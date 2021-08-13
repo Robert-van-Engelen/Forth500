@@ -1,0 +1,52 @@
+# CHANGES
+
+- removed useless `rc` before `jp interp__`
+- replaced `jp interp__` by `jp cont__` to skip BREAK key test in code when control flow is not jumping backward and no IO (with a few exceptions)
+- `jp cont__` with fetch-exec loop cycle takes 17 CPU cycles (4+5+4+4), 7 cycles saved (i.e. BREAK key test adds 40% overhead), BREAK key interruption is fully working by testing BREAK key in `docol__xt`, when performing backward jumps and when performing IO
+- removed floating point words (float operations are not implemented in this version)
+- optimized code that returns `TRUE` (-1 or $ffff) or `FALSE` (0) by using `mv ba,$0000`, `jpnz cont__`, `dec ba`, `jp cont__` or by using `mv ba,$ffff`, `jpnz cont__`, `inc ba`, `jp cont__`
+- optimized `mv i,$00xx` to `mv il,$xx`
+- fixed and optimized internal throws that removed the TOS
+- added `2VALUE` and `2VALUE?`, updated `TO` and `+TO` to set `VALUE` and `2VALUE` accordingly
+- replaced `(IS)` with standards-compliant `DEFER!`
+- replaced `BEHAVIOR` with standards-compliant `ACTION-OF` using `DEFER@`
+- removed non-standard `MATCH?`
+- replaced `M+` and `M-` with Forth code instead of assembly
+- added standards-compliant `PARSE-NAME`
+- fixed `2CONSTANT` lo/hi order swapped
+- removed BLOCK (`BLK`, `BLOCK`, `BUFFER`, `LOAD`, `LIST`, `THRU`) because blocks are not implemented and `EVALUATE` does not even use `BLK`
+- added standards-compliant `HOLDS`
+- removed `NO-IOERROR` constant that is always zero
+- optimized `dolit__xt` 0, 1, 2, -1 with new `dolit0_xt`, `dolit1_xt`, `dolit2_xt`, `dolitm1_xt`
+- replaced `FALSE` and `TRUE` with jump to `dolit0_` and `dolitm1_` instead of `docon__xt`
+- optimized `STDI`, `STDO`, `STDL`, `R/O`, `W/O`, `R/W` with jump to `dolit0_xt`, `dolit1_xt`, `dolit2_xt`, `dolit3_xt`
+- fixed `DRIVE-NAME` to return current `DRIVE` string (E: by default) when drive is not specified
+- renamed internal `FILE-NAME` to `FILENAME` and `DRIVE-NAME` to `DRIVENAME`
+- changed internal `FNP` to `VALUE FNP` instead of `VARIABLE FNP`
+- added standards-compliant `BUFFER:`
+- added standards-compliant but dummy `SAVE-INPUT` and `RESTORE-INPUT`
+- added `K`
+- removed `ALLOCP`, unused
+- added standards-compliant `S\"` implemented with new `\"-PARSE`
+- changed old graphics words `PSET`, `PRESET`, etc to new `GMODE` to set the mode (set, reset, flip), `GPOINT`, `GPOINT?`, `GLINE`, `GBOX`
+- added graphics words `GDOTS`, `GDOTS?`, `GDRAW`, `GBLIT!`, `GBLIT@`
+- replaced internal `POCKET#`, `POCKET0`, `POCKET1`, `WHICH-POCKET` with new `WHICH-POCKET` with internal storage
+- replaced internal `FILENAME#`, `FILENAME0`, `FILENAME1`, `WHICH-FILENAME` with new `WHICH-FILE` with internal storage
+- renamed `>FILENAME` to `>FILE`
+- renamed `FILENAME>STRING` to `FILE>STRING`
+- renamed `STRING>FILENAME` to `STRING>FILE`
+- removed non-standard `SKIP-CHARS`, same as relative file move with `( d fileid ) SEEK-CUR SEEK-FILE`
+- fixed `RESIZE-FILE` to enlarge a file (but cannot truncate a file)
+- fixed `FILE-STATUS` to comply with standard, returns file structure pointer `f-addr` with file info
+- removed `FILE-SET` to set a file's attribute, it does not appear to work and there is a danger of losing files
+- fixed `WRITE-LINE` to add CR LF instead of just LF
+- fixed `FILE>STRING` when used after `>FILE`
+- added `FIND-FILE` support for * and ? globs (can only use a single * for name and extension, such as *.* and foo*.*)
+- added `FILES` to list files on a drive, supports ? and * globbing
+- added `2TUCK` for consistency with `2NIP`
+- removed `VERIFY-FILE`, which is not usable
+- renamed internal `FORGET-LIMIT` to `FENCE`
+- renamed internal `CHECK-STACK` to `?STACK`
+- optimized `(;CODE)`
+- added standards-compliant `BEGIN-STRUCT`, `END-STRUCT`, `+FIELD`, `CFIELD:`, `FIELD:`, `2FIELD:`
+- optimized `CASE OF` with new `(OF)` conditional jump that is faster and saves 6 bytes per `OF-ENDOF` pair

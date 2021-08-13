@@ -1,0 +1,7 @@
+XASM is written in Turbo Pascal.
+
+Free Pascal is a TP-compatible Pascal compiler: freepascal.org
+
+To build XASM from the command line (on a Unix/Linux system):
+
+$ fpc -Mtp XASM.PAS
