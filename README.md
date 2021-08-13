@@ -4,7 +4,7 @@ A complete Forth system based on the excellent ANS Forth compiler for the PC-E50
 
 A User Guide is forthcoming...
 
-This Forth compiler rewrite is [standard-Forth](https://forth-standard.org) compliant and satisifies:
+The Forth compiler is [standard-Forth](https://forth-standard.org) compliant and satisifies:
 - CORE
 - CORE-EXT
 - (BLOCK is incomplete and removed to save space for now)
@@ -34,12 +34,12 @@ Additional words:
 - LCD: `SET-SYMBOLS`, `BUSY-ON`, `BUSY-OFF`, `CURSOR`, `SET-CURSOR`, `X@`, `X!`, `Y@`, `Y!`, `XMAX@`, `XMAX!`, `YMAX@`, `YMAX!`
 - graphics: `GMODE`, `GPOINT`, `GPOINT?`, `GLINE`, `GBOX`, `GDOTS`, `GDOTS?`, `GDRAW`, `GBLIT!`, `GBLIT@`
 - sound: `BEEP`
-- dictionary: `LAST`, `LAST-XT`, `HIDE`, `REVEAL`, `L>NAME`, `>NAME, NAME>, FIND-WORD
-- files: `STRING>FILE`, `FILE>STRING`, `FIND-FILE`, `FILE-INFO`, `FILE-END?`, `WRITE-CHAR`, `READ-CHAR`, `PEEK-CHAR`, `CHAR-READY?`, `SEEK-FILE` (with `SEEK-SET`, `SEEK-CUR`, `SEEK-END`), `FREE-CAPACITY`, `>FILE`, `FILES`, `DRIVE`, `STDI`, `STDO`, `STDL`
+- dictionary: `LAST`, `LAST-XT`, `HIDE`, `REVEAL`, `L>NAME`, `>NAME`, `NAME>`, `FIND-WORD`
+- files: `FILES`, `DRIVE`, `STDI`, `STDO`, `STDL`, `FREE-CAPACITY`, `STRING>FILE`, `FILE>STRING`, `FIND-FILE`, `FILE-INFO`, `FILE-END?`, `WRITE-CHAR`, `READ-CHAR`, `PEEK-CHAR`, `CHAR-READY?`, `SEEK-FILE` (with `SEEK-SET`, `SEEK-CUR`, `SEEK-END`), `>FILE`
 - keyboard: `>KEY-BUFFER`, `KEY-CLEAR`, `INKEY`
 - parsing: `\"-PARSE`
 - editing: `EDIT`
 - marking: `ANEW`
 - power: `POWER-OFF`
 
-The code is optimized and more compact. The `docol` fetch-execute cycle is 40% more efficient.
+The code is rewritten and optimized to be faster and more compact. The `docol` fetch-execute cycle is 40% more efficient.
