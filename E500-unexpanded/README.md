@@ -1,6 +1,7 @@
 # Binary Forth500.bin for unexpanded PC-E500 with 32KB
 
-With a cassette interface such as CE-126p use PocketTools to load:
+Use a cassette interface, such as CE-126p or CE-124, and
+[PocketTools](https://www.peil-partner.de/ifhe.de/sharp/) to load:
 
     $ bin2wav --pc=E500 --type=bin --addr=0xB9000 Forth500.bin
 
@@ -19,4 +20,5 @@ To remove Forth from memory and release its allocated RAM space:
 
     > POKE &BFE03,&1A,&FD,&0B,0,0,0: CALL &FFFD8
 
-
+Instead of the wav file, a RS-232 interface can be used.  This
+requires a uuencoded bin file to transfer and install the binary.
