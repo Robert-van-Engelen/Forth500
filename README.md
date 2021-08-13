@@ -1,10 +1,10 @@
 # A Complete Forth System for the SHARP PC-E500(S)
 
-A complete Forth system rewrite based on the excellent ANS Forth compiler for the PC-E500(S) by Sébastien Furic.
+A complete Forth system based on the excellent ANS Forth compiler for the PC-E500(S) by Sébastien Furic.
 
 A User Guide is forthcoming...
 
-This Forth compiler is [standard-Forth](https://forth-standard.org) compliant and satisifies:
+This Forth compiler rewrite is [standard-Forth](https://forth-standard.org) compliant and satisifies:
 - CORE
 - CORE-EXT
 - (BLOCK is incomplete and removed to save space for now)
