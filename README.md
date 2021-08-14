@@ -4,7 +4,7 @@ A complete Forth system based on the excellent ANS Forth compiler for the PC-E50
 
 A User Guide is forthcoming...
 
-The Forth compiler is [standard-Forth](https://forth-standard.org) compliant and satisifies:
+This updated Forth compiler is [standard-Forth](https://forth-standard.org) compliant and satisifies:
 - CORE
 - CORE-EXT
 - (BLOCK is incomplete and removed to save space for now)
