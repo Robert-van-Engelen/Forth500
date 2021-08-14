@@ -27,7 +27,7 @@ Additional words:
 - values: `+TO`
 - variables: `ON`, `OFF`
 - arithmetic: `UMAX`, `UMIN`, `2+`, `2-`, `M-`, `D/MOD`, `DMOD`, `UMD*`
-- stack: `-ROT`, `2NIP`, `2TUCK`, `DUP>R`, `R>DROP`
+- stack: `-ROT`, `2NIP`, `2TUCK`, `DUP>R`, `R>DROP`, `CLEAR`
 - loops: `K`, `?LEAVE`
 - strings: `S=`, `EDIT`
 - display: `REVERSE-TYPE`, `BASE.`, `BIN.`, `DEC.`, `HEX.`, `N.S`
@@ -40,6 +40,7 @@ Additional words:
 - parsing: `\"-PARSE`
 - marking: `ANEW`
 - power: `POWER-OFF`
+- misc: `NOOP`
 
 The code is rewritten and optimized to be faster and more compact. The `docol` fetch-execute cycle is 40% more efficient.
 
