@@ -48,4 +48,6 @@ The code is rewritten and optimized to be faster and more compact. The `docol` f
 
 Words are case-insensitve and can be typed in upper/lower/mixed case.
 
-Also included is the XASM assembler to build the Forth500 system.
+Included are the binaries for unexpanded 32KB machines and expanded >96KB machines.
+
+Also included is the XASM assembler to rebuild the Forth500 system.
