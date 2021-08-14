@@ -2076,7 +2076,7 @@ plus_store_xt:	local
 ;-------------------------------------------------------------------------------
 d_plus_stor:	dw	plus_store
 		db	$03
-		db	'D+!'
+		db	'D+!'			; ( d addr -- )
 d_plus_stor_xt:	local
 		mv	y,!base_address+2
 		add	y,ba			; Y holds the address + 2 (low order) where to store the value
@@ -2092,6 +2092,7 @@ d_plus_stor_xt:	local
 		inc	ba
 lbl1:		add	ba,i			; BA holds the new high-order bits
 		mv	[y],ba
+		popu	ba			; Set new TOS
 		jp	!cont__
 		endl
 ;-------------------------------------------------------------------------------
