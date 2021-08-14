@@ -1252,14 +1252,14 @@ n_to_r:		dw	two_tuck
 		db	$03
 		db	'N>R'			; ( n*x +n -- ; R: -- n*x +n )
 n_to_r_xt:	local
-		mv	(!ex),ba		; Save TOS
+		mv	(!fx),ba		; Save TOS
 		inc	ba			; BA holds TOS+1
 		jr	lbl2
 lbl1:		popu	i			; Pop value from the stack
 		pushs	i			; and push on the return stack
 lbl2:		dec	ba			; Decrement BA and repeat until zero
 		jrnz	lbl1
-		mv	ba,(!ex)		; Push old TOS on
+		mv	ba,(!fx)		; Push old TOS on
 		pushs	ba			; the return stack
 		popu	ba			; Set new TOS
 		jp	!cont__
@@ -1271,14 +1271,14 @@ n_r_from:	dw	n_to_r
 n_r_from_xt:	local
 		pushu	ba			; Save the TOS
 		pops	ba			; BA holds n
-		mv	(!ex),ba		; Save new TOS
+		mv	(!fx),ba		; Save new TOS
 		inc	ba			; BA holds n+1
 		jr	lbl2
 lbl1:		pops	i			; Pop value from the return stack
 		pushu	i			; and push on the stack
 lbl2:		dec	ba			; Decrement BA and repeat until zero
 		jrnz	lbl1
-		mv	ba,(!ex)		; Set new TOS
+		mv	ba,(!fx)		; Set new TOS
 		jp	!cont__
 		endl
 ;-------------------------------------------------------------------------------
@@ -2074,28 +2074,28 @@ plus_store_xt:	local
 		jp	!cont__
 		endl
 ;-------------------------------------------------------------------------------
-;d_plus_stor:	dw	plus_store
-;		db	$03
-;		db	'D+!'
-;d_plus_stor_xt:	local
-;		mv	y,!base_address+2
-;		add	y,ba			; Y holds the address + 2 (low order) where to store the value
-;		popu	i			; I holds the high-order bits to add
-;		mv	(!fx),i
-;		popu	i			; I holds the low-order bits to add
-;		mv	ba,[y]			; BA holds the old low-order bits
-;		add	ba,i			; BA holds the new low-order bits
-;		mv	[y],ba
-;		mv	ba,[--y]		; BA holts the old high-order bits
-;		mv	i,(!fx)			; I holts the high-order bits to add
-;		jrnc	lbl1
-;		inc	ba
-;lbl1:		add	ba,i			; BA holds the new high-order bits
-;		mv	[y],ba
-;		jp	!cont__
-;		endl
+d_plus_stor:	dw	plus_store
+		db	$03
+		db	'D+!'
+d_plus_stor_xt:	local
+		mv	y,!base_address+2
+		add	y,ba			; Y holds the address + 2 (low order) where to store the value
+		popu	i			; I holds the high-order bits to add
+		mv	(!fx),i
+		popu	i			; I holds the low-order bits to add
+		mv	ba,[y]			; BA holds the old low-order bits
+		add	ba,i			; BA holds the new low-order bits
+		mv	[y],ba
+		mv	ba,[--y]		; BA holts the old high-order bits
+		mv	i,(!fx)			; I holts the high-order bits to add
+		jrnc	lbl1
+		inc	ba
+lbl1:		add	ba,i			; BA holds the new high-order bits
+		mv	[y],ba
+		jp	!cont__
+		endl
 ;-------------------------------------------------------------------------------
-d_plus:		dw	plus_store
+d_plus:		dw	d_plus_stor
 		db	$02
 		db	'D+'
 d_plus_xt:	local
@@ -7203,16 +7203,12 @@ lbl5:			dw	!to_body_xt		;     >BODY
 			dw	!fetch_xt		;     @
 			dw	!if__xt			;     IF
 			dw	lbl7-lbl6		;                                      
-lbl6:				dw	!dolit__xt	;       ['] (D+2TO) \ POSTPOONE (D+2TO)
+lbl6:				dw	!dolit__xt	;       ['] (D+2TO) \ POSTPONE (D+2TO)
 				dw	!dodplus2to__xt	;                                      
 				dw	!compile_com_xt	;       COMPILE,
 				dw	!comma_xt	;       ,
 				dw	!doexit__xt	;       EXIT THEN
-lbl7:			dw	!dup_to_r_xt		;     DUP>R
-			dw	!two_fetch_xt		;     2#
-			dw	!d_plus_xt		;     D+
-			dw	!r_from_xt		;     R>
-			dw	!two_store_xt		;     2!
+lbl7:			dw	!d_plus_stor_xt		;     D+!
 			dw	!doexit__xt		;     EXIT THEN
 lbl8:		dw	!dolit__xt			;   -32
 		dw	-32				;   \ Invalid name argument
@@ -8023,7 +8019,7 @@ lbl2:		dw	!dup_xt			;   DUP
 		dw	!allot_xt		;   ALLOT
 		dw	!swap_xt		;   SWAP
 		dw	!c_move_xt		;   CMOVE
-		dw	!dolit__xt		;   ['] DROP
+		dw	!dolit__xt		;   ['] DROP  \ POSTPONE DROP
 		dw	!drop_xt		;
 		dw	!compile_com_xt		;   COMPILE,
 		dw	!doexit__xt		; ; IMMEDIATE
@@ -8641,7 +8637,7 @@ lbl1a:					dw	!drop_xt	;           DROP
 					dw	!page_xt	;           PAGE THEN
 lbl2a:				dw	!minus_rot_xt		;         -ROT
 				dw	!type_xt		;         TYPE
-				dw	!space_xt		;         SPACE \ end of (DISPLAY-WORD)
+				dw	!space_xt		;         SPACE \ end of inlined (DISPLAY-WORD)
 				dw	!swap_xt		;         SWAP THEN
 lbl4:			dw	!fetch_xt			;       @
 			dw	!again__xt			;       AGAIN THEN
@@ -9196,16 +9192,16 @@ edit:		dw	insert_
 		db	'EDIT'
 edit_xt:	local
 		jp	!docol__xt				; : EDIT ( c-addr +n n n n -- c-addr +n )
-		;dw	!init_edit__xt				;   \ inlined (INIT-EDIT):
-		dw	!doto__xt				;   TO (LBOUND)
+		;dw	!init_edit__xt				;   (INIT-EDIT) \ replaced by inlined code:
+		dw	!doto__xt				;   TO (LBOUND)    \ n left margin (not editable)
 		dw	!lbound__xt+3				;
-		dw	!doto__xt				;   TO (CURRENT)
+		dw	!doto__xt				;   TO (CURRENT)   \ n starting position in the string to edit
 		dw	!current__xt+3				;
-		dw	!doto__xt				;   TO (END)
+		dw	!doto__xt				;   TO (END)       \ n length of the string to edit
 		dw	!end__xt+3				;
-		dw	!doto__xt				;   TO (UBOUND)
+		dw	!doto__xt				;   TO (UBOUND)    \ +n buffer size
 		dw	!ubound__xt+3				;
-		dw	!doto__xt				;   TO (BEGINNING)
+		dw	!doto__xt				;   TO (BEGINNING) \ c-addr buffer address
 		dw	!beginning__xt+3			;
 		dw	!x_fetch_xt				;   X@
 		dw	!doto__xt				;   TO (ORIGX)
@@ -9855,153 +9851,196 @@ currnt_base:	dw	quest_stack
 		db	$0c
 		db	'CURRENT-BASE'
 currnt_base_xt:	local
-		jp	!dovar__xt
+		jp	!dovar__xt		; VARIABLE CURRENT-BASE 10 CURRENT-BASE !
 		dw	10
 		endl
 ;-------------------------------------------------------------------------------
-cur_base_st:	dw	currnt_base
-		db	$0d
-		db	'CURRENT-BASE!'
-cur_base_st_xt:	local
-		jp	!docol__xt			; : CURRENT-BASE ( c-addr u -- )
-		dw	!next_char_xt			;   NEXT-CHAR
-			dw	!dolit__xt		;   CASE
-			dw	$0024			;     [CHAR] $ \ The value of the '$' character
-			;dw	!over_xt		;
-			;dw	!equals_xt		;
-			;dw	!if__xt			;
-			dw	!of__xt			;   OF
-			dw	lbl2-lbl1		;
-lbl1:				;dw	!drop_xt	;
-				dw	!dolit__xt	;     16
-				dw	16		;
-			dw	!ahead__xt		;   ENDOF
-			dw	lbl7-lbl2		;
-lbl2:			dw	!dolit__xt		;     [CHAR] #
-			dw	$0023			;     \ The value of the '#' character
-			;dw	!over_xt		;
-			;dw	!equals_xt		;
-			;dw	!if__xt			;
-			dw	!of__xt			;   OF
-			dw	lbl4-lbl3		;
-lbl3:				;dw	!drop_xt	;
-				dw	!dolit__xt	;     10
-				dw	10		;
-			dw	!ahead__xt		;   ENDOF
-			dw	lbl7-lbl4		;
-lbl4:			dw	!dolit__xt		;     [CHAR] %
-			dw	$0025			;     \ The value of the '%' character
-			;dw	!over_xt		;
-			;dw	!equals_xt		;
-			;dw	!if__xt			;
-			dw	!of__xt			;   OF
-			dw	lbl6-lbl5		;
-lbl5:				;dw	!drop_xt	;
-				dw	!dolit2_xt	;     2
-			dw	!ahead__xt		;   ENDOF
-			dw	lbl7-lbl6		;
-lbl6:			dw	!to_r_xt		;     >R
-			dw	!dolitm1_xt		;     -1
-			dw	!slash_str_xt		;     /STRING
-			dw	!base_xt		;     BASE
-			dw	!fetch_xt		;     @
-			dw	!r_from_xt		;     R>
-		dw	!drop_xt			;   ENDCASE \ also DROP of the default case
-lbl7:		dw	!currnt_base_xt			;   CURRENT-BASE
-		dw	!store_xt			;   !
-		dw	!doexit__xt			; ;
-		endl
+;cur_base_st:	dw	currnt_base
+;		db	$0d
+;		db	'CURRENT-BASE!'
+;cur_base_st_xt:	local
+;		jp	!docol__xt			; : CURRENT-BASE! ( c-addr u -- c-addr u )
+;		dw	!next_char_xt			;   NEXT-CHAR
+;			dw	!dolit__xt		;   CASE
+;			dw	$0024			;     [CHAR] $ \ The value of the '$' character
+;			;dw	!over_xt		;
+;			;dw	!equals_xt		;
+;			;dw	!if__xt			;
+;			dw	!of__xt			;   OF
+;			dw	lbl2-lbl1		;
+;lbl1:				;dw	!drop_xt	;
+;				dw	!dolit__xt	;     16
+;				dw	16		;
+;			dw	!ahead__xt		;   ENDOF
+;			dw	lbl7-lbl2		;
+;lbl2:			dw	!dolit__xt		;     [CHAR] #
+;			dw	$0023			;     \ The value of the '#' character
+;			;dw	!over_xt		;
+;			;dw	!equals_xt		;
+;			;dw	!if__xt			;
+;			dw	!of__xt			;   OF
+;			dw	lbl4-lbl3		;
+;lbl3:				;dw	!drop_xt	;
+;				dw	!dolit__xt	;     10
+;				dw	10		;
+;			dw	!ahead__xt		;   ENDOF
+;			dw	lbl7-lbl4		;
+;lbl4:			dw	!dolit__xt		;     [CHAR] %
+;			dw	$0025			;     \ The value of the '%' character
+;			;dw	!over_xt		;
+;			;dw	!equals_xt		;
+;			;dw	!if__xt			;
+;			dw	!of__xt			;   OF
+;			dw	lbl6-lbl5		;
+;lbl5:				;dw	!drop_xt	;
+;				dw	!dolit2_xt	;     2
+;			dw	!ahead__xt		;   ENDOF
+;			dw	lbl7-lbl6		;
+;lbl6:			dw	!to_r_xt		;     >R
+;			dw	!dolitm1_xt		;     -1
+;			dw	!slash_str_xt		;     /STRING
+;			dw	!base_xt		;     BASE
+;			dw	!fetch_xt		;     @
+;			dw	!r_from_xt		;     R>
+;		dw	!drop_xt			;   ENDCASE \ also DROP of the default case
+;lbl7:		dw	!currnt_base_xt			;   CURRENT-BASE
+;		dw	!store_xt			;   !
+;		dw	!doexit__xt			; ;
+;		endl
 ;-------------------------------------------------------------------------------
-negative:	dw	cur_base_st
+negative:	dw	currnt_base
 		db	$08
 		db	'NEGATIVE'
 negative_xt:	local
-		jp	!dovar__xt
-		dw	$0000
+		jp	!dovar__xt		; VARIABLE NEGATIVE NEGATIVE OFF
+		dw	$0000			; A flag to indicate negative numbers
 		endl
 ;-------------------------------------------------------------------------------
-negative_st:	dw	negative
-		db	$09
-		db	'NEGATIVE!'
-negative_st_xt:	local
-		jp	!docol__xt
-		dw	!next_char_xt
-		dw	!dolit__xt
-		dw	$002d			; The value of '-'
-		dw	!equals_xt
-		dw	!dup_xt
-		dw	!negative_xt
-		dw	!store_xt
-		dw	!if__xt
-		dw	lbl2-lbl1
-lbl1:			dw	!doexit__xt
-lbl2:		dw	!dolitm1_xt
-		dw	!slash_str_xt
-		dw	!doexit__xt
-		endl
+;negative_st:	dw	negative
+;		db	$09
+;		db	'NEGATIVE!'
+;negative_st_xt:	local
+;		jp	!docol__xt		; : NEGATIVE! ( c-addr u -- c-addr u )
+;		dw	!next_char_xt		;   NEXT-CHAR
+;		dw	!dolit__xt		;   $2d
+;		dw	$002d			;   \ The value of '-'
+;		dw	!equals_xt		;   =
+;		dw	!dup_xt			;   DUP
+;		dw	!negative_xt		;   NEGATIVE
+;		dw	!store_xt		;   !
+;		dw	!invert_xt		;   INVERT \ quick way to get 0 or -1 for /STRING
+;		;dw	!if__xt			;
+;		;dw	lbl2-lbl1		;
+;lbl1:		;	dw	!doexit__xt	;
+;lbl2:		;dw	!dolitm1_xt		;
+;		dw	!slash_str_xt		;   /STRING
+;		dw	!doexit__xt		; ;
+;		endl
 ;-------------------------------------------------------------------------------
-double:		dw	negative_st
+double:		dw	negative
 		db	$06
 		db	'DOUBLE'
 double_xt:	local
-		jp	!dovar__xt
-		dw	$0000
+		jp	!dovar__xt		; VARIABLE DOUBLE DOUBLE OFF
+		dw	$0000			; A flag to indicate doubles
 		endl
 ;-------------------------------------------------------------------------------
-double_nb:	dw	double
-		db	$0d
-		db	'DOUBLE-NUMBER'
-double_nb_xt:	local
-		jp	!docol__xt
-		dw	!double_xt
-		dw	!off_xt
-		dw	!dolit0_xt
-		dw	!s_to_d_xt
-		dw	!two_to_r_xt
-		dw	!cur_base_st_xt
-		dw	!negative_st_xt
-lbl1:			dw	!quest_dup_xt
-		dw	!if__xt
-		dw	lbl8-lbl2
-lbl2:			dw	!next_char_xt
-			dw	!dup_xt
-			dw	!dolit__xt
-			dw	$002e		; The value of '.'
-			dw	!equals_xt
-			dw	!if__xt
-			dw	lbl4-lbl3
-lbl3:				dw	!drop_xt
-				dw	!double_xt
-				dw	!on_xt
-			dw	!ahead__xt
-			dw	lbl7-lbl4
-lbl4:				dw	!to_binary_xt
-				dw	!dup_xt
-				dw	!dolit0_xt
-				dw	!currnt_base_xt
-				dw	!fetch_xt
-				dw	!within_xt
-				dw	!invert_xt
-				dw	!if__xt
-				dw	lbl6-lbl5
-lbl5:					dw	!dolit__xt
-					dw	-13		; Undefined word
-					dw	!throw_xt
-lbl6:				dw	!s_to_d_xt
-				dw	!two_r_from_xt
-				dw	!currnt_base_xt
-				dw	!fetch_xt
-				dw	!u_m_d_star_xt
-				dw	!d_plus_xt
-				dw	!two_to_r_xt
-lbl7:		dw	!again__xt
-		dw	lbl8-lbl1
-lbl8:		dw	!drop_xt
-		dw	!two_r_from_xt
-		dw	!doexit__xt
+to_double:	dw	double
+		db	$07
+		db	'>DOUBLE'
+to_double_xt:	local
+		jp	!docol__xt				; : >DOUBLE ( c-addr u -- ud )
+		dw	!double_xt				;   DOUBLE
+		dw	!off_xt					;   OFF
+		dw	!dolit0_xt				;   0.
+		dw	!dolit0_xt				;
+		dw	!two_to_r_xt				;   2>R
+		;dw	!cur_base_st_xt				;   CURRENT-BASE! \ replaced by inlined code:
+		dw	!next_char_xt				;   NEXT-CHAR
+			dw	!dolit__xt			;   CASE
+			dw	$0024				;     [CHAR] $ \ The value of the '$' character
+			dw	!of__xt				;   OF
+			dw	lbl2a-lbl1a			;
+lbl1a:				dw	!dolit__xt		;     16
+				dw	16			;
+			dw	!ahead__xt			;   ENDOF
+			dw	lbl7a-lbl2a			;
+lbl2a:			dw	!dolit__xt			;     [CHAR] #
+			dw	$0023				;     \ The value of the '#' character
+			dw	!of__xt				;   OF
+			dw	lbl4a-lbl3a			;
+lbl3a:				dw	!dolit__xt		;     10
+				dw	10			;
+			dw	!ahead__xt			;   ENDOF
+			dw	lbl7a-lbl4a			;
+lbl4a:			dw	!dolit__xt			;     [CHAR] %
+			dw	$0025				;     \ The value of the '%' character
+			dw	!of__xt				;   OF
+			dw	lbl6a-lbl5a			;
+lbl5a:				dw	!dolit2_xt		;     2
+			dw	!ahead__xt			;   ENDOF
+			dw	lbl7a-lbl6a			;
+lbl6a:			dw	!to_r_xt			;     >R
+			dw	!dolitm1_xt			;     -1
+			dw	!slash_str_xt			;     /STRING
+			dw	!base_xt			;     BASE
+			dw	!fetch_xt			;     @
+			dw	!r_from_xt			;     R>
+		dw	!drop_xt				;   ENDCASE \ also DROP of the default case
+lbl7a:		dw	!currnt_base_xt				;   CURRENT-BASE
+		dw	!store_xt				;   !         \ end of inlined CURRENT-BASE! code
+		;dw	!negative_st_xt				;   NEGATIVE! \ replaced by inlined code:
+		dw	!next_char_xt				;   NEXT-CHAR
+		dw	!dolit__xt				;   $2d
+		dw	$002d					;   \ The value of '-'
+		dw	!equals_xt				;   =
+		dw	!dup_xt					;   DUP
+		dw	!negative_xt				;   NEGATIVE
+		dw	!store_xt				;   !
+		dw	!invert_xt				;   INVERT  \ gives 0 (got a '-') or -1 (not a '-')
+		dw	!slash_str_xt				;   /STRING \ end of inlined NEGATIVE! code
+lbl1:			dw	!quest_dup_xt			;   BEGIN ?DUP
+		dw	!if__xt					;   WHILE
+		dw	lbl8-lbl2				;
+lbl2:			dw	!next_char_xt			;     NEXT-CHAR
+			dw	!dup_xt				;     DUP
+			dw	!dolit__xt			;     [CHAR] .
+			dw	$002e				;     \ The value of '.'
+			dw	!equals_xt			;     =
+			dw	!if__xt				;     IF
+			dw	lbl4-lbl3			;
+lbl3:				dw	!drop_xt		;       DROP
+				dw	!double_xt		;       DOUBLE
+				dw	!on_xt			;       ON
+			dw	!ahead__xt			;     ELSE
+			dw	lbl7-lbl4			;
+lbl4:				dw	!to_binary_xt		;       >BINARY
+				dw	!dup_xt			;       DUP
+				dw	!dolit0_xt		;       0
+				dw	!currnt_base_xt		;       CURRENT-BASE
+				dw	!fetch_xt		;       @
+				dw	!within_xt		;       WITHIN
+				dw	!invert_xt		;       INVERT
+				dw	!if__xt			;       IF
+				dw	lbl6-lbl5		;
+lbl5:					dw	!dolit__xt	;         -13
+					dw	-13		;         \ Undefined word
+					dw	!throw_xt	;         THROW THEN
+lbl6:				dw	!s_to_d_xt		;       S>D
+				dw	!two_r_from_xt		;       2R>
+				dw	!currnt_base_xt		;       CURRENT-BASE
+				dw	!fetch_xt		;       @
+				dw	!u_m_d_star_xt		;       UMD*
+				dw	!d_plus_xt		;       D+
+				dw	!two_to_r_xt		;       2>R THEN
+lbl7:		dw	!again__xt				;   REPEAT
+		dw	lbl8-lbl1				;
+lbl8:		dw	!drop_xt				;   DROP
+		dw	!two_r_from_xt				;   2R>
+		dw	!doexit__xt				; ;
 		endl
 ;-------------------------------------------------------------------------------
-;float_:		dw	double_nb
+;float_:		dw	to_double
 ;		db	$07
 ;		db	'(FLOAT)'
 ;float__xt:	local
@@ -10178,12 +10217,12 @@ lbl8:		dw	!drop_xt
 ;		jp	!interp__
 ;		endl
 ;-------------------------------------------------------------------------------
-number:		dw	double_nb
+number:		dw	to_double
 		db	$06
 		db	'NUMBER'
 number_xt:	local
-		jp	!docol__xt			; : NUMBER
-		dw	!double_nb_xt			;   DOUBLE-NUMBER
+		jp	!docol__xt			; : NUMBER ( c-addr u -- |n|u|d|ud )
+		dw	!to_double_xt			;   >DOUBLE
 		dw	!negative_xt			;   NEGATIVE
 		dw	!fetch_xt			;   @
 		dw	!if__xt				;   IF

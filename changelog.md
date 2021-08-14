@@ -50,4 +50,5 @@
 - optimized `(;CODE)`
 - added standards-compliant `BEGIN-STRUCT`, `END-STRUCT`, `+FIELD`, `CFIELD:`, `FIELD:`, `2FIELD:`
 - optimized `CASE OF` with new `(OF)` conditional jump that is faster and saves 6 bytes per `OF-ENDOF` pair
+- changed `DOUBLE-NUMBER` to `>DOUBLE` with optimized code to reduce code size
 - changed to case-insensitve Forth, words can be typed in upper/lower/mixed case.

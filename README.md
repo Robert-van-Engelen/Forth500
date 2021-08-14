@@ -25,7 +25,7 @@ This updated Forth compiler is [standard-Forth](https://forth-standard.org) comp
 Additional words:
 - introspection: `COLON?`, `DOES>?`, `MARKER?`, `VARIABLE?`, `2VARIABLE?`, `VALUE?`, `2VALUE?`
 - values: `+TO`
-- variables: `ON`, `OFF`
+- variables: `D+!`, `ON`, `OFF`
 - arithmetic: `UMAX`, `UMIN`, `2+`, `2-`, `M-`, `D/MOD`, `DMOD`, `UMD*`
 - stack: `-ROT`, `2NIP`, `2TUCK`, `DUP>R`, `R>DROP`, `CLEAR`
 - loops: `K`, `?LEAVE`
