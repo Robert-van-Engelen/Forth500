@@ -6,7 +6,7 @@ The PC-E500 is a powerful pocket computer introduced in 1989 that saw a [PC-E500
 
 A User Guide is forthcoming...
 
-This updated Forth compiler is [standard-Forth](https://forth-standard.org) compliant and satisifies:
+This updated Forth compiler is [standard Forth](https://forth-standard.org) 2012 compliant and satisifies:
 - CORE
 - CORE-EXT
 - (BLOCK is incomplete and removed to save space for now)
