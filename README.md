@@ -2,6 +2,8 @@
 
 A complete Forth system based on the excellent ANS Forth compiler for the PC-E500(S) by Sébastien Furic.
 
+The PC-E500 is a powerful handheld pocket computer introduced in 1989 and had a [PC-E500S](https://en.wikipedia.org/wiki/Sharp_PC-E500S) successor in 1995.
+
 A User Guide is forthcoming...
 
 This updated Forth compiler is [standard-Forth](https://forth-standard.org) compliant and satisifies:
@@ -45,3 +47,5 @@ Additional words:
 The code is rewritten and optimized to be faster and more compact. The `docol` fetch-execute cycle is 40% more efficient.
 
 Words are case-insensitve and can be typed in upper/lower/mixed case.
+
+Also included is the XASM assembler to build the Forth500 system.
