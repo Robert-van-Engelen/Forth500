@@ -1,10 +1,10 @@
 ; Forth500
 ;
 ; Authors:
-;   Sébastien Furic
-;   Dr. Robert van Engelen
+;   Sébastien Furic (original pceForth-v1)
+;   Dr. Robert van Engelen (Forth500)
 ;
-; Change org according to the available RAM memory:
+; Change org in Forth500.s according to the available RAM memory:
 ; 
 ; 1. for machines with 64k RAM card or larger and MEM$="B":
 ;         org	$b0000
@@ -1271,13 +1271,14 @@ n_r_from:	dw	n_to_r
 n_r_from_xt:	local
 		pushu	ba			; Save the TOS
 		pops	ba			; BA holds n
+		mv	(!ex),ba		; Save new TOS
 		inc	ba			; BA holds n+1
 		jr	lbl2
 lbl1:		pops	i			; Pop value from the return stack
 		pushu	i			; and push on the stack
 lbl2:		dec	ba			; Decrement BA and repeat until zero
 		jrnz	lbl1
-		popu	ba			; Set new TOS
+		mv	ba,(!ex)		; Set new TOS
 		jp	!cont__
 		endl
 ;-------------------------------------------------------------------------------
