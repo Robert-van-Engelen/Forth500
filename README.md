@@ -38,8 +38,9 @@ Additional words:
 - files: `FILES`, `DRIVE`, `STDI`, `STDO`, `STDL`, `FREE-CAPACITY`, `STRING>FILE`, `FILE>STRING`, `FIND-FILE`, `FILE-INFO`, `FILE-END?`, `WRITE-CHAR`, `READ-CHAR`, `PEEK-CHAR`, `CHAR-READY?`, `SEEK-FILE` (with `SEEK-SET`, `SEEK-CUR`, `SEEK-END`), `>FILE`
 - keyboard: `>KEY-BUFFER`, `KEY-CLEAR`, `INKEY`
 - parsing: `\"-PARSE`
-- editing: `EDIT`
 - marking: `ANEW`
 - power: `POWER-OFF`
 
 The code is rewritten and optimized to be faster and more compact. The `docol` fetch-execute cycle is 40% more efficient.
+
+Words are case-insensitve and can be typed in upper/lower/mixed case.
