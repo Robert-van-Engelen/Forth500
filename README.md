@@ -1,8 +1,10 @@
 # A Complete Forth System for the SHARP PC-E500(S)
 
-A complete Forth system based on the excellent ANS Forth compiler for the PC-E500(S) by Sébastien Furic.
+A Forth system based on the excellent ANS Forth compiler for the PC-E500(S) by Sébastien Furic.
 
 The PC-E500 is a powerful pocket computer introduced in 1989 that saw a [PC-E500S](https://en.wikipedia.org/wiki/Sharp_PC-E500S) successor in 1995.
+
+The code is rewritten and optimized to be faster and more compact. The `docol` fetch-execute cycle is 40% more efficient.  Words are case-insensitive and can be typed in upper/lower/mixed case.  Included are the binaries for unexpanded 32KB machines and expanded >96KB machines.  Also included is the XASM assembler with documentation translated to English to rebuild the Forth500 system.
 
 A User Guide is forthcoming...
 
@@ -44,10 +46,3 @@ Additional words:
 - power: `POWER-OFF`
 - misc: `NOOP`
 
-The code is rewritten and optimized to be faster and more compact. The `docol` fetch-execute cycle is 40% more efficient.
-
-Words are case-insensitve and can be typed in upper/lower/mixed case.
-
-Included are the binaries for unexpanded 32KB machines and expanded >96KB machines.
-
-Also included is the XASM assembler to rebuild the Forth500 system.
