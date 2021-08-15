@@ -8108,7 +8108,7 @@ brkt_compil_xt:	local
 		endl
 ;-------------------------------------------------------------------------------
 fence:		dw	brkt_compil
-		db	$0c
+		db	$05
 		db	'FENCE'
 fence_xt:	local
 		jp	!docon__xt
