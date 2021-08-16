@@ -2,7 +2,7 @@
 
 A Forth 2012 system based on the excellent ANS Forth compiler for the PC-E500(S) by Sébastien Furic.
 
-[![PC-E500S][PC-E500S]](PC-E500S.jpeg)
+![PC-E500S](PC-E500S.jpeg)
 
 The PC-E500 is a powerful pocket computer introduced in 1989 that saw a [PC-E500S](https://en.wikipedia.org/wiki/Sharp_PC-E500S) successor in 1995.
 
