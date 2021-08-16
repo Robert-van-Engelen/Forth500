@@ -7,6 +7,7 @@
 - optimized code that returns `TRUE` (-1 or $ffff) or `FALSE` (0) by using `mv ba,$0000`, `jpnz cont__`, `dec ba`, `jp cont__` or by using `mv ba,$ffff`, `jpnz cont__`, `inc ba`, `jp cont__`
 - optimized `mv i,$00xx` to `mv il,$xx`
 - fixed and optimized internal throws that removed the TOS
+- optimized internal throws by setting the 8-bits `il` register and jumping to `throw__`
 - added `2VALUE` and `2VALUE?`, updated `TO` and `+TO` to set `VALUE` and `2VALUE` accordingly
 - replaced `(IS)` with standards-compliant `DEFER!`
 - replaced `BEHAVIOR` with standards-compliant `ACTION-OF` using `DEFER@`
@@ -32,7 +33,7 @@
 - added graphics words `GDOTS`, `GDOTS?`, `GDRAW`, `GBLIT!`, `GBLIT@`
 - replaced internal `POCKET#`, `POCKET0`, `POCKET1`, `WHICH-POCKET` with new `WHICH-POCKET` with internal storage
 - replaced internal `FILENAME#`, `FILENAME0`, `FILENAME1`, `WHICH-FILENAME` with new `WHICH-FILE` with internal storage
-- renamed `>FILENAME` to `>FILE`
+- renamed `>FILENAME` to `>FILE`, this takes a fileid to return a file status address with 18+8 bytes and ior
 - renamed `FILENAME>STRING` to `FILE>STRING`
 - renamed `STRING>FILENAME` to `STRING>FILE`
 - removed non-standard `SKIP-CHARS`, same as relative file move with `( d fileid ) SEEK-CUR SEEK-FILE`
@@ -45,11 +46,12 @@
 - added `FILES` to list files on a drive, supports ? and * globbing
 - added `2TUCK` for consistency with `2NIP`
 - removed `VERIFY-FILE`, which is not usable
-- renamed internal `FORGET-LIMIT` to `FENCE`
-- renamed internal `CHECK-STACK` to `?STACK`
+- renamed internal `FORGET-LIMIT` to the more conventional `FENCE`
+- renamed internal `CHECK-STACK` to the more conventional `?STACK`
 - optimized `(;CODE)`
 - added standards-compliant `BEGIN-STRUCT`, `END-STRUCT`, `+FIELD`, `CFIELD:`, `FIELD:`, `2FIELD:`
 - optimized `CASE OF` with new `(OF)` conditional jump that is faster and saves 6 bytes per `OF-ENDOF` pair
 - changed `DOUBLE-NUMBER` to `>DOUBLE` with optimized code to reduce code size
-- fixed D+! missing set new TOS
+- fixed `D+!` that was missing a `popu ba` to set new TOS
+- updated the filename-related words to automatically change the current drive letter (stored in `DRIVE`) when specified
 - changed to case-insensitve Forth, words can be typed in upper/lower/mixed case.

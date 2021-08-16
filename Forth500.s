@@ -1,18 +1,18 @@
 ; Forth500
 ;
 ; Authors:
-;   Sébastien Furic (original pceForth-v1)
+;   Sébastien Furic (original pce500forth-v1)
 ;   Dr. Robert van Engelen (Forth500)
 ;
 ; Change org in Forth500.s according to the available RAM memory:
 ; 
-; 1. for machines with 64k RAM card or larger and MEM$="B":
+; 1. for machines with extra 64KB RAM card or larger and MEM$="B":
 ;         org	$b0000
 ; 
-; 2. for machines with 32k RAM card and MEM$="B" and no E: drive:
+; 2. for machines with extra 32KB RAM card and MEM$="B" and no E: drive:
 ;         org	$b1000
 ; 
-; 3. for unexpanded 32k machines or MEM$="S1" and no E: drive:
+; 3. for unexpanded 32KB machines or MEM$="S1" and no E: drive:
 ;         org	$b9000
 ; 
 ; Assemble to produce binary file Forth500.obj:
@@ -28,6 +28,15 @@
 ; On the PC-E500 execute (the specified org address is &xx00):
 ;   > POKE &BFE03,&1A,&FD,&0B,0,&FC-&xx,0: CALL &FFFD8
 ; This reserves &Bxx00-&BFC00 and resets the machine.
+;
+; Warning: memory cannot be allocated when in use by programs.  To check if
+; memory was allocated:
+; 
+;     > HEX PEEK &BFD1B
+;     xx
+; 
+; The value xx shows that memory was allocated from &Bxx00 on (&BFD1C contains
+; the low-order address byte, which is zero).
 ; 
 ; Play the wav file, load and run Forth (the specified org address is &xx00):
 ;   > CLOADM
@@ -36,7 +45,17 @@
 ; To remove Forth from memory and release its allocated RAM space:
 ;   > POKE &BFE03,&1A,&FD,&0B,0,0,0: CALL &FFFD8
 
-; Implementation logic registers (BP-relative addresses)
+;-------------------------------------------------------------------------------
+;
+;		BP register offset for BP-relative addresses
+;
+;-------------------------------------------------------------------------------
+bp0:		equ	$70
+;-------------------------------------------------------------------------------
+;
+;		Implementation logic registers (BP-relative addresses)
+;
+;-------------------------------------------------------------------------------
 ; 16 bit (8+8) registers
 el:		equ	$00
 eh:		equ	$01
@@ -67,10 +86,11 @@ wi:		equ	$10			; Here pointer
 xi:		equ	$13			; FP (Floating point stack pointer)
 yi:		equ	$16			; Free heap pointers stack pointer value
 zi:		equ	$19			; Heap address
-
-
-; Standard logic registers
+;-------------------------------------------------------------------------------
 ;
+;		 Standard logic registers
+;
+;-------------------------------------------------------------------------------
 bl:		equ	$d4
 bh:		equ	$d5
 bx:		equ	$d4
@@ -82,10 +102,19 @@ dh:		equ	$d9
 dx:		equ	$d8
 si:		equ	$da
 di:		equ	$dd
+;-------------------------------------------------------------------------------
 ;
+;		System file and IO control vectors
+;
+;-------------------------------------------------------------------------------
 fcs:		equ	$fffe4
 iocs:		equ	$fffe8
+;-------------------------------------------------------------------------------
 ;
+;		Forth system parameters
+;
+;-------------------------------------------------------------------------------
+base_address:	equ	$b0000			; 11th segment
 ib_size:	equ	256			; TIB and FIB size
 hold_size:	equ	40			; ENVIRONMENT? /HOLD size
 blk_buff_size:	equ	1024
@@ -103,13 +132,18 @@ s_limit:	equ	s_beginning-s_size	; The stack's low limit
 ;heap_addr:	equ	a_limit-16*heap_size	; The address of the floating-point heap
 ;dict_limit:	equ	heap_addr		; The upper limit of the dictionary space
 dict_limit:	equ	s_limit			; The upper limit of the dictionary space
+;-------------------------------------------------------------------------------
 ;
-;Other constants
-bp0:		equ	$70
-base_address:	equ	$b0000			; 11th segment
+;		Forth boot address
 ;
-		org	$b9000			; $b0000 is the best choice, but some machines does not have enough memory
-boot:		local				; ($b9000 is the value to choose when running on a 32 kB machine).
+;-------------------------------------------------------------------------------
+		org	$b9000
+;-------------------------------------------------------------------------------
+;
+;		Forth booting
+;
+;-------------------------------------------------------------------------------
+boot:		local
 		pre_on
 		and	($fb),$7f		; Disable interruptions
 		mv	[!bp_value],($ec)	; Save BP's current value
@@ -142,31 +176,42 @@ boot:		local				; ($b9000 is the value to choose when running on a 32 kB machine
 		jp	!startup_xt
 		endl
 ;-------------------------------------------------------------------------------
-bp_value:	ds	1
-u_value:	ds	3
-s_value:	ds	3
+;
+;		Saved E500 system and Forth parameters
+;
+;-------------------------------------------------------------------------------
+bp_value:	ds	1			; To restore BP
+u_value:	ds	3			; To restore U
+s_value:	ds	3			; To restore S
 symbols:	ds	4			; To restore display's symbols when returning to BASIC
-here_value:	dp	_end_
+here_value:	dp	_end_			; 20 bit address HERE pointer
+last_value:	dw	startup			; 16 bit LAST address
+lastxt_value:	dw	startup_xt		; 16 bit LAST-XT address
 ;fp_value:	dp	f_beginning		; Floating-point stack pointer
 ;ap_value:	dp	a_beginning		; Free heap pointers stack pointer
 ;f_depth:	db	32			; The number of remaining places on the floating-point stack
 ;a_depth:	db	0			; The number of remaining free heap pointers (0 to force garbage collection)
-last_value:	dw	startup
-lastxt_value:	dw	startup_xt
+;-------------------------------------------------------------------------------
 ;
+;		Forth internals
+;
+;-------------------------------------------------------------------------------
 docol_:		dw	$0000			; To mark the last definition
 		db	$07
 		db	'(DOCOL)'
 docol__xt:	pushs	x			; Save old IP
 		mv	x,!base_address+3	; Set new IP (I contains
 		add	x,i			; the current execution token)
+;---------------
 interp__:	pre_on
 		test	($ff),$08		; Is break pushed?
 		pre_off
 		jrnz	break__
+;---------------
 cont__:		mv	i,[x++]			; Set I to new execution token
 		pushs	i			; Execute
 		ret				; new token
+;-------------------------------------------------------------------------------
 break__:	local
 		pre_on
 lbl1:		mv	il,$ff			; Test if the break
@@ -176,13 +221,14 @@ lbl2:		test	($ff),$08		; key was intentionally
 		jrnz	lbl2			; when the break key is released)
 		pre_off
 		endl
-;-------------------------------------------------------------------------------
 		mv	il,-28			; User interrupt
+;---------------
 throw__:	pushu	ba			; Save TOS
 		mv	ba,$ff00		; Set high-order bits, standard error codes are always negative
 		add	ba,il			; Set TOS to error code
-		mv	i,!throw_xt		; Execution token of the next word to execute
+		mv	i,!throw_xt		; Execution token of THROW, (DOCOL) needs this
 		jp	!throw_xt
+;-------------------------------------------------------------------------------
 doexit_:	dw	docol_
 		db	$06
 		db	'(EXIT)'
@@ -3687,8 +3733,8 @@ drive:		dw	which_file
 		db	$05
 		db	'DRIVE'
 drive_xt:	local
-		jp	!dovar__xt		; CREATE DRIVE 5 ALLOT
-		db	'E:   '			; Current drive E, F or G can change with CHAR F DRIVE C!
+		jp	!dovar__xt		; CREATE DRIVE 2 CHARS ALLOT
+		db	'E:'			; Current drive E, F or G can change with CHAR F DRIVE C!
 		endl
 ;-------------------------------------------------------------------------------
 drivename:	dw	drive
@@ -3706,7 +3752,15 @@ drivename_xt:	local
 lbl1:			dw	!drop_xt	;     DROP
 			dw	!nip_xt		;     NIP
 			dw	!over_xt	;     OVER
-			dw	!minus_xt	;     -
+			dw	!minus_xt	;     -     \ c-addr u
+			dw	!dup_xt		;     DUP
+			dw	!dolit1_xt	;     1
+			dw	!equals_xt	;     =
+			dw	!if__xt		;     IF    \ if drive is one char, set DRIVE to this char
+			dw	!over_xt	;       OVER
+			dw	!c_fetch_xt	;       C@
+			dw	!drive_xt	;       DRIVE
+			dw	!c_store_xt	;       C! THEN
 			dw	!doexit__xt	;     EXIT THEN
 lbl2:		dw	!two_drop_xt		;   2DROP
 		dw	!two_drop_xt		;   2DROP
@@ -6889,11 +6943,11 @@ name_:		dw	link_
 name__xt:	local
 		jp	!docol__xt		; : (NAME) ( c-addr u -- )
 		dw	!dup_xt			;   DUP
-		dw	!c_comma_xt		;   C, \ Length and control bits
+		dw	!c_comma_xt		;   C,     \ Length and control bits
 		dw	!here_xt		;   HERE
 		dw	!swap_xt		;   SWAP
-		dw	!dup_xt			;   DUP
-		dw	!chars_xt		;   CHARS  \ c-addr HERE u u
+		dw	!dup_xt			;   DUP    \ c-addr HERE u u
+		;dw	!chars_xt		;   CHARS  \ Does nothing
 		dw	!allot_xt		;   ALLOT  \ c-addr HERE u
 		dw	!c_move_xt		;   CMOVE
 		dw	!doexit__xt		; ;
@@ -7907,7 +7961,7 @@ sliteral_xt:	local
 		dw	!comma_xt		;   ,
 		dw	!here_xt		;   HERE
 		dw	!over_xt		;   OVER
-		dw	!chars_xt		;   CHARS
+		;dw	!chars_xt		;   CHARS  \ Does nothing
 		dw	!allot_xt		;   ALLOT
 		dw	!swap_xt		;   SWAP
 		dw	!c_move_xt		;   CMOVE
@@ -8016,7 +8070,7 @@ lbl2:		dw	!dup_xt			;   DUP
 		dw	!c_comma_xt		;   C,
 		dw	!here_xt		;   HERE
 		dw	!over_xt		;   OVER
-		dw	!chars_xt		;   CHARS
+		;dw	!chars_xt		;   CHARS  \ does nothing
 		dw	!allot_xt		;   ALLOT
 		dw	!swap_xt		;   SWAP
 		dw	!c_move_xt		;   CMOVE
