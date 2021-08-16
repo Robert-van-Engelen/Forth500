@@ -11,6 +11,15 @@ On the PC-E500 execute:
 
 This reserves &B0000-&BFC00 and resets the machine.
 
+Warning: memory cannot be allocated when in use by programs.  To check if
+memory was allocated:
+
+    > PEEK &BFD1B
+    0
+
+The value 0 shows that memory was allocated from &B0000 on (&BFD1C contains the
+low-order address byte, which is also zero).
+
 Play the wav file, load and run Forth:
 
     > CLOADM
@@ -20,5 +29,5 @@ To remove Forth from memory and release its allocated RAM space:
 
     > POKE &BFE03,&1A,&FD,&0B,0,0,0: CALL &FFFD8
 
-Instead of the wav file, a RS-232 interface can be used.  This
-requires a uuencoded bin file to transfer and install the binary.
+Instead of the wav file, a RS-232 interface can be used.  This requires a
+uuencoded bin file to transfer and install the binary.
