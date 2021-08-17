@@ -8,6 +8,8 @@ The PC-E500 is a powerful pocket computer introduced in 1989 that saw a [PC-E500
 
 Parts of the Forth machine code are rewritten and optimized to be faster and more compact. The `docol` fetch-execute cycle is 40% more efficient.  Words are case-insensitive and can be typed in upper/lower/mixed case.  Included are the binaries for unexpanded 32KB machines and expanded >96KB machines.  Also included is the XASM assembler written by N. Kon for the SC62015 CPU with documentation translated to English.  XASM is required to rebuild the Forth500 system.
 
+To use Forth500, first load the binary, then `CALL&B0000` (see [expanded E500](E500-expanded)) or `CALL&B9000` (see [unexpanded E500](E500-unexpanded)).  Forth500 starts immediately and can be exited with `BYE`.  Call again to continue using Forth500 where you left off.  Forth500 resides in protected memory and does not interfere with BASIC.
+
 A User Guide is forthcoming...
 
 This updated Forth compiler is [standard Forth](https://forth-standard.org) 2012 compliant and satisifies:
@@ -52,4 +54,3 @@ Work in progress:
 
 - Floating point words and stack
 - A file editor (a command line editor is included)
-
