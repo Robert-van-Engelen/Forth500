@@ -2,6 +2,8 @@
 
 # Forth500 User Guide
 
+Author: Robert A. van Engelen, 2021
+
 Forth500 is a standard Forth 2012 system for the SHARP PC-E500(S) pocket
 computer.  This pocket computer sports a 2.304MHz 8-bit CPU with a 20-bit
 address space of 1MB.  This pocket computer includes 256KB system ROM and 32KB
@@ -571,3 +573,5 @@ We saw that `.` displays the TOS.  Other words to display stack values:
 ## Graphics
 
 ## Sound
+
+_Copyright Robert A. van Engelen 2021_
