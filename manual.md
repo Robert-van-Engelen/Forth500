@@ -212,9 +212,108 @@ For convenience, the words `ON` and `OFF` can be used:
     spanish ? ↲
     -1 OK[0]
 
-The `?` word is a shorthand for `@ .` to display the value of a variable.
+The `?` word is a shorthand for `@ .` to display the value of a variable:
 
-This ends our quick tutorial introduction to the basics of Forth.
+    : ? @ . ;
+
+A large portion of the Forth system is defined in Forth itself, like the `?`
+word.
+
+In place of `IF-ELSE-THEN` which we can nest, we can also use
+`CASE-OF-ENDOF-ENDCASE` to add more languages:
+
+    0 CONSTANT #english ↲
+    1 CONSTANT #spanish ↲
+    2 CONSTANT #french ↲
+    VARIABLE language #english language ! ↲
+    : hello ↲
+      language @ CASE ↲
+        #english OF ." Hello, World!" ENDOF ↲
+        #spanish OF ." Hola, Mundo!" ENDOF ↲
+        #french OF ." Salut Mondial!" ENDOF ↲
+        ." Unknown language" ↲
+      ENDCASE ↲
+      CR ; ↲
+    hello ↲
+    Hello, World!
+
+Note that a default case is not really necessary, but can be inserted between
+the last `ENDOF` and `ENDCASE`.  In the default branch the `CASE` value is the
+TOS, which can be inspected, but should not be dropped before `ENDCASE`.
+
+Constant words push their value on the stack, wheras variable words push the
+address of their value on the stack to be fetched with `@` and new values are
+stored with `!`.
+
+So-called Forth values offer the advantage of implicit fetch like constants.
+Let's replace the `VARIABLE language` with a `VALUE` initialized to `#english`:
+
+    #english VALUE language ↲
+
+To change the value we use the `TO` word followed by the name of the value:
+
+    #spanish TO language ↲
+
+Now with `language` as a `VALUE`, `hello` should be changed by removing the
+`@` after `language`:
+
+    : hello ↲
+      language CASE ↲
+      ...
+
+Earlier we saw the `DO-LOOP`.  The loop iterates until its internal loop
+counter when incremented equals the final value.  For example, this loop
+executes `hello` 10 times:
+
+    : greetings 10 0 DO hello LOOP ; ↲
+
+Actually, `DO` cannot be recommended because the loop body is always executed
+at least once, for example when the initial value is the same as the final
+value.  Using `?DO` instead of `DO` avoids this:
+
+    : hellos 0 ?DO hello LOOP ; ↲
+    0 hellos ↲
+    OK[0]
+
+This never executes the loop body `hello` as intended.  To change the step size
+or direction of the loop, use `+LOOP`.  The word `I` returns the counter value:
+
+    : evens 10 0 ?DO I . 2 +LOOP ; ↲
+    evens ↲
+    0 2 4 6 8 OK[0]
+
+Again, be warned that the loop terminates when the counter equals the final
+value, not exceeds it.  Therefore, using the wrong loop `9 0 ?DO I . 2 +LOOP`
+would never terminate.
+
+A `BEGIN-WHILE-REPEAT` is a logically-controlled loop with which we can do the
+same as follows by pushing a `0` to use as a counter on top of the stack:
+
+    : evens ↲
+      0 ↲
+      BEGIN DUP 10 < WHILE ↲
+        DUP . ↲
+        2+ ↲
+      REPEAT DROP ; ↲
+    evens ↲
+    0 2 4 6 8 OK[0]
+
+A `BEGIN-UNTIL` loop:
+
+    : evens ↲
+      0 ↲
+      BEGIN ↲
+        DUP . ↲
+        2+ ↲
+      DUP 10 < INVERT UNTIL DROP ; ↲
+    evens ↲
+    0 2 4 6 8 OK[0]
+
+Forth has no built-in `>=`, so we use `< INVERT`.  To define `>=` is easy:
+
+    : >= < INVERT ; ↲
+
+This ends our quick tutorial introduction to the essential basics of Forth.
 
 ## Stack manipulation
 
@@ -325,7 +424,7 @@ division and modulo may throw exception -10 "Division by zero":
 The _after_ stack effects include the operations % (mod), & (bitwise and), |
 (bitwise or), ^ (bitwise xor), ~ (bitwise not/invert), << (bitshift left)
 and >> (bitshift right).  The U< and U> comparisons are unsigned, see
-[Conditionals](#conditionals).
+[Comparisons](#comparisons).
 
 The `*/` and `*/MOD` words produce an intermediate double product to avoid
 intermediate overflow.
@@ -369,13 +468,13 @@ operations.  Words involving division and modulo may throw exception -10
 | `M-`     | ( _d_ _n_ -- (_d_-_n_) )                 | subtract signed single from signed double
 | `M*`     | ( _n1_ _n2_ -- (_n1_\*_n2_) )            | multiply signed singles to return signed double
 | `UM*`    | ( _u1_ _u2_ -- (_u1_\*_u2_) )            | multiply unsigned singles to return unsigned double
-| `UMD*`   | ( _ud_ _u_ -- (_ud_\*_u_) )              | multiply unsigned double and single
-| `M*/`    | ( _d_ _n_ _+n_ -- (_d_\*_n_/_+n_) )      | multiple signed double with signed single then divide by positive single to return signed double
+| `UMD*`   | ( _ud_ _u_ -- (_ud_\*_u_) )              | multiply unsigned double and single to return unsigned double
+| `M*/`    | ( _d_ _n_ _+n_ -- (_d_\*_n_/_+n_) )      | multiply signed double with signed single then divide by positive single to return signed double
 | `UM/MOD` | ( _u1_ _u2_ -- (_u1_%_u2_) (_u1_/_u2_) ) | remainder and quotient of unsigned singles
 | `FM/MOD` | ( _d_ _n_ -- (_d_%_n_) (_d_/_n_) )       | floored remainder and quotient of signed double and single
 | `SM/REM` | ( _d_ _n_ -- (_d_%_n_) (_d_/_n_) )       | symmetric remainder and quotient of signed double and single
 
-## Conditionals
+## Comparisons
 
 The following words return true or false on the stack by comparing integer
 values.
@@ -402,7 +501,7 @@ values.
 | `D0=`    | ( _d_ -- true ) if _d_=0 otherwise ( _d_ -- false )
 | `D0>`    | ( _d_ -- true ) if _d_>0 otherwise ( _d_ -- false )
 | `D0<>`   | ( _d_ -- true ) if _d_≠0 otherwise ( _d_ -- false )
-| `WITHIN` | ( _n1_|_u1_ _n2_|_u2_ _n3_|_u3_ -- flag )
+| `WITHIN` | ( _n1_\|_u1_ _n2_\|_u2_ _n3_\|_u3_ -- flag )
 
 The `WITHIN` word applies to signed and unsigned single integers on the stack,
 represented by _n_|_u_.  True is returned if the value _n1_|_u1_ is in the range
@@ -421,13 +520,31 @@ returning true if either (_n2_|_u2_ < _n3_|_u3_ and (_n2_|_u2_ <= _n1_|_u1_ and
 _n1_|_u1_ < _n3_|_u3_)) or (_n2_|_u2_ > _n3_|_u3_ and (_n2_|_u2_ <= _n1_|_u1_
 or _n1_|_u1_ < _n3_|_u3_)) is true, returning false otherwise.
 
+## Strings
+
 ## Return stack
 
 ## Variables, values and constants
 
 ## Defining new words
 
+### Deferred words
+
+### Recursion
+
+### Immediate words
+
+### Noname words
+
+### Words to create data
+
 ## Control flow
+
+### Conditionals
+
+### Loops
+
+## Exceptions
 
 ## Numeric output
 
@@ -454,5 +571,3 @@ We saw that `.` displays the TOS.  Other words to display stack values:
 ## Graphics
 
 ## Sound
-
-## Exceptions
