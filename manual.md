@@ -77,7 +77,7 @@ To clear the stack, type:
 Like traditional Forth systems, Forth500 integers are 16-bit signed or
 unsigned.  Decimal, hexadecimal and binary number systems are supported:
 
-| input   | TOS |
+| input   | TOS | comment
 | ------- | --- | --------------------------------------------------------------
 | `TRUE`  |  -1 | Boolean true is -1
 | `FALSE` |   0 | Boolean false is 0
