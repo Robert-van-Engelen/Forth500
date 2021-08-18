@@ -22,11 +22,12 @@ lot of freedom and power at your fingertips.  But this comes with a healthy
 dose of responsibility to do things right:  errors can lead to system crashes.
 Fortunately, the PC-E500(S) easily recovers from a system crash with a reset.
 
-## A quick tutorial
+## Quick tutorial
 
 This section is intentionally kept simple by avoiding technical jargon and
 unnecessary excess.  Familiarity with the concepts of stacks and dictionaries
-is assumed.
+is assumed.  Experience with C makes it easier to follow the use of addresses
+(pointers) to integer values, strings and other data in Forth.
 
 ### Introduction
 
@@ -42,7 +43,7 @@ Forth500 is case insensitive.  Words may be typed in either case or use mixed
 case.  In the following, built-in words are shown in UPPER CASE.  User-defined
 words are shown in lower case.
 
-To list the words stored in the Forth dictionary, type (↲ is enter):
+To list the words stored in the Forth dictionary, type (↲ is ENTER):
 
     WORDS ↲
 
@@ -58,13 +59,14 @@ For example, `WORDS DUP` lists all words with names that contain the part `DUP`
 Words like `DUP` operate on the stack.  `DUP` duplicates the top value,
 generally called TOS: top of stack.  All computations in Forth occur on the
 stack.  Words may take values from the stack, by popping them, and push return
-values on the stack.  Integer values are simply pushed onto the stack:
+values on the stack.  Besides words, type literal integer values to push them
+onto the stack:
 
     TRUE 123 DUP .S ↲
     -1 123 123 OK[3]
 
 where `TRUE` pushes -1, `123` pushes 123, `DUP` duplicates the TOS and `.S`
-shows the stack values.  `OK[3]` indicates that there currently are three
+shows the stack values.  `OK[3]` indicates that currently there are three
 values on the stack.
 
 You can spread the code over multiple lines.  It does not matter if you hit
@@ -73,6 +75,7 @@ ENTER at the end or if you hit ENTER to input more than one line.
 To clear the stack, type:
 
     CLEAR ↲
+    OK[0]
 
 Like traditional Forth systems, Forth500 integers are 16-bit signed or
 unsigned.  Decimal, hexadecimal and binary number systems are supported:
@@ -112,11 +115,11 @@ Words that execute subroutines are defined with a `:` (colon):
 
     : hello ." Hello, World!" CR ; ↲
 
-This defines the word `hello` with the obligatory "Hello, World!" message.  The
-definition ends with a `;` (semicolon).  The `."` word parses a sequence of
-character until `"`.  These characters are display on screen.  Note that `."`
-is a normal word and must be followed by a blank.  The `CR` word prints a
-carriage return and newline.
+This defines the word `hello` that displays the obligatory "Hello, World!"
+message.  The definition ends with a `;` (semicolon).  The `."` word parses a
+sequence of character until `"`.  These characters are display on screen.  Note
+that `."` is a normal word and must be followed by a blank.  The `CR` word
+prints a carriage return and newline.
 
 Let's try it out:
 
@@ -148,7 +151,7 @@ For example, we can redefine `greetings` to use `hellos`:
 
 But what if we want to change the message?  Forth allows you to redefine words
 at any time, but this does not change the behavior of any previously defined
-words used by other previously defined words:
+words that may be used by other previously defined words:
 
     : hello ." Hola, Mundo!" CR ; ↲
     2 hellos ↲
@@ -165,8 +168,8 @@ We can delete old definitions by forgetting them:
 
 Because we defined two `hello` words, we should forget `hello` twice to delete
 the new and the old `hello`.  Forgetting means that everything after the
-specified word is deleted from the dictionary, including `greetings` and
-`hellos`.
+specified word is deleted from the dictionary, including our `greetings` and
+`hellos` definitions.
 
 To create a configurable `hello` word that displays alternative messages, we
 can use branching based on the value of a variable:
@@ -180,13 +183,40 @@ can use branching based on the value of a variable:
       THEN CR ; ↲
 
 For newcomers to Forth this may look strange with the `IF` and `THEN` out of
-place.  A `THEN` closes the `IF` (some Forth's allow `ENDIF` or `THEN`).  By
-comparison to C, `spanish @ IF x ELSE y` is similar to `*spanish ? x : y`.  The
-variable `spanish` places its address on the stack.  The value is fetched with
-`@`.  If the value is nonzero (true), then the statements after `IF` are
-executed.  Otherwise, the statements after `ELSE` are executed.
+place.  A `THEN` closes the `IF` (some Forth's allow both `ENDIF` and `THEN`).
+By comparison to C, `spanish @ IF x ELSE y` is similar to `*spanish ? x : y`.
+The variable `spanish` places the address of its value on the stack.  The value
+is fetched (dereferenced) with the word `@`.  If the value is nonzero (true),
+then the statements after `IF` are executed.  Otherwise, the statements after
+`ELSE` are executed.
 
-### Stack manipulation
+To set the variable to a value:
+
+    FALSE spanish ! ↲
+
+or
+
+    TRUE spanish ! ↲
+
+where the store word `!` saves the 2OS value to the memory cell indicated by
+the TOS address.  Observe this stack order carefully!  Otherwise you will end
+up writing data to arbitrary memory locations.  The `!` reminds you of this
+potential danger.
+
+For convenience, the words `ON` and `OFF` can be used:
+
+    spanish OFF ↲
+    spanish ? ↲
+    0 OK[0]
+    spanish ON ↲
+    spanish ? ↲
+    -1 OK[0]
+
+The `?` word is a shorthand for `@ .` to display the value of a variable.
+
+This ends our quick tutorial introduction to the basics of Forth.
+
+## Stack manipulation
 
 To make it easier to document words that manipulate the stack, we need to first
 distinguish what type of values are manipulted on the stack.  To do so, we use
@@ -216,9 +246,9 @@ the following common conventions:
 A single integer or address is also called a "cell" with a size of two bytes.
 
 With these naming conventions for stack values, we can now describe words by
-their stack effect.  Values on the left of the `--` are on the stack before
-the word is executed and the values on the right of the `--` are on the stack
-after the word is executed.  The stack grows to the right with the TOS on top:
+their stack effect.  Values on the left of the -- are on the stack before the
+word is executed and the values on the right of the -- are on the stack after
+the word is executed.  The stack grows to the right with the TOS on top:
 
 | word   | stack effect ( _before_ -- _after_ ) | comment
 | ------ | ------------------------------------ | ------------------------------
@@ -258,7 +288,7 @@ integers or one double integer):
 | `2TUCK` | ( _x1_ _x2_ _x3_ _x4_ -- _x3_ _x4_ _x1_ _x2_ _x3_ _x4_ )
 | `2ROT ` | ( _x1_ _x2_ _x3_ _x4_ _x5_ _x6_ -- _x3_ _x4_ _x5_ _x6_ _x1_ _x2_ )
 
-### Arithmetic
+## Arithmetic
 
 The following words cover integer arithmetic operations.  Words involving
 division and modulo may throw exception -10 "Division by zero":
@@ -293,20 +323,69 @@ division and modulo may throw exception -10 "Division by zero":
 | `RSHIFT` | ( _u_ _+n_ -- (_u_>>_+n_) )
 
 The _after_ stack effects include the operations % (mod), & (bitwise and), |
-(bitwise or), ^ (bitwise xor), ~ (bitwise not/invert), << (bitshift left) and
->> (bitshift right).  The U< and U> comparisons are unsigned,
-see Conditionals.
+(bitwise or), ^ (bitwise xor), ~ (bitwise not/invert), << (bitshift left)
+and >> (bitshift right).  The U< and U> comparisons are unsigned, see
+[Conditionals](#conditionals).
 
-The `*/` and `*/MOD` operations produce an intermediate double product to avoid
+The `*/` and `*/MOD` words produce an intermediate double product to avoid
 intermediate overflow.
 
-### Double arithmetic
+## Double arithmetic
 
-### Mixed arithmetic
+The following words cover double integer arithmetic operations.  Words
+involving division and modulo may throw exception -10 "Division by zero":
 
-### Conditionals
+| word      | stack effect ( _before_ -- _after_ )
+| --------- | ------------------------------------------------------------------
+| `D+`      | ( _d1_ _d2_ -- (_d1_+_d2_) )
+| `D-`      | ( _d1_ _d2_ -- (_d1_-_d2_) )
+| `D*`      | ( _d1_ _d2_ -- (_d1_\*_d2_) )
+| `D/`      | ( _d1_ _d2_ -- (_d1_/_d2_) )
+| `DMOD`    | ( _d1_ _d2_ -- (_d1_%_d2_) )
+| `D/MOD`   | ( _d1_ _d2_ -- (_d1_%_d2_) (_d1_/_d2_) )
+| `DMAX`    | ( _d1_ _d2_ -- _d1_ ) if _d1_D>_d2_ otherwise ( _d1_ _d2_ -- _d2_ )
+| `DMIN`    | ( _d1_ _d2_ -- _d1_ ) if _d1_D<_d2_ otherwise ( _d1_ _d2_ -- _d2_ )
+| `DABS`    | ( _d_ -- _+d_ )
+| `DNEGATE` | ( _d_ -- (-_d_) )
+| `D2*`     | ( _d_ -- (_d_\*2) )
+| `D2/`     | ( _d_ -- (_d_/2) )
+| `S>D`     | ( _n_ -- _d_ )
+| `D>S`     | ( _d_ -- _n_ )
 
-### Numeric output
+The `D>S` word converts a signed double to a signed single integer, throwing
+exception -11 "Result out of range" if the double value cannot be converted.
+
+To convert a single integer to a double
+
+## Mixed arithmetic
+
+The following words cover mixed single and double integer arithmetic
+operations.  Words involving division and modulo may throw exception -10
+"Division by zero".
+
+| word     | stack effect ( _before_ -- _after_ )     | comment
+| -------- | ---------------------------------------- | ------------------------
+| `M+`     | ( _d_ _n_ -- (_d_+_n_) )                 | add signed single to signed double
+| `M-`     | ( _d_ _n_ -- (_d_-_n_) )                 | subtract signed single from signed double
+| `M*`     | ( _n1_ _n2_ -- (_n1_\*_n2_) )            | multiply signed singles to return signed double
+| `UM*`    | ( _u1_ _u2_ -- (_u1_\*_u2_) )            | multiply unsigned singles to return unsigned double
+| `UMD*`   | ( _ud_ _u_ -- (_ud_\*_u_) )              | multiply unsigned double and single
+| `M*/`    | ( _d_ _n_ _+n_ -- (_d_\*_n_/_+n_) )      | multiple signed double with signed single then divide by positive single to return signed double
+| `UM/MOD` | ( _u1_ _u2_ -- (_u1_%_u2_) (_u1_/_u2_) ) | remainder and quotient of unsigned singles
+| `FM/MOD` | ( _d_ _n_ -- (_d_%_n_) (_d_/_n_) )       | floored remainder and quotient of signed double and single
+| `SM/REM` | ( _d_ _n_ -- (_d_%_n_) (_d_/_n_) )       | symmetric remainder and quotient of signed double and single
+
+## Conditionals
+
+## Return stack
+
+## Variables, values and constants
+
+## Defining new words
+
+## Control flow
+
+## Numeric output
 
 We saw that `.` displays the TOS.  Other words to display stack values:
 
@@ -320,4 +399,16 @@ We saw that `.` displays the TOS.  Other words to display stack values:
 | `DEC.`  |
 | `HEX.`  |
 
-### Character output
+## Character output
+
+## Input
+
+## Files
+
+## Screen
+
+## Graphics
+
+## Sound
+
+## Exceptions
