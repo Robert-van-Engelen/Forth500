@@ -355,7 +355,7 @@ involving division and modulo may throw exception -10 "Division by zero":
 The `D>S` word converts a signed double to a signed single integer, throwing
 exception -11 "Result out of range" if the double value cannot be converted.
 
-To convert a single integer to a double
+Note: to convert an unsigned single integer to a double, just push a `0`.
 
 ## Mixed arithmetic
 
@@ -376,6 +376,50 @@ operations.  Words involving division and modulo may throw exception -10
 | `SM/REM` | ( _d_ _n_ -- (_d_%_n_) (_d_/_n_) )       | symmetric remainder and quotient of signed double and single
 
 ## Conditionals
+
+The following words return true or false on the stack by comparing integer
+values.
+
+| word     | stack effect ( _before_ -- _after_ )
+| -------- | -------------------------------------------------------------------
+| `<`      | ( _n1_ _n2_ -- true ) if _n1_<_n2_ otherwise ( _n1_ _n2_ -- false )
+| `=`      | ( _x1_ _x2_ -- true ) if _x1_=_x2_ otherwise ( _x1_ _x2_ -- false )
+| `>`      | ( _n1_ _n2_ -- true ) if _n1_>_n2_ otherwise ( _n1_ _n2_ -- false )
+| `<>`     | ( _x1_ _x2_ -- true ) if _x1_≠_x2_ otherwise ( _n1_ _n2_ -- false )
+| `U<`     | ( _u1_ _u2_ -- true ) if _u1_<_u2_ otherwise ( _u1_ _u2_ -- false )
+| `U>`     | ( _u1_ _u2_ -- true ) if _u1_>_u2_ otherwise ( _u1_ _u2_ -- false )
+| `D<`     | ( _d1_ _d2_ -- true ) if _d1_<_d2_ otherwise ( _n1_ _n2_ -- false )
+| `D=`     | ( _d1_ _d2_ -- true ) if _d1_=_d2_ otherwise ( _n1_ _n2_ -- false )
+| `D>`     | ( _d1_ _d2_ -- true ) if _d1_>_d2_ otherwise ( _n1_ _n2_ -- false )
+| `D<>`    | ( _d1_ _d2_ -- true ) if _d1_≠_d2_ otherwise ( _n1_ _n2_ -- false )
+| `DU<`    | ( _ud1_ _ud2_ -- true ) if _ud1_<_ud2_ otherwise ( _ud1_ _ud2_ -- false )
+| `DU>`    | ( _ud1_ _ud2_ -- true ) if _ud1_>_ud2_ otherwise ( _ud1_ _ud2_ -- false )
+| `0<`     | ( _n_ -- true ) if _n_<0 otherwise ( _n_ -- false )
+| `0=`     | ( _n_ -- true ) if _n_=0 otherwise ( _n_ -- false )
+| `0>`     | ( _n_ -- true ) if _n_>0 otherwise ( _n_ -- false )
+| `0<>`    | ( _n_ -- true ) if _n_≠0 otherwise ( _n_ -- false )
+| `D0<`    | ( _d_ -- true ) if _d_<0 otherwise ( _d_ -- false )
+| `D0=`    | ( _d_ -- true ) if _d_=0 otherwise ( _d_ -- false )
+| `D0>`    | ( _d_ -- true ) if _d_>0 otherwise ( _d_ -- false )
+| `D0<>`   | ( _d_ -- true ) if _d_≠0 otherwise ( _d_ -- false )
+| `WITHIN` | ( _n1_|_u1_ _n2_|_u2_ _n3_|_u3_ -- flag )
+
+The `WITHIN` word applies to signed and unsigned single integers on the stack,
+represented by _n_|_u_.  True is returned if the value _n1_|_u1_ is in the range
+_n2_|_u2_ inclusive to _n3_|_u3_ exclusive.  For exanple:
+
+    5 -1 10 WITHIN . ↲
+    -1 OK[0]
+    5 6 10 WITHIN . ↲
+    0 OK[0]
+    5 -1 5 WITHIN . ↲
+    0 OK[0]
+
+More precisely, the word performs a comparison of a test value _n1_|_u1_ with an
+inclusive lower limit _n2_|_u2_ and an exclusive upper limit _n3_|_u3_,
+returning true if either (_n2_|_u2_ < _n3_|_u3_ and (_n2_|_u2_ <= _n1_|_u1_ and
+_n1_|_u1_ < _n3_|_u3_)) or (_n2_|_u2_ > _n3_|_u3_ and (_n2_|_u2_ <= _n1_|_u1_
+or _n1_|_u1_ < _n3_|_u3_)) is true, returning false otherwise.
 
 ## Return stack
 
