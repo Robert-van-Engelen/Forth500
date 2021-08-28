@@ -2,6 +2,8 @@
 
 Author: Dr. Robert A. van Engelen, 2021
 
+## Table of contents
+
 - [Forth](#forth)
 - [Quick tutorial](#quick-tutorial)
 - [Stack effects](#stack-effects)
@@ -37,7 +39,7 @@ Author: Dr. Robert A. van Engelen, 2021
   - [Conditionals](#conditionals)
   - [Loops](#loops)
 - [Compile-time immedate words](#compile-time-immediate-words)
-  - [The \[ and \] brackets](#the-and-brackets)
+  - [The \[ and \] brackets](#the--and--brackets)
   - [Immediate execution](#immediate-execution)
   - [Literals](#literals)
   - [Postponing](#postponing)
@@ -52,11 +54,12 @@ Author: Dr. Robert A. van Engelen, 2021
 
 ## Forth
 
-Forth500 is a standard Forth 2012 system for the SHARP PC-E500(S) pocket
-computer.  This pocket computer sports a 2.304MHz 8-bit CPU with a 20-bit
-address space of 1MB.  This pocket computer includes 256KB system ROM and 32KB
-to 256KB RAM.  The RAM card slot offers additional storage up to 256KB RAM.
-Forth500 is small enough to fit in an unexpanded 32KB machine.
+Forth500 is a [standard Forth 2012](https://forth-standard.org/standard/intro)
+system for the SHARP PC-E500(S) pocket computer.  This pocket computer sports a
+2.304MHz 8-bit CPU with a 20-bit address space of up to 1MB.  This pocket
+computer includes 256KB system ROM and 32KB to 256KB RAM.  The RAM card slot
+offers additional storage up to 256KB RAM.  Forth500 is small enough to fit in
+an unexpanded 32KB machine.
 
 Forth is unlike any other mainstream programming language.  It has an
 unconventional syntax and unique program execution characteristics.  Because of
@@ -109,7 +112,7 @@ To list the words stored in the Forth dictionary, type (↲ is ENTER):
 
     WORDS ↲
 
-Hit any key to continue or BREAK to stop.  BREAK generally terminates the
+Hit any key to continue or ON/BRK to stop.  ON/BRK generally terminates the
 execution of a Forth500 program or subroutine associated with a word.  To list
 words that fully and partially match a given name, type:
 
@@ -119,7 +122,7 @@ For example, `WORDS DUP` lists all words with names that contain the part `DUP`
 (the search is case sensitive).
 
 Words like `DUP` operate on the stack.  `DUP` duplicates the top value,
-generally called TOS: top of stack.  All computations in Forth occur on the
+generally called TOS: "Top Of Stack".  All computations in Forth occur on the
 stack.  Words may take values from the stack, by popping them, and push return
 values on the stack.  Besides words, type literal integer values to push them
 onto the stack:
@@ -180,8 +183,8 @@ Words that execute subroutines are defined with a `:` (colon):
 This defines the word `hello` that displays the obligatory "Hello, World!"
 message.  The definition ends with a `;` (semicolon).  The `."` word parses a
 sequence of character until `"`.  These characters are display on screen.  Note
-that `."` is a normal word and must be followed by a blank.  The `CR` word
-prints a carriage return and newline.
+that `."` is a normal word and must therefore be followed by a space.  The `CR`
+word starts a new line by printing a carriage return and newline.
 
 Let's try it out:
 
@@ -328,7 +331,8 @@ executes `hello` 10 times:
 
 Actually, `DO` cannot be recommended because the loop body is always executed
 at least once, for example when the initial value is the same as the final
-value.  Use `?DO` instead of `DO` to avoid this problem:
+value we end up executing the loop 65536 times! (Because integers wrap around.)
+We use `?DO` instead of `DO` to avoid this problem:
 
     : hellos 0 ?DO hello LOOP ; ↲
     0 hellos ↲
@@ -391,8 +395,8 @@ code, `( a comment goes here )` and `\ a comment until the end of the line`:
       DROP ;                \ drop counter ↲
 
 Word definitions are typically annotated with their stack effect, in this case
-there is none `( -- )`, see the next section on how this notation is used in
-practice.
+there is no effect `( -- )`, see the next section on how this notation is used
+in practice.
 
 This ends our tutorial introduction to the essential basics of Forth.
 
@@ -442,16 +446,17 @@ compile time and the second effect occurs at run time:
 
 `CREATE` ( "name" -- ; -- _addr_ )
 
-A quoted part such as "name" are parsed from the input and not on the stack.
+A quoted part such as "name" are parsed from the input and not taken from the
+stack.
 
-The "return stack" effects are prefixed with `R:`, for example:
+Return stack effects are prefixed with `R:`.  For example:
 
 `>R` ( _x_ -- ; R: -- _x_ )
 
-This word moves _x_ from the stack to the so-called return stack.  The return
-stack is used for the return addresses of words executed and to store temporary
-values.  It is important to keep the return stack balanced to prevent words
-from returning to an incorrect return address.
+This word moves _x_ from the stack to the so-called "return stack".  The return
+stack is used to keep return addresses of words executed and to store temporary
+values.  It is important to keep the return stack balanced.  This prevents
+words from returning to an incorrect return address and crashing the system.
 
 ## Stack manipulation
 
@@ -772,7 +777,7 @@ output" words.  An internal "hold area" (a buffer of 40 bytes) is filled with
 digits and other characters in backward order (least significant digit goes in
 first):
 
-| word    | stack effect             |
+| word    | stack effect             | comment
 | ------- | ------------------------ | -----------------------------------------
 | `<#`    | ( -- )                   | initiates the hold area for conversion
 | `#`     | ( _ud1_ -- _ud2_ )       | adds one digit to the hold area in the current `BASE`, updates _ud1_ to _ud2_
@@ -808,7 +813,7 @@ words added to the dictionary.
 
 ## String constants
 
-The following words store or display string `...` constants:
+The following words store or display string constants:
 
 | word       | stack effect        | comment
 | ---------- | ------------------- | -------------------------------------------
@@ -827,11 +832,11 @@ in colon definitions.  Otherwise, the string is stored in a temporary internal
 Note that most words require strings with a _c-addr_ _u_ pair of cells on the
 stack, such as `TYPE` to display a string.
 
-A "counted string" is compiled with `C"` to code in colon definitions.  A
-counted string constant is a _c-addr_ pointing to the length of the string
-followed by the string characters.  The `COUNT` word takes a counted string
-_c-addr_ from the stack to return a string address _c-addr_ and length _u_ on
-the stack.  The maximum length of a counted string is 255 characters.
+A so-called "counted string" is compiled with `C"` to code in colon
+definitions.  A counted string constant is a _c-addr_ pointing to the length of
+the string followed by the string characters.  The `COUNT` word takes a counted
+string _c-addr_ from the stack to return a string address _c-addr_ and length
+_u_ on the stack.  The maximum length of a counted string is 255 characters.
 
 The `S\"` word accepts the following special characters in the string when
 escaped with `\`:
@@ -858,7 +863,7 @@ escaped with `\`:
 
 The following words allocate and accept user input into a string buffer:
 
-| word      | stack effect                                        | comment
+| word      | stack effect ( _before_ -- _after_ )                | comment
 | --------- | --------------------------------------------------- | ------------
 | `PAD`     | ( -- _c-addr_ )                                     | returns the fixed address of a 256 byte temporary buffer that is not used by any built-in Forth words
 | `BUFFER:` | ( _u_ "name" -- ; _c-addr_ )                        | creates an uninitialized string buffer of size _u_
@@ -1071,7 +1076,7 @@ The `BEEP` word emits sound with the specified duration and tone:
 
 | word   | stack effect     | comment
 | ------ | ---------------- | --------------------------------------------------
-| `BEEP` | ( _u1_ _u2_ -- ) | beeps for _u1_ ms with tone _u2_
+| `BEEP` | ( _u1_ _u2_ -- ) | beeps with tone _u1_ for _u2_ milliseconds
 
 ## The return stack
 
@@ -1422,7 +1427,7 @@ and `}` to demarcate the array index expression as follows:
 
 ### Markers
 
-A so-called marker word is created with `MARKER`.  When the word is executed,
+A so-called "marker word" is created with `MARKER`.  When the word is executed,
 it deletes itself and all definitions after it.  For example:
 
     MARKER my-program ↲
@@ -1511,21 +1516,21 @@ These words can only be used in colon definitions.  The default branch has
 Enumeration-controlled do-loops use the words `DO` or `?DO` and `LOOP` or
 `+LOOP`:
 
-   limit start DO
-     loop body
-   LOOP
+    limit start DO
+      loop body
+    LOOP
 
-   limit start ?DO
-     loop body
-   LOOP
+    limit start ?DO
+      loop body
+    LOOP
 
-   limit start DO
-     loop body
-   step +LOOP
+    limit start DO
+      loop body
+    step +LOOP
 
-   limit start ?DO
-     loop body
-   step +LOOP
+    limit start ?DO
+      loop body
+    step +LOOP
 
 These words can only be used in colon definitions.  Do-loops run from `start`
 to `limit`, but exclude the last iteration for `limit`.  The `DO` loop iterates
