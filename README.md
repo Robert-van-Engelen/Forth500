@@ -12,7 +12,7 @@ To use Forth500, first load the binary, then `CALL &B0000` (see [expanded E500](
 
 The [Forth500.s](Forth500.s) source code is extensively documented and PC-E500 technical [resources](resources) are included.
 
-A User Guide is forthcoming...
+The [Forth500 User Guide](#manual.md) introduces standard Forth and the Forth500 system.
 
 This updated Forth compiler is [standard Forth](https://forth-standard.org) 2012 compliant and satisifies:
 - CORE
