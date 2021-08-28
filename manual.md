@@ -936,7 +936,7 @@ The following words compare and search two strings:
 | word      | stack effect ( _before_ -- _after_ )                       | comment
 | --------- | ---------------------------------------------------------- | -----
 | `S=`      | ( _c-addr1_ _u1_ _c-addr2_ _u2_ -- flag )                  | returns `TRUE` if the two strings are equal
-| `COMPARE` | ( _c-addr1_ _u1_ _c-addr2_ _u2_ -- -1|0|1 )                | returns -1|0|1 (less, equal, greater) comparison of the two strings
+| `COMPARE` | ( _c-addr1_ _u1_ _c-addr2_ _u2_ -- -1\|0\|1 )              | returns -1\|0\|1 (less, equal, greater) comparison of the two strings
 | `SEARCH`  | ( _c-addr1_ _u1_ _c-addr2_ _u2_ -- _c-addr3_ _u3_ _flag_ ) | returns `TRUE` if the second string was found in the first string at _c-addr3_ with _u3_=_u2_, otherwise `FALSE` and _c-addr3_=_c-addr1_, _u3_=_u1_
 
 To convert a string to a number:
@@ -1020,7 +1020,7 @@ mode to set, reset or reverse pixels:
 
 | word      | stack effect                   | comment
 | --------- | ------------------------------ | ---------------------------------
-| `GMODE`   | ( 0|1|2 -- )                   | pixels are set (0), reset (1) or reversed (2)
+| `GMODE`   | ( 0\|1\|2 -- )                 | pixels are set (0), reset (1) or reversed (2)
 | `GPOINT`  | ( _n1_ _n2_ -- )               | draw a pixel at x=_n1_ and y=_n2_
 | `GPOINT?` | ( _n1_ _n2_ -- _flag_ )        | returns `TRUE` if a pixel is set at x=_n1_ and y=_n2_
 | `GLINE`   | ( _n1_ _n2_ _n3_ _n4_ _u_ -- ) | draw a line from x=_n1_ and y=_n2_ to x=_n3_ and y=_n4_ with pattern _u_
@@ -1824,7 +1824,7 @@ The following words return _ior_ to indicate success (zero) or failure (nonzero
 | `SEEK-SET`        | ( -- 0 )                                        | to seek from the start of the file
 | `SEEK-CUR`        | ( -- 1 )                                        | to seek from the current position in the file
 | `SEEK-END`        | ( -- 2 )                                        | to seek from the ens of the file
-| `SEEK-FILE`       | ( _d_ _fileid_ 0|1|2 -- _ior_ )                 | seek file offset _d_ from the start, relative to the current position or from the end
+| `SEEK-FILE`       | ( _d_ _fileid_ 0\|1\|2 -- _ior_ )               | seek file offset _d_ from the start, relative to the current position or from the end
 | `REPOSITION-FILE` | ( _ud_ _fileid_ -- _ior_ )                      | seek file offset _ud_ from the start
 | `RESIZE-FILE`     | ( _ud_ _fileid_ -- _ior_ )                      | resize _fileid_ to _ud_ bytes (does not truncate files, only enlarge)
 | `DRIVE`           | ( -- _addr_ )                                   | returns address _addr_ of the current drive letter
