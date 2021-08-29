@@ -10,13 +10,14 @@ Author: Dr. Robert A. van Engelen, 2021
 - [Stack manipulation](#stack-manipulation)
 - [Integer constants](#integer-constants)
 - [Arithmetic](#arithmetic)
-- [Double arithmetic](#double-arithmetic)
-- [Mixed arithmetic](#mixed-arithmetic)
-- [Fixed point arithmetic](#fixed-point-arithmetic)
-- [Floating point arithmetic](#floating-point-arithmetic)
-- [Numeric comparisons](#numeric-comparisons)
+  - [Single arithmetic](#single-arithmetic)
+  - [Double arithmetic](#double-arithmetic)
+  - [Mixed arithmetic](#mixed-arithmetic)
+  - [Fixed point arithmetic](#fixed-point-arithmetic)
+  - [Floating point arithmetic](#floating-point-arithmetic)
+  - [Numeric comparisons](#numeric-comparisons)
 - [Numeric output](#numeric-output)
-- [Pictured numeric output](#pictured-numeric-output)
+  - [Pictured numeric output](#pictured-numeric-output)
 - [String constants](#string-constants)
 - [String operations](#string-operations)
 - [Keyboard input](#keyboard-input)
@@ -46,11 +47,10 @@ Author: Dr. Robert A. van Engelen, 2021
   - [Compile-time conditionals](#compile-time-conditionals)
 - [Source input and parsing](#source-input-and-parsing)
 - [Files](#files)
-- [File errors](#file-errors)
+  - [File errors](#file-errors)
 - [Exceptions](#exceptions)
 - [Environmental queries](#environmental-queries)
 - [Dictionary structure](#dictionary-structure)
-- [Alphabetic list of words](#alphabetic-list-of-words)
 
 ## Forth
 
@@ -552,8 +552,10 @@ The following words define common constants regardless of the current `BASE`:
 
 ## Arithmetic
 
-The following words cover integer arithmetic operations.  Words involving
-division and modulo may throw exception -10 "Division by zero":
+### Single arithmetic
+
+The following words perform single integer (one cell) arithmetic operations.
+Words involving division and modulo may throw exception -10 "Division by zero":
 
 | word     | stack effect ( _before_ -- _after_ )
 | -------- | -------------------------------------------------------------------
@@ -605,9 +607,9 @@ The _after_ stack effects include the operations % (mod), & (bitwise and), |
 and >> (bitshift right).  The `U<` and `U>` comparisons are unsigned, see
 [numeric comparisons](#numeric-comparisons).
 
-## Double arithmetic
+### Double arithmetic
 
-The following words cover double integer arithmetic operations.  Words
+The following words perform double integer arithmetic operations.  Words
 involving division and modulo may throw exception -10 "Division by zero":
 
 | word      | stack effect ( _before_ -- _after_ )
@@ -633,7 +635,7 @@ exception -11 "Result out of range" if the double value cannot be converted.
 To convert an unsigned single integer to an unsigned double integer, just push
 a `0` on the stack.
 
-## Mixed arithmetic
+### Mixed arithmetic
 
 The following words cover mixed single and double integer arithmetic
 operations.  Words involving division may throw exception -10 "Division by
@@ -662,7 +664,7 @@ In case of `SM/REM`, the quotient is a single signed integer floored
 towards zero (hence symmetric) _q_ = _floor_(_a_ / _b_). For example,
 `-10. 7 SM/REM` returns remainder -3 and quotient -1.
 
-## Fixed point arithmetic
+### Fixed point arithmetic
 
 Fixed point offers an alternative to floating point if the exponential range of
 values manipulated can be fixed to a few digits after the decimal point.
@@ -697,13 +699,13 @@ by scaling the divisor down by 10 and the dividend up by 10 before dividing:
 
     : /.00 10/ 2SWAP 10. D* 2SWAP D/ ;
 
-## Floating point arithmetic
+### Floating point arithmetic
 
 Not implemented yet.  I am looking for information on the location of the
 floating point routines in PC-E500(S), which was once available online and
 documented, but I cannot find it.
 
-## Numeric comparisons
+### Numeric comparisons
 
 The following words return true (-1) or false (0) on the stack by comparing
 integer values.
@@ -770,7 +772,7 @@ Note that `0 .R` may be used to display an integer without a trailing space.
 
 See also [pictured numeric output](#pictured-numeric-output).
 
-## Pictured numeric output
+### Pictured numeric output
 
 Formatted numeric output is produced with a sequence of "pictured numeric
 output" words.  An internal "hold area" (a buffer of 40 bytes) is filled with
@@ -1337,12 +1339,12 @@ Address arithmetic can be added with `DOES>` to automatically fetch a prime
 number from the `primes` table:
 
     CREATE primes 2 , 3 , 5 , 7 , 11 , 13 , 17 , 19 , 23 , 31 , ↲
-    DOES> SWAP CELLS + @ ; ↲
+      DOES> SWAP CELLS + @ ; ↲
     3 primes . ↲
     7 OK[0]
 
-The `SWAP CELLS + @` doubles 3 to 6 then adds the address of the `primes` table
-to get to the address to fetch the value.
+The `SWAP CELLS + @` doubles the index with `CELLS` then adds the address of
+the `primes` table to get to the address to fetch the value.
 
 Note that `>BODY` (see [introspection](#introspection)) of an execution token
 returns the same address as `CREATE` returns and that `DOES>` pushes on the
@@ -1390,9 +1392,9 @@ numbers:
     10 CELLS BUFFER: primes ↲
 
 This allocates space for 10 primes, but does nothing more.  Adding a provision
-to automatically index an array is done by creating a `BUFFER:` with a `DOES>`
-operation to return the address of a cell given the array and array index on
-the stack:
+to automatically index an array is done by creating a `BUFFER:` with `DOES>`
+code to return the address of a cell given the array and array index on the
+stack:
 
     : cell-array: CELLS BUFFER: DOES> SWAP CELLS + ; ↲
 
@@ -1434,11 +1436,11 @@ it deletes itself and all definitions after it.  For example:
     ...
     my-program ↲
 
-This marks `my-program` as the start of our code in `...`.  The code is deleted
-by `my-program`.
+This marks `my-program` as the start of our code `...`.  The code is deleted by
+`my-program`.
 
-A source code file might start with the following to delete its definitions
-when the file is parsed again:
+A source code file might start with the following code to delete its
+definitions when the file is parsed again:
 
     [DEFINED] my-program [IF] my-program [THEN] ↲
     MARKER my-program ↲
@@ -1470,7 +1472,9 @@ The following words can be used to inspect words and dictionary contents:
 | `LAST`        | ( -- _addr_ )            | return the dictionary entry of the last defined word (the entry is a link to the previous entry)
 | `L>NAME`      | ( _addr_ -- _nt_ )       | return the name token of the dictionary entry at _addr_ 
 | `LAST-XT`     | ( -- _xt_ )              | return the execution token of the last defined word
-| `WORDS`       | ( [ "name" ] -- )        | displays all words in the dictionary matching the optional "name" 
+| `WORDS`       | ( [ "name" ] -- )        | displays all words in the dictionary matching (part of) the optional "name" 
+
+See also [dictionary structure](#dictionary-structure).
 
 ## Control flow
 
@@ -1492,7 +1496,7 @@ condition:
 These words can only be used in colon definitions.
 
 The immediate words `CASE`, `OF`, `ENDOF`, `ENDCASE` select a branch to
-execute by comparing the TOS to the `OF` value:
+execute by comparing the TOS to the `OF` values:
 
     value CASE
       case1 OF
@@ -1509,12 +1513,13 @@ execute by comparing the TOS to the `OF` value:
     ENDCASE
 
 These words can only be used in colon definitions.  The default branch has
-`value` as TOS, which may be inspected but should not be dropped.
+`value` as TOS, which may be inspected in the default branch, but should not be
+dropped.
 
 ### Loops
 
-Enumeration-controlled do-loops use the words `DO` or `?DO` and `LOOP` or
-`+LOOP`:
+Enumeration-controlled do-loops start with the word `DO` or `?DO` and end with
+the word `LOOP` or `+LOOP`:
 
     limit start DO
       loop body
@@ -1532,30 +1537,32 @@ Enumeration-controlled do-loops use the words `DO` or `?DO` and `LOOP` or
       loop body
     step +LOOP
 
-These words can only be used in colon definitions.  Do-loops run from `start`
-to `limit`, but exclude the last iteration for `limit`.  The `DO` loop iterates
-at least once, even when `start` equals `limit`.  The `?DO` loop does not
-iterate when `start` equals `limit`.  The `+LOOP` word increments the internal
-loop counter by `step`, which may be negative.
+These words can only be used in colon definitions.  Do-loops run from the `start`
+to the `limit` values, excluding the last iteration for `limit`.  The `DO` loop
+iterates at least once, even when `start` equals `limit`.  The `?DO` loop does
+not iterate when `start` equals `limit`.  The `+LOOP` word increments the
+internal loop counter by `step`.  The `step` size may be negative.
 
-Do-loops iterate forever when the internal counter never equals `limit`, even
-when the counter exceeds `limit`.
+Do-loops iterate as long as the internal counter is not equal to `limit`.
+Beware that this means that do-loops run forever when the internal counter
+never equals `limit`, even when the counter exceeds `limit`.
 
-The internal loop counter can be used in the loop as `I`.  Likewise, the second
-outer loop counter is `J` and the third outer loop counter is `K`.  These
-return undefined values when not used within do-loops.
+The internal loop counter value can be used in the loop as `I`.  Likewise, the
+second outer loop counter is `J` and the third outer loop counter is `K`.
+These return undefined values when not used within do-loops.
 
-A do-loop body is exited with `LEAVE`.  The `?LEAVE` word pops the TOS and when
-nonzero leaves the do-loop, which is a shorthand for `IF LEAVE THEN`.
+A do-loop body is exited prematurely with `LEAVE` and `?LEAVE`.  The `?LEAVE`
+word pops the TOS and when nonzero leaves the do-loop, which is a shorthand for
+`IF LEAVE THEN`.
 
-When exiting from the current colon definition with `EXIT` from within a
-do-loop, first the `UNLOOP` word must be used to remove the loop control values
-from the return stack before `EXIT`:
+When exiting from the current colon definition with `EXIT` inside a do-loop,
+first the `UNLOOP` word must be used to remove the loop control values from the
+return stack before `EXIT`.
 
 Return stack operations `>R`, `R@` and `R>` cannot be used from outside a
-do-loop to the inside loop body, because the do-loop stores the loop counter
-and limit value on the return stack.  For example, `>R DO ... R@ ... LOOP R>`
-produces undefined values.
+do-loop to the inside, because the do-loop stores the loop counter and limit
+value on the return stack.  For example, `>R DO ... R@ ... LOOP R>` produces
+undefined values.
 
 The words `BEGIN` and `AGAIN` form a loop that never ends:
 
@@ -1575,7 +1582,7 @@ once until the condition `test` is nonzero (is true):
     test UNTIL
 
 The words `BEGIN`, `WHILE` and `REPEAT` form a conditional loop that iterates
-while the condition `test` is nonzero (is true):
+while the condition `test` is true (nonzero):
 
     BEGIN
     test WHILE
@@ -1595,17 +1602,17 @@ multi-test conditional loop with optional `ELSE`:
         loop body2
     REPEAT
     ELSE
-      executed if test2 is nonzero (is true)
+      executed if test2 is true (nonzero)
     THEN
 
 The loop `body1` and `body2` are executed as long as `test1` and `test2` are
-nonzere (are true).  If `test1` is zero (is false), then the loop exits.  If
-`test2` is zero (is false), then the loop terminates in the `ELSE` branch.
-Multiple `WHILE` and optional `ELSE` branches may be added.  Each additional
-`WHILE` requires a `THEN` after `REPEAT`.
+true (nonzere).  If `test1` is false (zero), then the loop exits.  If `test2`
+is false (zero), then the loop terminates in the `ELSE` branch.  Multiple
+`WHILE` and optional `ELSE` branches may be added.  Each additional `WHILE`
+requires a `THEN` after `REPEAT`.
 
 To understand how and why this works, note that a `WHILE` and `REPEAT`
-combination is equal to:
+combination is equal to `BEGIN` with an `IF` to conditionally execute `AGAIN`:
 
     BEGIN       \  BEGIN
       test IF   \    test WHILE
@@ -1613,20 +1620,22 @@ combination is equal to:
 
 ## Compile-time immediate words
 
-The interpretation versus compilation state variable is `STATE`.  When nonzero
-(or `TRUE`), a colon definition is being compiled.  When zero (or `FALSE`), the
+The interpretation versus compilation state variable is `STATE`.  When true
+(nonzero), a colon definition is being compiled.  When false (zero), the
 system is interpreting.  The `[` and `]` may be used in colon definitions to
-temporarily switch to interpret mode.  Some words are always interpreted and
-not compiled.  These words are marked `IMMEDIATE`.  The compiler executes
-`IMMEDIATE` word immediately.  In fact, Forth control flow is implemented with
-immediate words that compile conditional branches and loops.
+temporarily switch to interpret mode.
+
+Some words are always interpreted and not compiled.  These words are marked
+`IMMEDIATE`.  The compiler executes `IMMEDIATE` word immediately.  In fact,
+Forth control flow is implemented with immediate words that compile conditional
+branches and loops.
 
 ### The [ and ] brackets
 
-The `[` word switches `STATE` to `FALSE` and `]` switches `STATE` to `TRUE`.
-This means that `[` and `]` can be used within a colon definition to temporarily
-switch to interpret mode and execute words, rather than compiling them.  For
-example:
+The immediate `[` word switches `STATE` to `FALSE` and `]` switches `STATE` to
+`TRUE`.  This means that `[` and `]` can be used within a colon definition to
+temporarily switch to interpret mode and execute words, rather than compiling
+them.  For example:
 
     : my-word ↲
       [ ." compiling my-word" CR ] ↲
@@ -1636,13 +1645,17 @@ example:
 This example displays `compiling my-word...` when `my-word` is compiled and
 displays `executing my-word` when `my-word` is executed.
 
-It is a good habit to define words to break up long definitions:
+It is a good habit to define words to break up longer definitions, so we can
+rewrite this as follows:
 
     : compiling-my-word ." compiling my-word" CR ; ↲
     : my-word ↲
       [ compiling-my-word ] ↲
       ." executing my-word" CR ; ↲
     my-word ↲
+
+Note that the immediate `.(` word can be used to display compile-time messages,
+see also [immediate execution](#immediate-execution).
 
 ### Immediate execution
 
@@ -1657,7 +1670,7 @@ The `[` and `]` are no longer necessary if we make `compiling-my-word`
 Using brackets with `[compiling-my-word]` is another good habit as a reminder
 that we execute `[ compiling-my-word ]`.
 
-This example illustrates how `IMMEDIATE` can be used.  Because displaying
+This example illustrates how `IMMEDIATE` is used.  Because displaying
 information while compiling is generally considered useful, the `.(` word is
 marked immediate to display text followed by a `CR` during compilation:
 
@@ -1676,13 +1689,13 @@ we can create a variable and use its current value to create a literal
 constant:
 
     VARIABLE foo 123 foo ! ↲
-    : now-foo [ foo ] LITERAL ; ↲
+    : now-foo [ foo @ ] LITERAL ; ↲
     456 foo ! ↲
     now-foo . ↲
     123 OK[0]
 
-This example demonstrates that the constant `123` is compiled into a literal in
-`now-foo`.
+The example demonstrates how the current value of a variable is compiled into a
+literal in `now-foo`.
 
 The `2LITERAL` word compiles double integers (two cells).  The `SLITERAL` word
 compiles strings:
@@ -1727,7 +1740,7 @@ the result of which is:
     : foo MAX ;
 
 Note that `compile-MAX` is `IMMEDIATE` to compile `MAX` in the definition of
-`foo`.  In this way, `compile-MAX` serves as a macro that expands into `MAX`.
+`foo`.  Basically, `compile-MAX` acts like a macro that expands into `MAX`.
 
 ### Compile-time conditionals
 
@@ -1787,10 +1800,10 @@ The following words parse the current source of input:
 | `PARSE-NAME` | ( "name" -- _c-addr_ _u_ )         | parses a name delimited by blank space, returns the name as a string _c-addr_ _u_
 | `WORD`       | ( _char_ "chars" -- _c-addr_ )     | an obsolete word to parse a word
 
-Basically, `PARSE-NAME` is the same as `BL PARSE-WORD`, where `BL` is the space
-character.  The names of words in the dictionary are parsed with `PARSE-NAME`.
-When `BL` is used as delimiter, also the control characters, such as CR and LF,
-are considered delimiters.
+`PARSE-NAME` is the same as `BL PARSE-WORD`, where `BL` is the space character.
+The names of words in the dictionary are parsed with `PARSE-NAME`.  When `BL`
+is used as delimiter, also the control characters, such as CR and LF, are
+considered delimiters.
 
 ## Files
 
@@ -1847,7 +1860,7 @@ drive, for example:
 Only one `*` for the file name can be used and only one `*` for the file
 extension can be used.
 
-## File errors
+### File errors
 
 File I/O _ior_ error codes returned by file operations, _ior_=0 means no error:
 
@@ -1877,18 +1890,30 @@ File I/O _ior_ error codes returned by file operations, _ior_=0 means no error:
 | `QUIT`   | ( ... -- ... )                       | throw -56
 | `THROW`  | ( ... _x_ -- ... ) or ( 0 -- )       | if _x_ is nonzero, throw _x_ else drop the 0
 | `CATCH`  | ( _xt_ -- ... 0 ) or ( _xt_ -- _x_ ) | execute _xt_, if an exception _x_ occurs then restore the stack and return _x_, otherwise return 0
+| `[']`    | ( "name" -- ; -- _xt_ )              | compiles "name" as an execution token literal _xt_
+| `'`      | ( "name" -- _xt_ )                   | returns the execution token of "name" on the stack
 
 Note that `test ABORT" test failed"` throws -2 if `test` leaves a nonzero on
 the stack.  This construct can be used to check return values and perform
 assertions on values in the code.
 
-The `CATCH` word executes the execution token _xt_ like `EXECUTE`, but catches
-exceptions thrown.  If an exception _x_ occurs, then the stack is restored to
-the state before `CATCH` (without _xt_) and the nonzero exception code _x_ is
-pushed on the stack.  Otherwise a zero is left on the stack.
+The `CATCH` word executes the execution token _xt_ on the stack like `EXECUTE`,
+but catches exceptions thrown.  If an exception _x_ is thrown, then the stack
+has the state before `CATCH` with _xt_ removed and the nonzero exception code
+_x_ as the new TOS.  Otherwise,  a zero is left on the stack.  For example:
 
-For example, to throw and catch any errors when opening a file read-only, read
-it in blocks of 256 bytes into the `PAD` to display on screen, and close it:
+    : try-to-divide ( -- )
+      dividend divisor ['] / CATCH IF ↲
+        ." cannot divide by zero" 2DROP \ remove dividend and divisor ↲
+      ELSE ↲
+        ." result=" . ↲
+      THEN ↲
+
+`CATCH` restored the stack pointer when an exception is thrown, but the stack
+values may be changed by the word executed and thus may not be usable.
+
+To throw and catch any errors when opening a file read-only, read it in blocks
+of 256 bytes into the `PAD` to display on screen, and close it:
 
     : fopen ( c-addr u -- fileid )
       R/O OPEN-FILE THROW ;
@@ -1901,7 +1926,7 @@ it in blocks of 256 bytes into the `PAD` to display on screen, and close it:
     : more ( -- )
       fopen \ fileid
       BEGIN
-        ' fread CATCH IF
+        ['] fread CATCH IF
           fclose ABORT
         THEN \ fileid c-addr length
       DUP WHILE
@@ -1910,7 +1935,7 @@ it in blocks of 256 bytes into the `PAD` to display on screen, and close it:
       2DROP
       fclose CR ;
     : some ( -- )
-      S" somefile.txt" ' more CATCH ABORT" an error occurred" ;
+      S" somefile.txt" ['] more CATCH ABORT" an error occurred" ;
 
 The following standard Forth exception codes may be thrown by built-in Forth500
 words:
@@ -1993,7 +2018,7 @@ The Forth500 dictionary is organized as follows:
     |    |---------|
     |    | 7       |     length of "(DOCOL)" (1 byte)
     |    |---------|
-    |    | (DOCOL) |     "(DOCOL)" characters (7 bytes)
+    |    | (DOCOL) |     "(DOCOL)" word characters (7 bytes)
     |    |---------|
     |    | code    |     machine code
     |    |---------|
@@ -2007,7 +2032,7 @@ The Forth500 dictionary is organized as follows:
     |    |---------|
     |    | $80+5   |     length of "aword" (1 byte) with IMMEDIATE bit set
     |    |---------|
-    |    | aword   |     "my-word" characters (7 bytes)
+    |    | aword   |     "my-word" word characters (7 bytes)
     |    |---------|
     |    | code    |     Forth code and/or data
     |    |---------|
@@ -2015,10 +2040,10 @@ The Forth500 dictionary is organized as follows:
          |---------|
          | 7       |     length of "my-word" (1 byte)
          |---------|
-         | my-word |     "my-word" characters (7 bytes)
+         | my-word |     "my-word" word characters (7 bytes)
          |---------|
          | code    |<--- LAST-XT Forth code and/or data
-         |---------|<--- HERE pointer
+         |---------|<--- HERE pointer to free space
          |         |
          | free    |
          | space   |
@@ -2051,8 +2076,5 @@ bytes, followed by Forth code (a sequence of execution tokens) or data.
 Immediate words are marked with the high bit 7 set ($80).  Hidden words have
 the "smudge" bit 6 ($40) set.  A word is hidden until successfully compiled.
 
-## Alphabetic list of words
-
-TODO
 
 _Copyright Robert A. van Engelen (c) 2021_
