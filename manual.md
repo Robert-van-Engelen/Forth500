@@ -80,15 +80,16 @@ unnecessary excess.  Familiarity with the concepts of stacks and dictionaries
 is assumed.  Experience with C makes it easier to follow the use of addresses
 (pointers) to integer values, strings and other data in Forth.
 
-A Forth system is a dictionary of words.  A word is often a name but can be any
-sequence of characters excluding space, tab, newline, and other control
-characters.  Words are defined for subroutines, for named constants and for
-global variables and data.  Some words may execute at compile time to compile
-the body of subroutine definitions and to implement control flow such as
-branched and loops.  As such, the syntax blends compile-time and runtime
-behaviors that are only distinguishable by naming and naming conventions.
+A Forth system is a dictionary of words.  A word can be any sequence of
+characters excluding space, tab, newline, and other control characters.  Words
+can be entered simply by typing them in as long as they are separated by
+spacing.  Words are defined for subroutines, for named constants and for global
+variables and data.  Some words may execute at compile time to compile the body
+of subroutine definitions and to implement control flow such as branched and
+loops.  As such, the syntax blends compile-time and runtime behaviors that are
+only distinguishable by naming and naming conventions.
 
-You can enter Forth code at the Forth500 interactive prompt.  The following
+You can enter Forth words at the Forth500 interactive prompt.  The following
 special keys can be used:
 
 | key         | comment
@@ -97,7 +98,7 @@ special keys can be used:
 | DEL         | delete the character under the cursor
 | BS          | backspace
 | ENTER       | execute the line of input
-| LEFT/RIGHT  | before typing input "replays" the last line of input
+| LEFT/RIGHT  | before typing input "replays" the last line of input to edit
 | CURSOR KEYS | move cursor up/down/left/right on the line
 | C/CE        | clears the line
 
@@ -176,7 +177,7 @@ The `D.` word prints a signed double integer and pops it from the stack.  Words
 that operate on two integers as doubles are typically identified by `Dxxx` and
 `2xxx`.
 
-Words that execute subroutines are defined with a `:` (colon):
+Words that execute subroutines are defined with a `:` (colon) and end with `;`:
 
     : hello ." Hello, World!" CR ; ↲
 
@@ -227,7 +228,7 @@ Only new words that we add after this will use our new `hello` definition.
 Basically, the Forth dictionary is searched from the most recently defined
 word to the oldest defined word.
 
-We can delete old definitions by forgetting them:
+Old definitions can be deleted with everything defined after by forgetting:
 
     forget hello
 
@@ -247,7 +248,7 @@ can use branching based on the value of a variable:
         ." Hello, World!" ↲
       THEN CR ; ↲
 
-For newcomers to Forth this may look strange with the `IF` and `THEN` out of
+If you are new to Forth this may look strange with the `IF` and `THEN` out of
 place.  A `THEN` closes the `IF` (some Forth's allow both `ENDIF` and `THEN`).
 By comparison to C, `spanish @ IF x ELSE y` is similar to `*spanish ? x : y`.
 The variable `spanish` places the address of its value on the stack.  The value
@@ -586,9 +587,9 @@ Words involving division and modulo may throw exception -10 "Division by zero":
 | `LSHIFT` | ( _u_ _+n_ -- (_u_<<_+n_) )
 | `RSHIFT` | ( _u_ _+n_ -- (_u_>>_+n_) )
 
-Integer overflow and underflow throws no exceptions.  In case of integer
+Integer overflow and underflow does not throw exceptions.  In case of integer
 addition and subtraction, values wrap around.  For all other integer
-operations, overflow and underflow produce unreliable values.
+operations, overflow and underflow produce undefined values.
 
 The `MOD`, `/MOD`, and `*/MOD` words return a remainder on the stack.  The
 quotient _q_ and remainder _r_ satisfy _q_ = _floor_(_a_ / _b_) such that
@@ -635,6 +636,10 @@ exception -11 "Result out of range" if the double value cannot be converted.
 To convert an unsigned single integer to an unsigned double integer, just push
 a `0` on the stack.
 
+Integer overflow and underflow does not throw exceptions.  In case of integer
+addition and subtraction, values wrap around.  For all other integer
+operations, overflow and underflow produce undefined values.
+
 ### Mixed arithmetic
 
 The following words cover mixed single and double integer arithmetic
@@ -650,8 +655,8 @@ zero".
 | `UMD*`   | ( _ud_ _u_ -- (_ud_\*_u_) )              | multiply unsigned double and single to return unsigned double
 | `M*/`    | ( _d_ _n_ _+n_ -- (_d_\*_n_/_+n_) )      | multiply signed double with signed single then divide by positive single to return signed double
 | `UM/MOD` | ( _u1_ _u2_ -- (_u1_%_u2_) (_u1_/_u2_) ) | unsigned single remainder and quotient of unsigned single division
-| `FM/MOD` | ( _d_ _n_ -- (_d_%_n_) (_d_/_n_) )       | floored single remainder and quotient of signed double and single division
-| `SM/REM` | ( _d_ _n_ -- (_d_%_n_) (_d_/_n_) )       | symmetric single remainder and quotient of signed double and single division
+| `FM/MOD` | ( _d_ _n_ -- (_d_%_n_) (_d_/_n_) )       | floored single remainder and single quotient of signed double and single division
+| `SM/REM` | ( _d_ _n_ -- (_d_%_n_) (_d_/_n_) )       | symmetric single remainder and single quotient of signed double and single division
 
 The `UM/MOD`, `FM/MOD`, and `SM/REM` words return a remainder on the stack.  In
 all cases, the quotient _q_ and remainder _r_ satisfy _a_ = _b_ \* _q_ + _r_,
@@ -666,38 +671,42 @@ towards zero (hence symmetric) _q_ = _floor_(_a_ / _b_). For example,
 
 ### Fixed point arithmetic
 
-Fixed point offers an alternative to floating point if the exponential range of
-values manipulated can be fixed to a few digits after the decimal point.
+Fixed point offers an alternative to floating point if the range of values
+manipulated can be fixed to a few digits after the decimal point.  Scaling of
+values must be applied when appropriate.
 
 A classic example is pi to compute the circumference of a circle using a
-rational approximation of pi and a fixed point radius with a 2 digit fraction:
+rational approximation of pi and a fixed point radius with a 2 digit fraction.
 
     : pi* 355 113 M*/ ; ↲
     12.00 2VALUE radius ↲
     radius 2. D* pi* D. ↲
+    7539 OK[0]
 
-Note that the placement of `.` in `12.00` has no meaning at all, it is just
-suggestive of a decimal value with a 2 digit fraction.
+This computes 12*2*pi=75.39.  Note that the placement of `.` in `12.00` has no
+meaning at all, it is just suggestive of a decimal value with a 2 digit
+fraction.
 
 Multiplying the fixed point value `radius` by the double integer `2.` does not
 require scaling of the result.  Addition and subtraction with `D+` and `D-`
-does not require scaling either.  However, multiplying and dividing two fixed
+do not require scaling either.  However, multiplying and dividing two fixed
 point numbers requires scaling the result, for example with a new word:
 
-    : *.00 D* 100 SM/REM 2NIP ; ↲
+    : *.00 D* 100. D/ ; ↲
     radius radius *.00 pi* D. ↲
+    45238 OK[0]
 
 There is a slight risk of overflowing the intermediate product when the
 multiplicants are large.  If this is a potential hazard then note that this can
 be avoided by scaling the multiplicants instead of the result:
 
-    : 10/ 10 SM/REM 2NIP ; ↲
-    : *.00 10/ 2SWAP 10/ D* ; ↲
+    : 10./ 10. D/ ; ↲
+    : *.00 10./ 2SWAP 10./ D* ; ↲
 
 Likewise, fixed point division requires scaling.  One way to do this is
 by scaling the divisor down by 10 and the dividend up by 10 before dividing:
 
-    : /.00 10/ 2SWAP 10. D* 2SWAP D/ ;
+    : /.00 10./ 2SWAP 10. D* 2SWAP D/ ;
 
 ### Floating point arithmetic
 
@@ -876,14 +885,14 @@ Note that `BUFFER:` only reserves space for the string but does not store the
 max size and the length of the actual string contained.  To do so, use a
 `CONSTANT` and a `VARIABLE`:
 
-    40 CONSTANT max-name ↲
-    max-name BUFFER: name ↲
+    40 CONSTANT name-max ↲
+    name-max BUFFER: name ↲
     VARIABLE name-len ↲
-    name max-name ACCEPT name-len ! ↲
+    name name-max ACCEPT name-len ! ↲
 
 To let the user edit the name:
 
-    name max-name name-len @ DUP 0 EDIT DROP name-len ! ↲
+    name name-max name-len @ DUP 0 EDIT DROP name-len ! ↲
 
 The following words move and copy characters in and between string buffers:
 
@@ -1022,7 +1031,7 @@ mode to set, reset or reverse pixels:
 
 | word      | stack effect                   | comment
 | --------- | ------------------------------ | ---------------------------------
-| `GMODE`   | ( 0\|1\|2 -- )                 | pixels are set (0), reset (1) or reversed (2)
+| `GMODE!`  | ( 0\|1\|2 -- )                 | pixels are set (0), reset (1) or reversed (2), stored in `GMODE`
 | `GPOINT`  | ( _n1_ _n2_ -- )               | draw a pixel at x=_n1_ and y=_n2_
 | `GPOINT?` | ( _n1_ _n2_ -- _flag_ )        | returns `TRUE` if a pixel is set at x=_n1_ and y=_n2_
 | `GLINE`   | ( _n1_ _n2_ _n3_ _n4_ _u_ -- ) | draw a line from x=_n1_ and y=_n2_ to x=_n3_ and y=_n4_ with pattern _u_
@@ -1037,15 +1046,14 @@ A pattern _u_ is a 16-bit pixel pattern to draw dashes lines and boxes.  The
 pattern should be $ffff (-1 or `TRUE`) for solid lines and boxes.  For example,
 to reverse the current screen:
 
-    2 GMODE ↲
+    2 GMODE! ↲
     0 0 239 31 TRUE GBOX ↲
 
 The `GDOTS` word takes an 8-bit pattern to draw a row of 8 pixels.  The `GDRAW`
 word draws a sequence of 8-bit patterns.  For example, to display a smiley at
 the upper left corner of the screen:
 
-    : smiley S\" \xc3\x24\x19\x5a\x1a\x1a\x5a\x19\x24\xc3" GDRAW ; ↲
-    0 GMODE ↲
+    : smiley S\" \x3c\x42\x91\xa5\xa1\xa1\xa5\x91\x42\x3c" GDRAW ; ↲
     0 0 smiley ↲
 
       XXXXXX
@@ -1056,6 +1064,8 @@ the upper left corner of the screen:
     X  XXXX  X
      X      X
       XXXXXX
+
+The current `GMODE` has no effect on `GDOTS` and `GDRAW`.
 
 Blitting moves screen data between buffers to update or restore the screen
 content.  The `GBLIT!` word stores a row of screen data in a buffer and
@@ -1152,16 +1162,17 @@ to assign and update `VALUE` and `2VALUE` words.
 A deferred word executes another word assigned to it, essentially a variable
 that contains the execution token of another word to execute indirectly:
 
-| word        | stack effect        | comment
-| ----------- | ------------------- | ------------------------------------------
-| `DEFER`     | ( "name" -- )       | defines a deferred word that is initially uninitialized
-| `'`         | ( "name" -- _xt_ )  | (tick) return the execution token of a name
-| `IS`        | ( _xt_ "name" -- )  | assign "name" the execution token _xt_ of another word
-| `ACTION-OF` | ( "name" -- _xt_ )  | fetch the execution token _xt_ assigned to "name"
-| `DEFER!`    | ( _xt1_ _xt2_ -- )  | assign _xt1_ to deferred word execution token _xt2_
-| `DEFER@`    | ( _xt1_ -- _xt2_ )  | fetch _xt2_ from deferred word execution token _xt1_
-| `NOOP`      | ( -- )              | does nothing
-| `EXECUTE`   | ( ... _xt_ -- ... ) | executes execution token _xt_
+| word        | stack effect            | comment
+| ----------- | ----------------------- | --------------------------------------
+| `DEFER`     | ( "name" -- )           | defines a deferred word that is initially uninitialized
+| `'`         | ( "name" -- _xt_ )      | (tick) returns the execution token of "name" on the stack
+| `[']`       | ( "name" -- ; -- _xt_ ) | compiles "name" as an execution token literal _xt_
+| `IS`        | ( _xt_ "name" -- )      | assign "name" the execution token _xt_ of another word
+| `ACTION-OF` | ( "name" -- _xt_ )      | fetch the execution token _xt_ assigned to "name"
+| `DEFER!`    | ( _xt1_ _xt2_ -- )      | assign _xt1_ to deferred word execution token _xt2_
+| `DEFER@`    | ( _xt1_ -- _xt2_ )      | fetch _xt2_ from deferred word execution token _xt1_
+| `NOOP`      | ( -- )                  | does nothing
+| `EXECUTE`   | ( ... _xt_ -- ... )     | executes execution token _xt_
 
 A deferred word is defined with `DEFER` and assigned with `IS`:
 
@@ -1357,7 +1368,7 @@ The following words define a structure and its fields:
 | word              | stack effect ( _before_ -- _after_ )         | comment
 | ----------------- | -------------------------------------------- | -----------
 | `BEGIN-STRUCTURE` | ( "name" -- _addr_ 0 ; -- _u_ )              | define a structure type
-| `+FIELD:`         | ( _u_ _n_ "name" -- _u_ ; _addr_ -- _addr_ ) | define a field name with the specified size
+| `+FIELD`          | ( _u_ _n_ "name" -- _u_ ; _addr_ -- _addr_ ) | define a field name with the specified size
 | `FIELD:`          | ( _u_ "name" -- n ; addr -- addr )           | define a single cell field
 | `CFIELD:`         | ( _u_ "name" -- n ; addr -- addr )           | define a character field
 | `2FIELD:`         | ( _u_ "name" -- n ; addr -- addr )           | define a double cell field
@@ -1708,17 +1719,17 @@ compiles strings:
 | `[CHAR]`   | ( "name" -- ; -- _char_ )            | returns the first character of "name" on the stack
 | `[']`      | ( "name" -- ; -- _xt_ )              | returns the execution token of "name" on the stack
 
-The `[CHAR]` word parses a name and returns the first character on the stack.
+The `[CHAR]` word parses a name and compiles the first character as a literal.
 This is the compile-time equivalent of `CHAR`.  For example, `[CHAR] $` is the
 same as `[ CHAR $ ] LITERAL`.
 
-The `[']` word parses a name and returns the execution token on the stack.
+The `[']` word parses a name and compiles the execution token as a literal.
 This is the compile-time equivalent of `'` (tick).  For example, `['] NOOP` is
 the same as `[ ' NOOP ] LITERAL`.
 
 ### Postponing
 
-Immediate words cannot be compiled unless we postpone its execution with
+Immediate words cannot be compiled unless we postpone their execution with
 `POSTPONE`.  The `POSTPONE` word parses a name marked `IMMEDIATE` and compiles
 it to execute when the colon definition executes.  If the name is not
 immediate, then `POSTPONE` compiles the word's execution token as a literal
@@ -1744,7 +1755,7 @@ Note that `compile-MAX` is `IMMEDIATE` to compile `MAX` in the definition of
 
 ### Compile-time conditionals
 
-Forth source input is conditionally interpeted and compiled with `[IF]`,
+Forth source input is conditionally interpreted and compiled with `[IF]`,
 `[ELSE]` and `[THEN]` words.  The `[IF]` word jumps to a matching `[ELSE]`
 or `[THEN]` if the TOS is zero (`FALSE`).  When used in colon definitions, the
 TOS value should be produced immediately with `[` and `]`:
@@ -1890,8 +1901,8 @@ File I/O _ior_ error codes returned by file operations, _ior_=0 means no error:
 | `QUIT`   | ( ... -- ... )                       | throw -56
 | `THROW`  | ( ... _x_ -- ... ) or ( 0 -- )       | if _x_ is nonzero, throw _x_ else drop the 0
 | `CATCH`  | ( _xt_ -- ... 0 ) or ( _xt_ -- _x_ ) | execute _xt_, if an exception _x_ occurs then restore the stack and return _x_, otherwise return 0
+| `'`      | ( "name" -- _xt_ )                   | (tick) returns the execution token of "name" on the stack
 | `[']`    | ( "name" -- ; -- _xt_ )              | compiles "name" as an execution token literal _xt_
-| `'`      | ( "name" -- _xt_ )                   | returns the execution token of "name" on the stack
 
 Note that `test ABORT" test failed"` throws -2 if `test` leaves a nonzero on
 the stack.  This construct can be used to check return values and perform
