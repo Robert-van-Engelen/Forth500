@@ -1054,7 +1054,7 @@ word draws a sequence of 8-bit patterns.  For example, to display a smiley at
 the upper left corner of the screen:
 
     : smiley S\" \x3c\x42\x91\xa5\xa1\xa1\xa5\x91\x42\x3c" GDRAW ; ↲
-    0 0 smiley ↲
+    0 GMODE! PAGE CR 0 0 smiley ↲
 
       XXXXXX
      X      X
@@ -1064,8 +1064,6 @@ the upper left corner of the screen:
     X  XXXX  X
      X      X
       XXXXXX
-
-The current `GMODE` has no effect on `GDOTS` and `GDRAW`.
 
 Blitting moves screen data between buffers to update or restore the screen
 content.  The `GBLIT!` word stores a row of screen data in a buffer and
@@ -1078,7 +1076,7 @@ example, to save and restore the top row in the 256 byte `PAD`:
 
 To blit the whole screen, a buffer of 4 times 240 bytes is required:
 
-    4 240 * BUFFER: blit ↲
+    240 4 * BUFFER: blit ↲
     : save-screen 4 0 DO I DUP 240 * blit + GBLIT! LOOP ; ↲
     : restore-screen 4 0 DO I DUP 240 * blit + GBLIT@ LOOP ; ↲
 
@@ -1118,8 +1116,8 @@ example `2 N>R ... NR> DROP` moves 2+1 cells to the return stack and back,
 then dropping the restored 2.  Effectively the same as executing `2>R ... 2R>`.
 
 Care must be taken to prevent return stack imbalences when a colon definition
-exits.  The return stack must be restored to the previous state when the colon
-definition started before the colon definition exits.
+exits.  The return stack pointer must be restored to the original state when
+the colon definition started before the colon definition exits.
 
 The maximum depth of the return stack in Forth500 is 200 cells or 100 double
 cells.
@@ -1233,7 +1231,7 @@ final `;` is parsed.  This is done to avoid the possible use of incomplete
 colon definitions that can crash the system when executed.  A recursive colon
 definition should use `RECURSE` to call itself:
 
-    : factorial ( _u_ -- _ud_ )
+    : factorial ( _u_ -- _ud_ ) \ _u_<=12
       ?DUP IF DUP 1- RECURSE ROT UMD* ELSE 1. THEN ;
 
 Mutual recursion can be accomplished with [deferred words](#deferred-words):
@@ -1261,22 +1259,22 @@ the word we are defining) into the compiled code:
 
 ### CREATE and DOES>
 
-Data can be stored in the dictionary as words with `CREATE`.  Like a colon
-definition, the name of a word is parsed and added to the dictionary.  This
-word does nothing else but just return the address of the body of data stored
-in the dictionary.  To allocate and populate the data the following words can
-be used:
+Data can be stored in the dictionary as words created with `CREATE`.  Like a
+colon definition, the name of a word is parsed and added to the dictionary.
+This word does nothing else but just return the address of the body of data
+stored in the dictionary.  To allocate and populate the data the following
+words can be used:
 
 | word     | stack effect              | comment
 | -------- | ------------------------- | ---------------------------------------
 | `CREATE` | ( "name" -- ; -- _addr_ ) | adds a new word entry for "name" to the dictionary, this word returns _addr_
 | `HERE`   | ( -- _addr_ )             | the next free address in the dictionary
-| `CELL`   | ( -- 2 )                  | the size of a cell (single integer)
+| `CELL`   | ( -- 2 )                  | the size of a cell (single integer) in bytes
 | `CELLS`  | ( _u_ -- 2\*_u_ )         | convert _u_ from cells to bytes
 | `CELL+`  | ( _addr_ -- _addr_+2 )    | increments _addr_ by a cell width (by two)
 | `CHARS`  | ( _u_ -- _u_ )            | convert _u_ from characters to bytes (does nothing)
 | `CHAR+`  | ( _addr_ -- _addr_+1 )    | increments _addr_ by a character width (by one)
-| `ALLOT`  | ( _u_ -- )                | reserves _u_ bytes in the dictionary starting `HERE`, just adds _u_ to `HERE`
+| `ALLOT`  | ( _n_ -- )                | reserves _n_ bytes in the dictionary starting `HERE`, adds _n_ to `HERE`
 | `UNUSED` | ( -- _u_ )                | returns the number of unused bytes remaining in the dictionary
 | `,`      | ( _x_ -- )                | stores _x_ at `HERE` then increments `HERE` by `CELL` (by two)
 | `2,`     | ( _dx_ -- )               | stores _dx_ at `HERE` then increments `HERE` by `2 CELLS` (by four)
@@ -1287,7 +1285,8 @@ be used:
 | `C@`     | ( _addr_ -- _char_ )      | fetches _char_ stored at _addr_
 
 Allocation is limited by the remaining free space in the dictionary returned by
-the `UNUSED` word.
+the `UNUSED` word.  Note that the `ALLOT` value may be negative to release
+space, which should only release space allocated with a prior `ALLOT`.
 
 The `CREATE` word adds an entry to the dictionary, typically followed by words
 to allocate and store data assocated with the new word.  For example, we can
@@ -1328,38 +1327,31 @@ so that `buf` can also be created with:
     256 BUFFER: buf ↲
 
 The `DOES>` word compiles code until a terminating `;`.  This code is executed
-by the word we `CREATE`.  For example, we can create a `bar` word that stores a
-value and fetch it automatically whenever `bar` is executed:
-
-    CREATE bar 7 , DOES> @ ; ↲
-    bar . ↲
-    7 OK[0]
-
-Executing `bar` first returns the address of its body then executes `@` to
-fetch the value before returning.
-
-In fact, this is exactly how a `CONSTANT` is defined in Forth:
+by the word we `CREATE`.  For example, `CONSTANT` is defined in Forth as
+follows:
 
     : CONSTANT CREATE , DOES> @ ; ↲
 
-so that `bar` can also be created with:
+A constant just fetches its data from the definition's body.
 
-    7 CONSTANT bar ↲
+Note that `>BODY` (see [introspection](#introspection)) of an execution token
+returns the same address as `CREATE` returns and that `DOES>` pushes on the
+stack.  For example, `' buf >BODY` and `buf` return the same address.
 
-Address arithmetic can be added with `DOES>` to automatically fetch a prime
-number from the `primes` table:
+`DOES>` is valid only in a colon definition, because the `DOES>` code is part
+of the creating definition, not with the word we `CREATE`.  The word we
+`CREATE` executes the `DOES>` code.
 
-    CREATE primes 2 , 3 , 5 , 7 , 11 , 13 , 17 , 19 , 23 , 31 , ↲
-      DOES> SWAP CELLS + @ ; ↲
+For example, address arithmetic can be added with `DOES>` to automatically
+fetch a prime number from the `primes` table of constants:
+
+    : table: CREATE DOES> SWAP CELLS + @ ;
+    table: primes 2 , 3 , 5 , 7 , 11 , 13 , 17 , 19 , 23 , 31 , ↲
     3 primes . ↲
     7 OK[0]
 
 The `SWAP CELLS + @` doubles the index with `CELLS` then adds the address of
 the `primes` table to get to the address to fetch the value.
-
-Note that `>BODY` (see [introspection](#introspection)) of an execution token
-returns the same address as `CREATE` returns and that `DOES>` pushes on the
-stack.  For example, `' buf >BODY` and `buf` return the same address.
 
 #### Structures
 
@@ -1409,16 +1401,15 @@ stack:
 
     : cell-array: CELLS BUFFER: DOES> SWAP CELLS + ; ↲
 
-where `CELLS BUFFER:` allocates the specified number of cells for the named
-array, where `BUFFER:` just calls `CREATE ALLOT` to define the name with the
-reserved space.
+where `CELLS BUFFER:` creates a new word and allocates the specified number of
+cells for the named array, where `BUFFER:` just calls `CREATE ALLOT` to define
+the name with the reserved space.
 
-We can use `cell-array` to create an array of 10 prime numbers, each is a
-single integer:
+We can use `cell-array` to create an array of 10 uninitialized cells, then set
+the first entry to `123` for example:
 
-    10 cell-array: primes ↲
-     2 0 primes !  3 1 primes !  5 2 primes !  7 3 primes ! 11 4 primes ! ↲
-    13 5 primes ! 17 6 primes ! 23 7 primes ! 29 8 primes ! 31 9 primes ! ↲
+    10 cell-array: values ↲
+    123 0 values ! ↲
 
 A generic `array` word takes the number of elements and size of an element,
 where the element size is stored as a cell using `,` followed by `* ALLOT` to
