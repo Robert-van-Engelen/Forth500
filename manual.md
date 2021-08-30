@@ -283,8 +283,8 @@ Like the built-in `?` word, a large portion of the Forth system is defined in
 Forth itself.
 
 Instead of nesting multiple `IF-ELSE-THEN` branches to cover additional
-languages, we should use `CASE-OF-ENDOF-ENDCASE` and enumerate the languages
-as follows:
+languages, we should use `CASE`-`OF`-`ENDOF`-`ENDCASE` and enumerate the
+languages as follows:
 
     0 CONSTANT #english ↲
     1 CONSTANT #spanish ↲
@@ -325,7 +325,7 @@ Now with `language` as a `VALUE`, `hello` should be changed by removing the
       language CASE ↲
       ...
 
-Earlier we saw the `DO-LOOP`.  The loop iterates until its internal loop
+Earlier we saw the `DO`-`LOOP`.  The loop iterates until its internal loop
 counter when incremented *equals* the final value.  For example, this loop
 executes `hello` 10 times:
 
@@ -352,8 +352,8 @@ Again, be warned that the loop terminates when the counter *equals* the final
 value, not exceeds it.  Therefore, using the wrong loop `9 0 ?DO I . 2 +LOOP`
 would never terminate.
 
-A `BEGIN-WHILE-REPEAT` is a logically-controlled loop with which we can do the
-same as follows by pushing a `0` to use as a counter on top of the stack:
+A `BEGIN`-`WHILE`-`REPEAT` is a logically-controlled loop with which we can do
+the same as follows by pushing a `0` to use as a counter on top of the stack:
 
     : evens ↲
       0 ↲
@@ -368,7 +368,7 @@ same as follows by pushing a `0` to use as a counter on top of the stack:
 `DUP 10 <` is used for the `WHILE` test to check the TOS counter value is less
 than 10.  After the loop terminates, `DROP` removes the TOS counter.
 
-A `BEGIN-UNTIL` loop is similar, but executes the loop body at least once:
+A `BEGIN`-`UNTIL` loop is similar, but executes the loop body at least once:
 
     : evens ↲
       0 ↲
@@ -1029,12 +1029,12 @@ possible cursor shapes:
 
 ## Graphics
 
-The graphics mode is set with `GMODE`.  All graphics drawing commands use this
+The graphics mode is set with `GMODE!`.  All graphics drawing commands use this
 mode to set, reset or reverse pixels:
 
 | word      | stack effect                   | comment
 | --------- | ------------------------------ | ---------------------------------
-| `GMODE!`  | ( 0\|1\|2 -- )                 | pixels are set (0), reset (1) or reversed (2), stored in `GMODE`
+| `GMODE!`  | ( 0\|1\|2 -- )                 | pixels are set (0), reset (1) or reversed (2), stores in variable `GMODE`
 | `GPOINT`  | ( _n1_ _n2_ -- )               | draw a pixel at x=_n1_ and y=_n2_
 | `GPOINT?` | ( _n1_ _n2_ -- _flag_ )        | returns `TRUE` if a pixel is set at x=_n1_ and y=_n2_
 | `GLINE`   | ( _n1_ _n2_ _n3_ _n4_ _u_ -- ) | draw a line from x=_n1_ and y=_n2_ to x=_n3_ and y=_n4_ with pattern _u_
