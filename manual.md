@@ -1457,9 +1457,12 @@ reserve space for the array data:
 We can add "syntactic sugar" to enhance the readability of the code, using `{`
 and `}` to demarcate the array index expression as follows:
 
-    : { ;  \ Does nothing ↲
+    : { ; IMMEDIATE  \ Does nothing ↲
     10 2 CELLS array: }factorials ↲
     1. { 0 }factorials 2! 1. { 1 }factorials 2! 2. { 2 }factorials 2! ↲
+
+By making `{` immediate, it won't compile to a useless call to the `{` excution
+token.
 
 ### Markers
 
@@ -1470,8 +1473,8 @@ it deletes itself and all definitions after it.  For example:
     ...
     my-program ↲
 
-This marks `my-program` as the start of our code `...`.  The code is deleted by
-`my-program`.
+This marks `my-program` as the start of our code indicated by the `...`.  This
+code is deleted by `my-program`.
 
 A source code file might start with the following code to delete its
 definitions when the file is parsed again:
@@ -1796,8 +1799,8 @@ Note that `compile-MAX` is `IMMEDIATE` to compile `MAX` in the definition of
 
 Forth source input is conditionally interpreted and compiled with `[IF]`,
 `[ELSE]` and `[THEN]` words.  The `[IF]` word jumps to a matching `[ELSE]`
-or `[THEN]` if the TOS is zero (`FALSE`).  When used in colon definitions, the
-TOS value should be produced immediately with `[` and `]`:
+or `[THEN]` if the TOS is zero (i.e. false).  When used in colon definitions,
+the TOS value should be produced immediately with `[` and `]`:
 
     [ test ] [IF]
       this source input is compiled if test is nonzero
@@ -1836,9 +1839,9 @@ controlled by the following words:
 | `TIB`       | ( -- _c-addr_ )     | a 256 character terminal input buffer
 | `FIB`       | ( -- _c-addr_ )     | a 256 character file input buffer
 | `SOURCE-ID` | ( -- _addr_ )       | a variable holding the _fileid_ of the input source (e.g. `STDI` for keyboard)
-| `SOURCE`    | ( -- _c-addr_ _u_ ) | the current buffer (`TIB` or `FIB`) and number of characters stored in it
+| `SOURCE`    | ( -- _c-addr_ _u_ ) | returns the current buffer (`TIB` or `FIB`) and the number of characters stored in it
 | `>IN`       | ( -- _addr_ )       | a variable holding the current input position in the `SOURCE` buffer to parse from
-| `REFILL`    | ( -- _flag_ )       | refills the current input buffer, returns true if successful
+| `REFILL`    | ( -- _flag_ )       | refills the current input buffer from the current source, returns true if successful
 
 The following words parse the current source of input:
 
