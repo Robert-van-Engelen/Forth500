@@ -1,4 +1,6 @@
-# CHANGES
+# CHANGELOG
+
+The following bug fixes and improvements were made to the original pceForth code.
 
 - removed useless `rc` before `jp interp__`
 - replaced `jp interp__` by `jp cont__` to skip BREAK key test in code when control flow is not jumping backward and no IO (with a few exceptions)
@@ -12,9 +14,10 @@
 - replaced `(IS)` with standards-compliant `DEFER!`
 - replaced `BEHAVIOR` with standards-compliant `ACTION-OF` using `DEFER@`
 - removed non-standard `MATCH?`
+- removed non-standard `RECURSIVE` (same as `REVEAL`)
 - replaced `M+` and `M-` with Forth code instead of assembly
 - added standards-compliant `PARSE-NAME`
-- fixed `2CONSTANT` lo/hi order swapped
+- fixed `2CONSTANT` lo/hi cell order swapped
 - removed BLOCK (`BLK`, `BLOCK`, `BUFFER`, `LOAD`, `LIST`, `THRU`) because blocks are not implemented and `EVALUATE` does not even use `BLK`
 - added standards-compliant `HOLDS`
 - removed `NO-IOERROR` constant that is always zero
@@ -53,5 +56,12 @@
 - optimized `CASE OF` with new `(OF)` conditional jump that is faster and saves 6 bytes per `OF-ENDOF` pair
 - changed `DOUBLE-NUMBER` to `>DOUBLE` with optimized code to reduce code size
 - fixed `D+!` that was missing a `popu ba` to set new TOS
+- changed to case-insensitve Forth, words can be typed in upper/lower/mixed case
 - updated the filename-related words to automatically change the current drive letter (stored in `DRIVE`) when specified
-- changed to case-insensitve Forth, words can be typed in upper/lower/mixed case.
+- fixed `2/` and `D2/` that removed the sign, should perform an arithmetic shift right, not a logical shift right
+- replace `mv ba,0` with `sub ba,ba` when possible (the latter sets flags), saving >40 bytes
+- added dictionary underflow and overflow checks to `ALLOT` and to all of the comma words
+- added `CELL` (same as `1 CELLS`)
+- replaced `(UNINIT)` non-standard -59 exception "execution of an uninitialized deferred word" with a system-defined -256 exception
+- fixed `(DO2LIT)` lo/hi cell order swapped
+- fixed `FORGET` memory leak (did not forget old link cell and old name)

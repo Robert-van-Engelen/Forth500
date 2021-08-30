@@ -114,7 +114,7 @@ iocs:		equ	$fffe8
 ;		Forth system parameters
 ;
 ;-------------------------------------------------------------------------------
-base_address:	equ	$b0000			; 11th segment
+base_address:	equ	$b0000			; 11th segment (do not change)
 ib_size:	equ	256			; TIB and FIB size
 hold_size:	equ	40			; ENVIRONMENT? /HOLD size
 blk_buff_size:	equ	1024
@@ -134,10 +134,10 @@ s_limit:	equ	s_beginning-s_size	; The stack's low limit
 dict_limit:	equ	s_limit			; The upper limit of the dictionary space
 ;-------------------------------------------------------------------------------
 ;
-;		Forth boot address
+;		Forth location and boot address
 ;
 ;-------------------------------------------------------------------------------
-		org	$b9000
+		org	$b9000			; $b0000 or $b1000 or $b9000 ...
 ;-------------------------------------------------------------------------------
 ;
 ;		Forth booting
@@ -170,7 +170,7 @@ boot:		local
 		mv	[!last_xt+3],ba		; Set LAST value
 		mv	ba,[x++]
 		mv	[!lastxt_xt+3],ba	; Set LAST-XT value
-		mv	ba,$0000
+		sub	ba,ba
 		mv	[!handler_xt+3],ba	; No error handler
 		mv	i,!startup_xt
 		jp	!startup_xt
@@ -244,7 +244,7 @@ dolit0:		dw	doexit_
 		db	'0'
 dolit0_xt:	local
 		pushu	ba			; Save old TOS
-		mv	ba,0			; Set new TOS to 0 (FALSE)
+		sub	ba,ba			; Set new TOS to 0 (FALSE)
 		jr	!cont__
 		endl
 ;-------------------------------------------------------------------------------
@@ -312,9 +312,9 @@ do2lit_:	dw	dolit_
 		db	'(DO2LIT)'
 do2lit__xt:	local
 		pushu	ba			; Save old TOS
-		mv	ba,[x++]		; Fetch the first 16 bits (next token)
-		pushu	ba			; Push the first 16 bits one the stack
-		mv	ba,[x++]		; Set new TOS (next token)
+		mv	ba,[x++]		; Fetch the high-order 16 bits (next token) and set new TOS
+		mv	i,[x++]			; Fetch the low-order 16 bits (next token)
+		pushu	i			; Push the low-order 16 bits one the stack as 2OS
 		jr	!cont__
 		endl
 ;-------------------------------------------------------------------------------
@@ -333,11 +333,11 @@ do2lit__xt:	local
 ;		sub	y,i			; on a double precision address
 ;		mv	i,7			; The length of a single precision floating-point number
 ;lbl2:		mv	a,[x++]			; Copy the floating-point number
-;		mv	[--y],a			; on the floting-point stack
+;		mv	[--y],a			; on the floating-point stack
 ;		dec	i
 ;		jrnz	lbl2
-;		mv	ba,$0000		; Store computation
-;		mv	[--y],ba		; correction
+;		mv	il,0			; Store computation
+;		mv	[--y],i			; correction
 ;		mv	(!xi),y			; Update FP's value
 ;		popu	ba			; Restore TOS
 ;		jr	!cont__
@@ -469,6 +469,10 @@ dodefer_:	dw	dodplus2to_
 		db	$09
 		db	'(DODEFER)'
 dodefer__xt:	local
+		pre_on
+		test	($ff),$08		; Is break pushed?
+		pre_off
+		jpnz	!break__
 		mv	y,!base_address+3
 		add	y,i
 		mv	i,[y]			; Set current xt
@@ -513,15 +517,6 @@ sc_code__xt:	local
 		mv	i,x			; I holds the address of the token after (;CODE)
 		mv	[y],i			; Compile a 'jp' to the token after (;CODE)
 		jp	!doexit__xt		; Perform an EXIT
-		;pushu	ba			; Save TOS
-		;mv	i,x			; I holds the address of the token after (;CODE)
-		;mv	ba,[!lastxt_xt+3]	; BA holds the LAST-XT value
-		;mv	x,!base_address		; X holds the address
-		;add	x,ba			; of the LAST-XT (IP is lost)
-		;mv	[x+1],i			; Compile a 'jp' to the token after (;CODE)
-		;popu	ba			; Restore TOS
-		;pops	x			; restore old IP (perform a doexit_)
-		;jp	!cont__
 		endl
 ;-------------------------------------------------------------------------------
 ahead_:		dw	sc_code_
@@ -751,25 +746,28 @@ cell_plus:	dw	aligned
 		db	$05
 		db	'CELL+'
 cell_plus_xt:	local
-		inc	ba			; Add two
-		inc	ba			; to TOS
-		jp	!cont__
+		jp	!two_plus_xt		; Same as 2+
 		endl
 ;-------------------------------------------------------------------------------
 cells:		dw	cell_plus
 		db	$05
 		db	'CELLS'
 cells_xt:	local
-		add	ba,ba			; Double TOS
-		jp	!cont__
+		jp	!two_star_xt		; Same as 2*
 		endl
 ;-------------------------------------------------------------------------------
-char_plus:	dw	cells
+cell:		dw	cells
+		db	$04
+		db	'CELL'
+cell_xt:	local
+		jp	!dolit2_xt		; Same as 2
+		endl
+;-------------------------------------------------------------------------------
+char_plus:	dw	cell
 		db	$05
 		db	'CHAR+'
 char_plus_xt:	local
-		inc	ba			; Add one to TOS
-		jp	!cont__
+		jp	!one_plus_xt		; Same as 1+
 		endl
 ;-------------------------------------------------------------------------------
 chars:		dw	char_plus
@@ -801,70 +799,7 @@ fetch_xt:	local
 		jp	!cont__
 		endl
 ;-------------------------------------------------------------------------------
-comma:		dw	fetch
-		db	$01
-		db	','
-comma_xt:	local
-		mv	y,(!wi)			; Y holds HERE value
-		mv	[y++],ba		; Store TOS HERE and post-increment Y
-		mv	(!wi),y			; Save new HERE value
-		popu	ba			; Set new TOS
-		jp	!cont__
-		endl
-;-------------------------------------------------------------------------------
-compile_com:	dw	comma
-		db	$08
-		db	'COMPILE,'
-compile_com_xt:	local
-		jr	!comma_xt		; Same code as comma in this implementation
-		endl
-;-------------------------------------------------------------------------------
-allot:		dw	compile_com
-		db	$05
-		db	'ALLOT'
-allot_xt:	local
-		mv	i,(!wi)			; Y holds HERE value
-		add	i,ba			; Update HERE value
-		mv	(!wi),i			; Save new HERE value
-		popu	ba			; Set new TOS
-		jp	!cont__
-		endl
-;-------------------------------------------------------------------------------
-c_store:	dw	allot
-		db	$02
-		db	'C!'
-c_store_xt:	local
-		mv	y,!base_address
-		add	y,ba			; Y holds the address where to store the value
-		popu	ba			; A holds the character value
-		mv	[y],a			; Store the 8 low-order bits in memory
-		popu	ba			; Set new TOS
-		jp	!cont__
-		endl
-;-------------------------------------------------------------------------------
-c_fetch:	dw	c_store
-		db	$02
-		db	'C@'
-c_fetch_xt:	local
-		mv	y,!base_address
-		add	y,ba			; Y holds the address where to fetch the value
-		mv	ba,$0000		; To clear B register
-		mv	a,[y]			; Set new TOS (only the 8 low-order bits are significative)
-		jp	!cont__
-		endl
-;-------------------------------------------------------------------------------
-c_comma:	dw	c_fetch
-		db	$02
-		db	'C,'
-c_comma_xt:	local
-		mv	y,(!wi)			; Y holds HERE value
-		mv	[y++],a			; Store TOS as character HERE and post-increment Y
-		mv	(!wi),y			; Save new HERE value
-		popu	ba			; Set new TOS
-		jp	!cont__
-		endl
-;-------------------------------------------------------------------------------
-two_store:	dw	c_comma
+two_store:	dw	fetch
 		db	$02
 		db	'2!'
 two_store_xt:	local
@@ -890,17 +825,124 @@ two_fetch_xt:	local
 		jp	!cont__
 		endl
 ;-------------------------------------------------------------------------------
-two_comma:	dw	two_fetch
+c_store:	dw	two_fetch
+		db	$02
+		db	'C!'
+c_store_xt:	local
+		mv	y,!base_address
+		add	y,ba			; Y holds the address where to store the value
+		popu	ba			; A holds the character value
+		mv	[y],a			; Store the 8 low-order bits in memory
+		popu	ba			; Set new TOS
+		jp	!cont__
+		endl
+;-------------------------------------------------------------------------------
+c_fetch:	dw	c_store
+		db	$02
+		db	'C@'
+c_fetch_xt:	local
+		mv	y,!base_address
+		add	y,ba			; Y holds the address where to fetch the value
+		sub	ba,ba			; To clear B register
+		mv	a,[y]			; Set new TOS (only the 8 low-order bits are significative)
+		jp	!cont__
+		endl
+;-------------------------------------------------------------------------------
+comma:		dw	c_fetch
+		db	$01
+		db	','
+comma_xt:	local
+		mv	[(!wi)],ba
+		popu	ba			; Set new TOS
+		mv	il,2
+		jr	!allot__
+		endl
+;-------------------------------------------------------------------------------
+compile_com:	dw	comma
+		db	$08
+		db	'COMPILE,'
+compile_com_xt:	local
+		jr	!comma_xt		; Same code as comma in this implementation
+		endl
+;-------------------------------------------------------------------------------
+cfa_comma:	dw	compile_com
+		db	$04
+		db	'CFA,'
+cfa_comma_xt:	local
+		mv	y,(!wi)			; Y holds HERE value
+		mv	il,$02
+		mv	[y++],il		; Compile 'jp' instruction
+		mv	[y],ba			; Compile the address of the interpretation routine
+		popu	ba			; Set new TOS
+		mv	il,3
+		jr	!allot__
+		endl
+;-------------------------------------------------------------------------------
+does_comma:	dw	cfa_comma
+		db	$05
+		db	'DOES,'
+does_comma_xt:	local
+		mv	y,(!wi)			; Y holds HERE value
+		mv	il,$04
+		mv	[y++],il		; Compile 'call' instruction
+		mv	i,!does__xt
+		mv	[y],i			; Compile the address of the (DOES>) routine
+		mv	il,3
+		jr	!allot__
+		endl
+;-------------------------------------------------------------------------------
+allot:		dw	does_comma
+		db	$05
+		db	'ALLOT'			; ( n -- )
+allot_xt:	local
+		mv	i,ba			; I holds the size to allocate
+		popu	ba			; Set new TOS
+		endl
+;---------------
+allot__:	local
+		pushu	ba			; Save TOS
+		mv	ba,(!wi)		; BA holds HERE short address
+		add	ba,i			; New HERE value short address
+		jrc	lbl2			; Negative increment or overflow?
+		add	i,i			; Check if positive increment
+		jrc	lbl3			; Overflow if increment is negative
+		mv	i,!dict_limit-!hold_size
+		sub	ba,i			; Check overflow
+		jrnc	lbl3			; for positive increment
+lbl1:		add	ba,i			; Restore new HERE short address
+		mv	(!wi),ba		; Save new HERE value
+		popu	ba			; Restore TOS
+		jp	!cont__			;
+lbl2:		add	i,i			; Check if negative increment
+		jrnc	lbl3			; Overflow if increment is positive
+		mv	i,!_end_		; Check
+		sub	ba,i			; if
+		jrnc	lbl1			; underflow
+lbl3:		mv	il,-8			; Dictionary overflow
+		jp	!throw__
+		endl
+;-------------------------------------------------------------------------------
+c_comma:	dw	allot
+		db	$02
+		db	'C,'
+c_comma_xt:	local
+		mv	[(!wi)],a		; Store lower-order TOS at HERE
+		popu	ba			; Set new TOS
+		mv	il,1
+		jr	!allot__
+		endl
+;-------------------------------------------------------------------------------
+two_comma:	dw	c_comma
 		db	$02
 		db	'2,'
 two_comma_xt:	local
 		mv	y,(!wi)			; Y holds HERE value
 		mv	[y++],ba		; Store the 16 high-order bits in memory and post-increment Y
-		popu	ba			; BA holds the low-order bits
-		mv	[y++],ba		; Store the 16 low-order bits in memory
-		mv	(!wi),y			; Save new HERE value
+		popu	ba
+		mv	[y],ba			; Store the 16 low-order bits in memory
 		popu	ba			; Set new TOS
-		jp	!cont__
+		mv	il,4
+		jr	!allot__
 		endl
 ;-------------------------------------------------------------------------------
 fill:		dw	two_comma
@@ -1088,10 +1130,6 @@ two_nip_xt:	local
 		popu	y			; Discard second and 3OS (4 bytes)
 		popu	f
 		pushu	i
-		;mvw	(!fx),[u++]
-		;popu	i			; Discard 3OS
-		;popu	i			; Discard 4OS
-		;mvw	[--u],(!fx)
 		jp	!cont__
 		endl
 ;-------------------------------------------------------------------------------
@@ -1408,7 +1446,7 @@ r_quot_ftch_xt:	local
 ;-------------------------------------------------------------------------------
 dup_to_r:	dw	r_quot_ftch
 		db	$05
-		db	'DUP>R'
+		db	'DUP>R'			; ( x -- x ; R: -- x )
 dup_to_r_xt:	local
 		pushs	ba			; Copy TOS to the return stack
 		jp	!cont__
@@ -1416,7 +1454,7 @@ dup_to_r_xt:	local
 ;-------------------------------------------------------------------------------
 r_from_drop:	dw	dup_to_r
 		db	$06
-		db	'R>DROP'
+		db	'R>DROP'		; ( R: x -- )
 r_from_drop_xt:	local
 		pops	i			; Remove return stack's first element
 		jp	!cont__
@@ -1424,7 +1462,7 @@ r_from_drop_xt:	local
 ;-------------------------------------------------------------------------------
 i:		dw	r_from_drop
 		db	$01
-		db	'I'
+		db	'I'			; ( -- n )
 i_xt:		local
 		pushu	ba			; Save the TOS
 		mv	ba,[s]			; Reverse the
@@ -1435,7 +1473,7 @@ i_xt:		local
 ;-------------------------------------------------------------------------------
 j:		dw	i
 		db	$01
-		db	'J'
+		db	'J'			; ( -- n )
 j_xt:		local
 		pushu	ba			; Save the TOS
 		mv	ba,[s+6]		; Reverse the
@@ -1446,7 +1484,7 @@ j_xt:		local
 ;-------------------------------------------------------------------------------
 k:		dw	j
 		db	$01
-		db	'K'
+		db	'K'			; ( -- n )
 k_xt:		local
 		pushu	ba			; Save the TOS
 		mv	ba,[s+12]		; Reverse the
@@ -1457,7 +1495,7 @@ k_xt:		local
 ;-------------------------------------------------------------------------------
 execute:	dw	k
 		db	$07
-		db	'EXECUTE'
+		db	'EXECUTE'		; ( ... xt -- ... )
 execute_xt:	local
 		pushs	ba			; Push the current xt into the return stack
 		mv	i,ba			; Set current xt
@@ -1467,7 +1505,7 @@ execute_xt:	local
 ;-------------------------------------------------------------------------------
 and:		dw	execute
 		db	$03
-		db	'AND'
+		db	'AND'			; ( u u -- u )
 and_xt:		local
 		mv	(!fx),ba		; Save TOS
 		popu	ba			; Pop 2OS
@@ -1480,7 +1518,7 @@ and_xt:		local
 ;-------------------------------------------------------------------------------
 or:		dw	and
 		db	$02
-		db	'OR'
+		db	'OR'			; ( u u -- u )
 or_xt:		local
 		mv	(!fx),ba		; Save TOS
 		popu	ba			; Pop 2OS
@@ -1493,7 +1531,7 @@ or_xt:		local
 ;-------------------------------------------------------------------------------
 xor:		dw	or
 		db	$03
-		db	'XOR'
+		db	'XOR'			; ( u u -- u )
 xor_xt:		local
 		mv	(!fx),ba		; Save TOS
 		popu	ba			; Pop 2OS
@@ -1506,7 +1544,7 @@ xor_xt:		local
 ;-------------------------------------------------------------------------------
 invert:		dw	xor
 		db	$06
-		db	'INVERT'
+		db	'INVERT'		; ( u -- u )
 invert_xt:	local
 		mv	i,$ffff
 		sub	i,ba
@@ -1516,10 +1554,10 @@ invert_xt:	local
 ;-------------------------------------------------------------------------------
 equals:		dw	invert
 		db	$01
-		db	'='
+		db	'='			; ( x x -- flag )
 equals_xt:	local
 		popu	i			; Pop 2OS
-		sub	i,ba			; Compare it with TOS
+		sub	ba,i			; Compare it with TOS
 		mv	ba,$0000		; Set new TOS to FALSE
 		jrnz	lbl1
 		dec	ba			; Set new TOS to TRUE
@@ -1564,8 +1602,7 @@ d_zer_equ_xt:	local
 		dec	ba
 		mv	ba,$0000		; Set new TOS to FALSE
 		jrnz	lbl1			; Jump if high-order bits are not zero
-		inc	i
-		dec	i
+		sub	i,ba			; Compare I to zero
 		jrnz	lbl1			; Jump if low-order bits are not zero
 		dec	ba			; Set new TOS to TRUE
 lbl1:		jp	!cont__
@@ -1576,7 +1613,7 @@ not_equals:	dw	d_zer_equ
 		db	'<>'
 not_equals_xt:	local
 		popu	i			; Pop 2OS
-		sub	i,ba			; Compare it with TOS
+		sub	ba,i			; Compare it with TOS
 		mv	ba,$ffff		; Set new TOS to TRUE
 		jrnz	lbl1
 		inc	ba			; Set new TOS to FALSE
@@ -1639,7 +1676,7 @@ less_than_xt:	local
 		jrc	lbl2
 lbl1:		sub	i,ba			; Compare two positive left-shifted numbers
 		jrc	lbl5
-lbl2:		mv	ba,$0000		; Set new TOS to FALSE
+lbl2:		sub	ba,ba
 		jr	lbl6
 lbl4:		add	ba,ba			; Is TOS negative?
 		jrc	lbl1
@@ -1688,7 +1725,7 @@ lbl1:		sub	i,ba			; Compare two positive left-shifted numbers
 		mv	ba,(!fx)
 		sub	i,ba			; Compare the 16 low-order bits
 		jrc	lbl5
-lbl2:		mv	ba,$0000		; Set new TOS to FALSE
+lbl2:		sub	ba,ba			; Set new TOS to FALSE
 		jr	lbl6
 lbl4:		add	ba,ba			; Is TOS negative?
 		jrc	lbl1
@@ -1722,7 +1759,7 @@ d_u_l_than_xt:	local
 		mv	i,(!gx)
 		sub	i,ba			; Compare the 16 low-order bits
 		jrc	lbl2
-lbl1:		mv	ba,$0000		; Set new TOS to FALSE
+lbl1:		sub	ba,ba			; Set new TOS to FALSE
 		jr	lbl3
 lbl2:		mv	ba,$ffff		; Set new TOS to TRUE
 lbl3:		jp	!cont__
@@ -1743,7 +1780,7 @@ lbl2:		mv	ba,$ffff		; Set new TOS to TRUE
 		jr	lbl6
 lbl4:		add	ba,ba			; Is TOS negative?
 		jrc	lbl1
-lbl5:		mv	ba,$0000		; Set new TOS to FALSE
+lbl5:		sub	ba,ba			; Set new TOS to FALSE
 lbl6:		jp	!cont__
 		endl
 ;-------------------------------------------------------------------------------
@@ -1794,7 +1831,7 @@ lbl2:		mv	ba,$ffff		; Set new TOS to TRUE
 		jr	lbl6
 lbl4:		add	ba,ba			; Is TOS negative?
 		jrc	lbl1
-lbl5:		mv	ba,$0000		; Set new TOS to FALSE
+lbl5:		sub	ba,ba			; Set new TOS to FALSE
 lbl6:		jp	!cont__
 		endl
 ;-------------------------------------------------------------------------------
@@ -1828,7 +1865,7 @@ d_u_g_than_xt:	local
 		mv	i,(!gx)
 		sub	ba,i			; Compare the 16 low-order bits
 		jrc	lbl2
-lbl1:		mv	ba,$0000		; Set new TOS to FALSE
+lbl1:		sub	ba,ba			; Set new TOS to FALSE
 		jr	lbl3
 lbl2:		mv	ba,$ffff		; Set new TOS to TRUE
 lbl3:		jp	!cont__
@@ -2035,8 +2072,9 @@ two_slash:	dw	lshift
 		db	$02
 		db	'2/'
 two_slash_xt:	local
-		rc
 		ex	a,b
+		mv	il,a			; Copy sign bit
+		add	il,il			; to the carry flag
 		shr	a			; Right bit-shift 8 high-order bits
 		ex	a,b
 		shr	a			; Right bit-shift 8 low-order bits
@@ -2047,8 +2085,9 @@ d_two_slash:	dw	two_slash
 		db	$03
 		db	'D2/'
 d_two_slash_xt:	local
-		rc
 		ex	a,b
+		mv	il,a			; Copy sign bit
+		add	il,il			; to the carry flag
 		shr	a			; Right bit-shift 8 high-order bits
 		ex	a,b
 		shr	a			; Right bit-shift 8 low-order bits
@@ -2300,7 +2339,7 @@ star_xt:	local
 		popu	i
 		mv	(!el),$80		; Initialize counter
 		mv	(!fx),ba		; Save old TOS
-		mv	ba,$0000		; Initialize result
+		sub	ba,ba			; Initialize result
 lbl1:		shr	(!fl)			; Is right-most bit 1 or 0?
 		jrnc	lbl2
 		add	ba,i			; Add first operand to partial result
@@ -2376,7 +2415,7 @@ slash_mod_xt:	local
 		add	ba,ba			; Test the sign of the divisor
 		jrnc	lbl1
 		mv	(!eh),$02		; The quotient may be negative
-		mv	ba,$0000		; Negate
+		sub	ba,ba			; Negate
 		sub	ba,i			; the divisor
 		mv	i,ba
 lbl1:		mv	(!gx),i			; Save the divisor
@@ -2396,7 +2435,7 @@ lbl3:		mv	(!gx),ba		; Left-shift
 		inc	(!el)			; until it becomes
 		cmpw	(!fx),ba		; greater than the dividend (and save previous result)
 		jrnc	lbl3
-		mv	ba,$0000		; BA holds the absolute value of the result of the division
+		sub	ba,ba			; BA holds the absolute value of the result of the division
 lbl4:		add	ba,ba			; Left-shift the intermediate result
 		cmpw	(!fx),(!gx)		; Test if the next bit of the result is 0 or 1
 		jrc	lbl5
@@ -2412,7 +2451,7 @@ lbl5:		rc
 		test	(!eh),$01		; Test the sign of the modulo
 		jrz	lbl6
 		pushu	ba			; Save BA register (the quotient of the division)
-		mv	ba,$0000		; Negate
+		sub	ba,ba			; Negate
 		sub	ba,i			; the modulo
 		mv	i,ba
 		popu	ba			; Restore the quotient of the division
@@ -2565,7 +2604,7 @@ d_mod_xt:	local
 ;-------------------------------------------------------------------------------
 u_m_d_star:	dw	d_mod
 		db	$04
-		db	'UMD*'
+		db	'UMD*'			; ( ud u -- ud )
 u_m_d_star_xt:	local
 		mv	(!el),$80		; Initialize counter
 		mvw	(!gx),[u++]		; Save first argument
@@ -2598,7 +2637,7 @@ u_m_star:	dw	u_m_d_star
 		db	$03
 		db	'UM*'
 u_m_star_xt:	local
-		jp	!docol__xt		; : UM* ( ud u -- ud )
+		jp	!docol__xt		; : UM* ( u u -- ud )
 		dw	!dolit0_xt		;   0
 		dw	!rot_xt			;   ROT
 		dw	!u_m_d_star_xt		;   UMD*
@@ -2650,7 +2689,7 @@ lbl1:		mv	ba,(!hx)		; Left-shift
 		jrnc	lbl1
 lbl2:		mv	(!hx),ba		; Store the previous value
 		mv	(!ix),i			; (which is lower than the first argument)
-		mv	ba,$0000		; BA holds the absolute value of the result of the division
+		sub	ba,ba			; BA holds the absolute value of the result of the division
 lbl3:		add	ba,ba			; Left-shift the intermediate result
 		cmpw	(!gx),(!ix)		; Test if
 		jrc	lbl5			; the next bit
@@ -2763,7 +2802,7 @@ star_slash_xt:	local
 ;-------------------------------------------------------------------------------
 m_star_sl:	dw	star_slash
 		db	$03
-		db	'M*/'
+		db	'M*/'			; ( d n +n -- d )
 m_star_sl_xt:	local
 		mv	i,ba			; Test if the third
 		add	i,i			; argument is negative or zero
@@ -2834,7 +2873,7 @@ lbl7:		mv	il,4			; Left-shift
 		jrnz	lbl7			; save
 		cmpw	(!jx),(!hx)		; previous
 		jrnc	lbl7			; result)
-lbl8:		mv	ba,$0000		; BA holds the 16 high-order bits of the absolute value of the result
+lbl8:		sub	ba,ba			; BA holds the 16 high-order bits of the absolute value of the result
 lbl9:		add	ba,ba			; Left-shift the 16 high-order bits of the intermediate result
 		cmpw	(!kx),(!gx)		; Test if
 		jrc	lbl11			; the next bit
@@ -2872,7 +2911,7 @@ lbl12:		mv	il,4			; Left-shift
 		cmpw	(!jx),(!hx)		; previous
 		jrnc	lbl12			; result)
 lbl13:		mv	(!ix),ba		; Save the 16 high-order bits of the absolute value of the result
-		mv	ba,$0000		; BA holds the 16 low-order bits of the absolute value of the result
+		sub	ba,ba			; BA holds the 16 low-order bits of the absolute value of the result
 lbl14:		add	ba,ba			; Left-shift the 16 low-order bits of the intermediate result
 		cmpw	(!kx),(!gx)		; Test if
 		jrc	lbl16			; the next bit
@@ -3097,11 +3136,11 @@ lbl1:		mv	a,[x++]
 lbl2:		mv	ba,$ffff		; Set new TOS to TRUE
 lbl3:		pops	x			; Restore IP
 		jr	lbl6
-lbl4:		mv	ba,$0000		; Set new TOS to FALSE
+lbl4:		sub	ba,ba			; Set new TOS to FALSE
 		jr	lbl3
 lbl5:		popu	y			; Clean-up the stack
 		popu	y			;
-		mv	ba,$0000		; Set new TOS to FALSE
+		sub	ba,ba			; Set new TOS to FALSE
 lbl6:		jp	!cont__
 		endl
 ;-------------------------------------------------------------------------------
@@ -3128,7 +3167,7 @@ lbl3:		jp	!cont__
 ;-------------------------------------------------------------------------------
 slash_str:	dw	dash_trail
 		db	$07
-		db	'/STRING'		; ( c-addr u -- c-addr u )
+		db	'/STRING'		; ( c-addr u n -- c-addr u )
 slash_str_xt:	local
 		mv	i,[u+2]			; I holds the short address of the string
 		add	i,ba			; Add TOS to this address
@@ -3153,7 +3192,7 @@ next_char_xt:	local
 		dec	ba			; of the string
 		pushu	i			; Save the new address on the stack
 		pushu	ba			; Save the new length on the stack
-		mv	ba,$0000		; Set
+		sub	ba,ba			; Set
 		mv	a,[y]			; new TOS
 		jp	!cont__
 lbl1:		mv	il,-24			; Invalid numeric argument
@@ -3237,7 +3276,7 @@ lbl2:		mv	(!el),[x++]		; Compare
 lbl3:		cmpw	(!fx),(!gx)		; Strings are equal with respect to their first characters
 		jrc	lbl5			; Compare the length to discriminate
 		jrnz	lbl6			; over them
-		mv	ba,0			; Set new TOS (strings are equal)
+		sub	ba,ba			; Set new TOS (strings are equal)
 lbl4:		pops	x			; Restore IP
 		jp	!cont__
 lbl5:		mv	ba,-1			; Set new TOS (string1 is lower than string2)
@@ -3291,7 +3330,7 @@ lbl5:		popu	y			; Positon Y at the beginning of the second string
 		mv	ba,(!fx)		; Restore BA's value to the length of the second string
 		dec	i			; Count the number of possible matches
 		jrnz	lbl1
-lbl6:		mv	ba,$0000		; Set new TOS to FALSE (no match found)
+lbl6:		sub	ba,ba			; Set new TOS to FALSE (no match found)
 		jr	lbl4
 		endl
 ;-------------------------------------------------------------------------------
@@ -3349,7 +3388,7 @@ beg_struct:	dw	ms
 		db	$0f
 		db	'BEGIN-STRUCTURE'
 beg_struct_xt:	local
-		jp	!docol__xt		; : BEGIN-STRUCTURE ( "<spaces>name" -- addr 0 ; -- size )
+		jp	!docol__xt		; : BEGIN-STRUCTURE ( "<spaces>name" -- addr 0 ; -- u )
 		dw	!create_xt		;   CREATE
 		dw	!here_xt		;     HERE
 		dw	!dolit0_xt		;     0
@@ -3365,7 +3404,7 @@ end_struct:	dw	beg_struct
 		db	$0d
 		db	'END-STRUCTURE'
 end_struct_xt:	local
-		jp	!docol__xt		; : END-STRUCTURE ( addr n -- )
+		jp	!docol__xt		; : END-STRUCTURE ( addr u -- )
 		dw	!swap_xt		;   SWAP
 		dw	!store_xt		;   ! \ set size
 		dw	!doexit__xt		; ;
@@ -3375,7 +3414,7 @@ plus_field:	dw	end_struct
 		db	$06
 		db	'+FIELD'
 plus_field_xt:	local
-		jp	!docol__xt		; : +FIELD ( n n "<spaces>name" -- n ; addr -- addr )
+		jp	!docol__xt		; : +FIELD ( u n "<spaces>name" -- u ; addr -- addr )
 		dw	!create_xt		;   CREATE
 		dw	!over_xt		;     OVER
 		dw	!comma_xt		;     ,
@@ -3391,7 +3430,7 @@ c_field:	dw	plus_field
 		db	$07
 		db	'CFIELD:'
 c_field_xt:	local
-		jp	!docol__xt		; : CFIELD: ( n "<spaces>name" -- n ; addr -- addr )
+		jp	!docol__xt		; : CFIELD: ( u "<spaces>name" -- u ; addr -- addr )
 		dw	!dolit1_xt		;   1
 		dw	!plus_field_xt		;   +FIELD
 		dw	!doexit__xt		; ;
@@ -3401,7 +3440,7 @@ field:		dw	c_field
 		db	$06
 		db	'FIELD:'
 field_xt:	local
-		jp	!docol__xt		; : FIELD: ( n "<spaces>name" -- n ; addr -- addr )
+		jp	!docol__xt		; : FIELD: ( u "<spaces>name" -- u ; addr -- addr )
 		dw	!dolit2_xt		;   2
 		dw	!plus_field_xt		;   +FIELD
 		dw	!doexit__xt		; ;
@@ -3411,9 +3450,9 @@ two_field:	dw	field
 		db	$07
 		db	'2FIELD:'
 two_field_xt:	local
-		jp	!docol__xt		; : 2FIELD: ( n "<spaces>name" -- n ; addr -- addr )
-		dw	!field_xt		;   FIELD
-		dw	!field_xt		;   FIELD
+		jp	!docol__xt		; : 2FIELD: ( u "<spaces>name" -- u ; addr -- addr )
+		dw	!field_xt		;   FIELD:
+		dw	!field_xt		;   FIELD:
 		dw	!doexit__xt		; ;
 		endl
 ;-------------------------------------------------------------------------------
@@ -3610,6 +3649,10 @@ buf1:		ds	!ib_size		; Buffer #1
 ;		dw	$0000
 ;		endl
 ;-------------------------------------------------------------------------------
+;
+;		FILE I/O
+;
+;-------------------------------------------------------------------------------
 bin:		dw	which_pockt
 		db	$03
 		db	'BIN'
@@ -3741,32 +3784,33 @@ drivename:	dw	drive
 		db	$09
 		db	'DRIVENAME'
 drivename_xt:	local
-		jp	!docol__xt		; : DRIVENAME ( c-addr u -- c-addr u )
-		dw	!two_dup_xt		;   2DUP
-		dw	!doslit__xt		;   S" :"
-		dw	1			;
-		db	':'			;
-		dw	!search_xt		;   SEARCH \ c-addr u c-addr u flag
-		dw	!if__xt			;   IF
-		dw	lbl2-lbl1		;
-lbl1:			dw	!drop_xt	;     DROP
-			dw	!nip_xt		;     NIP
-			dw	!over_xt	;     OVER
-			dw	!minus_xt	;     -     \ c-addr u
-			dw	!dup_xt		;     DUP
-			dw	!dolit1_xt	;     1
-			dw	!equals_xt	;     =
-			dw	!if__xt		;     IF    \ if drive is one char, set DRIVE to this char
-			dw	!over_xt	;       OVER
-			dw	!c_fetch_xt	;       C@
-			dw	!drive_xt	;       DRIVE
-			dw	!c_store_xt	;       C! THEN
-			dw	!doexit__xt	;     EXIT THEN
-lbl2:		dw	!two_drop_xt		;   2DROP
-		dw	!two_drop_xt		;   2DROP
-		dw	!drive_xt		;   DRIVE
-		dw	!dolit1_xt		;   1
-		dw	!doexit__xt		; ;
+		jp	!docol__xt			; : DRIVENAME ( c-addr u -- c-addr u )
+		dw	!two_dup_xt			;   2DUP
+		dw	!doslit__xt			;   S" :"
+		dw	1				;
+		db	':'				;
+		dw	!search_xt			;   SEARCH \ c-addr u c-addr u flag
+		dw	!if__xt				;   IF
+		dw	lbl4-lbl1			;
+lbl1:			dw	!drop_xt		;     DROP
+			dw	!nip_xt			;     NIP
+			dw	!over_xt		;     OVER
+			dw	!minus_xt		;     -     \ c-addr u
+			dw	!dup_xt			;     DUP
+			dw	!dolit1_xt		;     1
+			dw	!equals_xt		;     =
+			dw	!if__xt			;     IF    \ if drive is one char, set DRIVE to this char
+			dw	lbl3-lbl2		;
+lbl2:				dw	!over_xt	;       OVER
+				dw	!c_fetch_xt	;       C@
+				dw	!drive_xt	;       DRIVE
+				dw	!c_store_xt	;       C! THEN
+lbl3:			dw	!doexit__xt		;     EXIT THEN
+lbl4:		dw	!two_drop_xt			;   2DROP
+		dw	!two_drop_xt			;   2DROP
+		dw	!drive_xt			;   DRIVE
+		dw	!dolit1_xt			;   1
+		dw	!doexit__xt			; ;
 		endl
 ;-------------------------------------------------------------------------------
 filename:	dw	drivename
@@ -4059,7 +4103,7 @@ lbl4:		pops	x			; Restore IP
 		jp	!interp__
 lbl5:		mv	i,x			; Save current filename
 		pushu	i			; area address on the stack
-		mv	ba,$0000		; Set new TOS (no error)
+		sub	ba,ba			; Set new TOS (no error)
 		jr	lbl4
 		pre_off
 		endl
@@ -4085,7 +4129,7 @@ creat_file__xt:	local
 		ex	a,b			; occurred)
 lbl1:		pops	x			; Restore IP
 		jp	!interp__
-lbl2:		mv	ba,$0000		; Set new TOS (no error)
+lbl2:		sub	ba,ba			; Set new TOS (no error)
 		jr	lbl1
 		pre_off
 		endl
@@ -4118,7 +4162,7 @@ del_file__xt:	local
 		ex	a,b			; occurred)
 lbl1:		pops	x			; Restore IP
 		jp	!interp__
-lbl2:		mv	ba,$0000		; Set new TOS (no error)
+lbl2:		sub	ba,ba			; Set new TOS (no error)
 		jr	lbl1
 		pre_off
 		endl
@@ -4218,7 +4262,7 @@ file_stat__xt:	local
 		ex	a,b			; occurred)
 lbl1:		pops	x			; Restore IP
 		jp	!interp__
-lbl2:		mv	ba,$0000		; Set new TOS (no error)
+lbl2:		sub	ba,ba			; Set new TOS (no error)
 		jr	lbl1
 		pre_off
 		endl
@@ -4252,7 +4296,7 @@ ren_file__xt:	local
 		ex	a,b			; occurred)
 lbl1:		pops	x			; Restore IP
 		jp	!interp__
-lbl2:		mv	ba,$0000		; Set new TOS (no error)
+lbl2:		sub	ba,ba			; Set new TOS (no error)
 		jr	lbl1
 		pre_off
 		endl
@@ -4330,7 +4374,7 @@ lbl2:		pops	x			; Restore IP
 lbl3:		mv	il,(!cl)		; Read file handle
 		inc	i			; Increment it (because fileIDs must start at index 1)
 		pushu	i			; Save it on the stack
-		mv	ba,$0000		; Set new TOS (no error)
+		sub	ba,ba			; Set new TOS (no error)
 		jr	lbl2
 		pre_off
 		endl
@@ -4367,7 +4411,7 @@ lbl1:		ex	a,b			; Set new TOS
 		ex	a,b			; occurred)
 lbl2:		pops	x			; Restore IP
 		jp	!interp__
-lbl3:		mv	ba,$0000		; Set new TOS (no error)
+lbl3:		sub	ba,ba			; Set new TOS (no error)
 		jr	lbl2
 		pre_off
 		endl
@@ -4404,7 +4448,7 @@ lbl1:		ex	a,b			; Set new TOS
 		ex	a,b			; occurred)
 lbl2:		pops	x			; Restore IP
 		jp	!interp__
-lbl3:		mv	ba,$0000		; Set new TOS (no error)
+lbl3:		sub	ba,ba			; Set new TOS (no error)
 		jr	lbl2
 		pre_off
 		endl
@@ -4478,14 +4522,14 @@ lbl1:		ex	a,b			; Set new TOS
 		ex	a,b			; occurred)
 lbl2:		pops	x			; Restore IP
 		jp	!interp__
-lbl3:		mv	ba,$0000		; Set new TOS (no error)
+lbl3:		sub	ba,ba			; Set new TOS (no error)
 		jr	lbl2
 		pre_off
 		endl
 ;-------------------------------------------------------------------------------
 read_char:	dw	read_file
 		db	$09
-		db	'READ-CHAR'		; ( fileid -- u ior )
+		db	'READ-CHAR'		; ( fileid -- char ior )
 read_char_xt:	local
 		pre_on
 		pushs	x			; Save IP
@@ -4523,14 +4567,14 @@ lbl4:		ex	a,b			; Test
 		mv	a,$00			; SO THAT THAT NEVER HAPPENS, HENCE THE ABOVE CODE
 		ex	a,b			; TO TEST THE FILE POSITION)
 		pushu	ba			; Save the character on the stack
-		mv	ba,$0000		; Set new TOS (no error)
+		sub	ba,ba			; Set new TOS (no error)
 		jr	lbl3
 		pre_off
 		endl
 ;-------------------------------------------------------------------------------
 peek_char:	dw	read_char
 		db	$09
-		db	'PEEK-CHAR'		; ( fileid -- u ior )
+		db	'PEEK-CHAR'		; ( fileid -- char ior )
 peek_char_xt:	local
 		pre_on
 		pushs	x			; Save IP
@@ -4558,7 +4602,7 @@ lbl3:		ex	a,b			; Test
 		mv	a,$00			
 		ex	a,b
 		pushu	ba			; Save the character on the stack
-		mv	ba,$0000		; Set new TOS (no error)
+		sub	ba,ba			; Set new TOS (no error)
 		jr	lbl2
 		pre_off
 		endl
@@ -4711,7 +4755,7 @@ lbl3:		ex	a,b			; Test
 		cmp	a,$00			; whether
 		mv	a,$0c			; no character
 		jrz	lbl1			; was written
-		mv	ba,$0000		; Set new TOS (no error)
+		sub	ba,ba			; Set new TOS (no error)
 		jr	lbl2
 		pre_off
 		endl
@@ -4785,7 +4829,7 @@ seek_file_xt:	local
 		mv	a,(bp+!el)		; Restore position attribute
 		callf	!fcs
 		jrc	lbl5
-		mv	ba,$0000		; No error
+		sub	ba,ba			; No error
 		jr	lbl6
 lbl3:		popu	i			; Discard the 16 high-order bits
 lbl4:		popu	i			; Discard the 16 low-order bits
@@ -4846,7 +4890,7 @@ repos_file_xt:	local
 ;		ex	a,b			; occurred)
 ;lbl2:		pops	x			; Restore IP
 ;		jp	!interp__
-;lbl3:		mv	ba,$0000		; Set new TOS (no error)
+;lbl3:		sub	ba,ba			; Set new TOS (no error)
 ;		jr	lbl2
 ;		pre_off
 ;		endl
@@ -4934,7 +4978,7 @@ lbl3:		ex	a,b			; Set new TOS
 		ex	a,b			; occurred)
 lbl4:		pops	x			; Restore IP
 		jp	!interp__
-lbl5:		mv	ba,$0000		; Set new TOS (no error)
+lbl5:		sub	ba,ba			; Set new TOS (no error)
 		jr	lbl4
 		pre_off
 		endl
@@ -4970,11 +5014,11 @@ files_xt:	local
 		dw	!if__xt				;   IF
 		dw	lbl2-lbl1			;
 lbl1:			dw	!two_drop_xt		;     2DROP
-			dw	!doslit__xt		;     S" *.*"
+			dw	!doslit__xt		;     S" *.*"   \ Show all files
 			dw	3			; 
 			db	'*.*'			;   THEN
-lbl2:		dw	!dolit0_xt			;   0
-		dw	!dolit0_xt			;   0
+lbl2:		dw	!dolit0_xt			;   0           \ Directory index for first iocs call
+		dw	!dolit0_xt			;   0           \ Loop (infinite)
 		dw	!dolit1_xt			;   1           \ c-addr u 0 0 1
 		dw	!do__xt				;   DO          \ c-addr u u
 		dw	lbl9-lbl3			;
@@ -5000,7 +5044,7 @@ lbl5:			dw	!over_xt		;     OVER
 			dw	!dolit__xt		;     6
 			dw	6			;
 			dw	!d_dot_r_xt		;     D.R
-			dw	!one_plus_xt		;     1+            \ Search next file
+			dw	!one_plus_xt		;     1+            \ Search next file in the directory
 			dw	!i_xt			;     I
 			dw	!dolit3_xt		;     3
 			dw	!and_xt			;     AND
@@ -5055,10 +5099,14 @@ lbl1:		ex	a,b			; Set new TOS
 		ex	a,b			; occurred)
 lbl2:		pops	x			; Restore IP
 		jp	!interp__
-lbl3:		mv	ba,$0000		; Set new TOS (no error)
+lbl3:		sub	ba,ba			; Set new TOS (no error)
 		jr	lbl2
 		pre_off
 		endl
+;-------------------------------------------------------------------------------
+;
+;		KEYBOARD INPUT
+;
 ;-------------------------------------------------------------------------------
 to_key_buff:	dw	free_capty
 		db	$0b
@@ -5142,7 +5190,7 @@ e_key_quest_xt:	local
 		dw	!if__xt			;   IF
 		dw	lbl2-lbl1		;
 lbl1:			dw	!dolit__xt	;     -57
-			dw	-57		;     \ Error in sending or receiving a character
+			dw	-57		;     \ Exception in sending or receiving a character
 			dw	!throw_xt	;     THROW
 lbl2:		dw	!doexit__xt		; ;
 		endl
@@ -5162,7 +5210,7 @@ e_key_xt:	local
 		dw	!if__xt			;   IF
 		dw	lbl2-lbl1		;
 lbl1:			dw	!dolit__xt	;     -57
-			dw	-57		;     \ Error in sending or receiving a character
+			dw	-57		;     \ Exception in sending or receiving a character
 			dw	!throw_xt	;     THROW THEN
 lbl2:		dw	!quest_dup_xt		;   ?DUP
 		dw	!if__xt			;   IF
@@ -5189,24 +5237,24 @@ key_quest:	dw	e_key_to_ch
 		db	$04
 		db	'KEY?'
 key_quest_xt:	local
-		jp	!docol__xt
-lbl1:		dw	!e_key_quest_xt
-		dw	!if__xt
-		dw	lbl5-lbl2
-lbl2:			dw	!stdi_xt
-			dw	!peek_char_xt
-			dw	!drop_xt
-			dw	!if__xt
-			dw	lbl4-lbl3
-lbl3:				dw	!true_xt
-				dw	!doexit__xt
-lbl4:			dw	!stdi_xt
-			dw	!read_char_xt
-			dw	!two_drop_xt
-			dw	!again__xt
-			dw	lbl5-lbl1
-lbl5:		dw	!false_xt
-		dw	!doexit__xt
+		jp	!docol__xt			; : KEY? ( -- flag )
+lbl1:		dw	!e_key_quest_xt			;   BEGIN EKEY?
+		dw	!if__xt				;   WHILE
+		dw	lbl5-lbl2			;
+lbl2:			dw	!stdi_xt		;     STDI
+			dw	!peek_char_xt		;     PEEK-CHAR
+			dw	!drop_xt		;     DROP
+			dw	!if__xt			;     IF
+			dw	lbl4-lbl3		;
+lbl3:				dw	!true_xt	;       TRUE
+				dw	!doexit__xt	;       EXIT THEN
+lbl4:			dw	!stdi_xt		;     STDI
+			dw	!read_char_xt		;     READ-CHAR
+			dw	!two_drop_xt		;     2DROP
+			dw	!again__xt		;   REPEAT
+			dw	lbl5-lbl1		;
+lbl5:		dw	!false_xt			;   FALSE
+		dw	!doexit__xt			; ;
 		endl
 ;-------------------------------------------------------------------------------
 key:		dw	key_quest
@@ -5224,6 +5272,10 @@ lbl2:			dw	!drop_xt	;     DROP
 			dw	lbl3-lbl1	;
 lbl3:		dw	!doexit__xt		; ;
 		endl
+;-------------------------------------------------------------------------------
+;
+;		LCD SCREEN SYMBOLS/ANNUNCIATORS
+;
 ;-------------------------------------------------------------------------------
 set_symbols:	dw	key
 		db	$0b
@@ -5264,6 +5316,10 @@ busy_off_xt:	local
 		dw	!doexit__xt		; ;
 		endl
 ;-------------------------------------------------------------------------------
+;
+;		CURSOR SHAPE
+;
+;-------------------------------------------------------------------------------
 cursor:		dw	busy_off
 		db	$06
 		db	'CURSOR'
@@ -5287,6 +5343,10 @@ set_cursor_xt:	local
 		jp	!interp__
 		endl
 ;-------------------------------------------------------------------------------
+;
+;		OUTPUT
+;
+;-------------------------------------------------------------------------------
 emit:		dw	set_cursor
 		db	$04
 		db	'EMIT'			; : EMIT ( char -- )
@@ -5303,7 +5363,7 @@ lbl1:		cmp	a,$ff			; Test if break key has been pushed
 		;inc	i			; a handler for this exception or not
 		;dec	i			;
 		jpz	!break__
-		mv	il,-57			; Error in sending or receiving a character
+		mv	il,-57			; Exception in sending or receiving a character
 		jp	!throw__
 		pre_off
 		endl
@@ -5312,14 +5372,14 @@ cr:		dw	emit
 		db	$02
 		db	'CR'
 cr_xt:		local
-		jp	!docol__xt
-		dw	!dolit__xt
-		dw	$000d			; The value of the carriage return character
-		dw	!emit_xt
-		dw	!dolit__xt
-		dw	$000a			; The value of the line feed character
-		dw	!emit_xt
-		dw	!doexit__xt
+		jp	!docol__xt		; : CR ( -- )
+		dw	!dolit__xt		;   $0d
+		dw	$000d			;   \ The value of the carriage return character
+		dw	!emit_xt		;   EMIT
+		dw	!dolit__xt		;   $0a
+		dw	$000a			;   \ The value of the line feed character
+		dw	!emit_xt		;   EMIT
+		dw	!doexit__xt		; ;
 		endl
 ;-------------------------------------------------------------------------------
 space:		dw	cr
@@ -5357,11 +5417,11 @@ page:		dw	spaces
 		db	'PAGE'			; ( -- )
 page_xt:	local
 		pushu	ba			; Save TOS
-		mv	ba,$0000		; Set x and y coordinates
-		mv	[$bfc27],ba		; of both next position to print
-		mv	[$bfc9b],ba		; and cursor to zero
+		mv	il,0			; Set x and y coordinates
+		mv	[$bfc27],i		; of both next position to print
+		mv	[$bfc9b],i		; and cursor to zero
 		pre_on
-lbl1:		mvw	(!cx),$0000		; LCD driver
+		mv	(!cx),i			; LCD driver
 		mv	il,$51			; 'Clearing of display 1'
 		callf	!iocs
 		pre_off
@@ -5374,8 +5434,8 @@ x_fetch:	dw	page
 		db	'X@'			; ( -- u )
 x_fetch_xt:	local
 		pushu	ba			; Save old TOS
-		mv	ba,$0000
-		mv	a,[$bfc9b]
+		sub	ba,ba			; Clear B
+		mv	a,[$bfc9b]		; BA holds x location
 		jp	!cont__
 		endl
 ;-------------------------------------------------------------------------------
@@ -5399,8 +5459,8 @@ y_fetch:	dw	x_store
 		db	'Y@'			; ( -- u )
 y_fetch_xt:	local
 		pushu	ba			; Save old TOS
-		mv	ba,$0000
-		mv	a,[$bfc9c]
+		sub	ba,ba			; Clear B
+		mv	a,[$bfc9c]		; BA holds y location
 		jp	!cont__
 		endl
 ;-------------------------------------------------------------------------------
@@ -5424,8 +5484,8 @@ x_max_fetch:	dw	y_store
 		db	'XMAX@'			; ( -- u )
 x_max_fetch_xt:	local
 		pushu	ba			; Save old TOS
-		mv	ba,$0000
-		mv	a,[$bfc9d]
+		sub	ba,ba			; Clear B
+		mv	a,[$bfc9d]		; BA holds max x
 		jp	!cont__
 		endl
 ;-------------------------------------------------------------------------------
@@ -5443,8 +5503,8 @@ y_max_fetch:	dw	x_max_store
 		db	'YMAX@'			; ( -- u )
 y_max_fetch_xt:	local
 		pushu	ba			; Save old TOS
-		mv	ba,$0000
-		mv	a,[$bfc9e]
+		sub	ba,ba			; Clear B
+		mv	a,[$bfc9e]		; BA holds max y
 		jp	!cont__
 		endl
 ;-------------------------------------------------------------------------------
@@ -5495,7 +5555,7 @@ lbl1:		cmp	a,$ff			; Test if break key has been pushed
 		;inc	i			; a handler for this exception or not
 		;dec	i			;
 		jpz	!break__
-		mv	il,-57			; Error in sending or receiving a character
+		mv	il,-57			; Exception in sending or receiving a character
 		jp	!throw__
 		endl
 ;-------------------------------------------------------------------------------
@@ -5521,13 +5581,13 @@ rev_type_xt:	local
 		endl
 ;-------------------------------------------------------------------------------
 ;
-;		LCD SCREEN
+;		LCD SCREEN OUTPUT
 ;
 ;-------------------------------------------------------------------------------
-disp_:		dw	rev_type
-		db	$06
-		db	'(DISP)'		; ( n n c-addr u -- )
-disp__xt:	local
+at_type:	dw	rev_type
+		db	$07
+		db	'AT-TYPE'		; ( n n c-addr u -- )
+at_type_xt:	local
 		pre_on
 		mv	y,ba			; Y holds the length of the character string
 		pushs	x			; Save IP
@@ -5553,10 +5613,10 @@ lbl4:		pops	x			; Restore IP
 		pre_off
 		endl
 ;-------------------------------------------------------------------------------
-scroll_:	dw	disp_
-		db	$08
-		db	'(SCROLL)'		; ( n -- )
-scroll__xt:	local
+scroll:		dw	at_type
+		db	$06
+		db	'SCROLL'		; ( n -- )
+scroll_xt:	local
 		pre_on
 		pushu	x			; Save IP
 		mv	i,ba			; I holds the number of lines to be scrolled
@@ -5577,10 +5637,10 @@ lbl3:		mvw	(!cx),$0000
 		pre_off
 		endl
 ;-------------------------------------------------------------------------------
-cls_:		dw	scroll_
-		db	$05
-		db	'(CLS)'			; ( u u u -- )
-cls__xt:	local
+at_clr:		dw	scroll
+		db	$06
+		db	'AT-CLR'		; ( n n n -- )
+at_clr_xt:	local
 		pre_on
 		popu	i			; y-coordinate to start to clear
 		mv	(!bh),il
@@ -5600,15 +5660,25 @@ cls__xt:	local
 ;		GRAPHICS
 ;
 ;-------------------------------------------------------------------------------
-gmode:		dw	cls_
+gmode:		dw	at_clr
 		db	$05
 		db	'GMODE'
-gmode__xt:	local
-		jp	!doval__xt		; 0 VALUE GMODE
+gmode_xt:	local
+		jp	!dovar__xt		; VARIABLE GMODE
 		dw	$0000			; 0=set, 1=reset, 2=reverse
 		endl
 ;-------------------------------------------------------------------------------
-gpoint:		dw	gmode
+gmode_stor:	dw	gmode
+		db	$06
+		db	'GMODE!'
+gmode__stor_xt:	local
+		jp	!docol__xt		; : GMODE! ( 0|1|2 -- )
+		dw	!gmode_xt		;   GMODE
+		dw	!store_xt		;   !
+		dw	!doexit__xt		; ;
+		endl
+;-------------------------------------------------------------------------------
+gpoint:		dw	gmode_stor
 		db	$06
 		db	'GPOINT'		; ( n n -- )
 gpoint_xt:	local
@@ -5617,7 +5687,7 @@ gpoint_xt:	local
 		mv	y,ba
 		popu	i
 		mv	x,i
-		mv	ba,[!gmode__xt+3]
+		mv	ba,[!gmode_xt+3]
 		mvw	(!cx),$0000
 		mv	il,$4c
 		callf	!iocs
@@ -5654,7 +5724,7 @@ gline_xt:	local
 		pushs	x
 		pre_on
 		mv	[$bfc2a],ba
-		mv	i,[!gmode__xt+3]
+		mv	i,[!gmode_xt+3]
 		mv	[$bfc96],i
 		popu	i
 		mv	(!dx),i
@@ -5680,7 +5750,7 @@ gbox_xt:	local
 		pushs	x
 		pre_on
 		mv	[$bfc2a],ba
-		mv	i,[!gmode__xt+3]
+		mv	i,[!gmode_xt+3]
 		mv	[$bfc96],i
 		popu	i
 		mv	(!dx),i
@@ -5705,7 +5775,7 @@ gdots:		dw	gbox
 gdots_xt:	local
 		pushs	x
 		pre_on
-		mv	i,[!gmode__xt+3]
+		mv	i,[!gmode_xt+3]
 		mv	[$bfc96],i
 		popu	i
 		mv	y,i
@@ -5769,7 +5839,7 @@ lbl3:		dw	!r_from_drop_xt		;   R>DROP
 ;-------------------------------------------------------------------------------
 gblit_store:	dw	gdraw
 		db	$06
-		db	'GBLIT!'		; ( u c-addr -- )
+		db	'GBLIT!'		; ( u addr -- )
 gblit_store_xt:	local
 		pushs	x
 		pre_on
@@ -5788,7 +5858,7 @@ gblit_store_xt:	local
 ;-------------------------------------------------------------------------------
 gblit_fetch:	dw	gblit_store
 		db	$06
-		db	'GBLIT@'		; ( u c-addr -- )
+		db	'GBLIT@'		; ( u addr -- )
 gblit_fetch_xt:	local
 		pushs	x
 		pre_on
@@ -5980,7 +6050,7 @@ depth:		dw	rp_fetch
 		db	'DEPTH'
 depth_xt:	local
 		jp	!docol__xt		; : DEPTH ( -- u )
-		dw	!dolit__xt		;   s_beginning
+		dw	!dolit__xt		;   #s_beginning
 		dw	!s_beginning		;
 		dw	!sp_fetch_xt		;   SP@
 		dw	!two_plus_xt		;   2+
@@ -5994,7 +6064,7 @@ clear:		dw	depth
 		db	'CLEAR'
 clear_xt:	local
 		jp	!docol__xt		; : CLEAR ( ... -- )
-		dw	!dolit__xt		;   s_beginning
+		dw	!dolit__xt		;   #s_beginning
 		dw	!s_beginning		;
 		dw	!sp_store_xt		;   SP!
 		dw	!doexit__xt		; ;
@@ -6065,7 +6135,7 @@ abort:		dw	throw
 		db	$05
 		db	'ABORT'
 abort_xt:	local
-		jp	!docol__xt		; : ABORT
+		jp	!docol__xt		; : ABORT ( -- )
 		dw	!dolitm1_xt		;   -1 \ ABORT
 		dw	!throw_xt		;   THROW
 		dw	!doexit__xt		; ;
@@ -6252,36 +6322,10 @@ right_brkt_xt:	local
 		jp	!docol__xt		; : ] ( -- )
 		dw	!state_xt		;   STATE
 		dw	!on_xt			;   ON
-		dw	!doexit__xt		; ; IMMEDIATE
+		dw	!doexit__xt		; ;
 		endl
 ;-------------------------------------------------------------------------------
-cfa_comma:	dw	right_brkt
-		db	$04
-		db	'CFA,'
-cfa_comma_xt:	local
-		mv	y,(!wi)			; Y holds HERE value
-		mv	(!el),$02
-		mv	[y++],(!el)		; Compile 'jp'
-		mv	[y++],ba		; Compile the address of the interpretation routine
-		mv	(!wi),y			; Save new HERE value
-		popu	ba			; Set new TOS
-		jp	!cont__
-		endl
-;-------------------------------------------------------------------------------
-does_comma:	dw	cfa_comma
-		db	$05
-		db	'DOES,'
-does_comma_xt:	local
-		mv	y,(!wi)			; Y holds HERE value
-		mv	(!el),$04
-		mv	[y++],(!el)		; Compile 'call' instruction
-		mvw	(!ex),!does__xt
-		mvw	[y++],(!ex)		; Compile the address of the (DOES) routine
-		mv	(!wi),y			; Save new HERE value
-		jp	!cont__
-		endl
-;-------------------------------------------------------------------------------
-hide:		dw	does_comma
+hide:		dw	right_brkt
 		db	$04
 		db	'HIDE'
 hide_xt:	local
@@ -6335,21 +6379,21 @@ immediate_xt:	local
 		dw	!doexit__xt		; ;
 		endl
 ;-------------------------------------------------------------------------------
-recursive:	dw	immediate
-		db	$89
-		db	'RECURSIVE'
-recursive_xt:	local
-		jp	!docol__xt		; : RECURSIVE ( -- ; -- )
-		dw	!quest_comp_xt		;   ?COMP
-		dw	!reveal_xt		;   REVEAL
-		dw	!doexit__xt		; ; IMMEDIATE
-		endl
+;recursive:	dw	immediate
+;		db	$89
+;		db	'RECURSIVE'
+;recursive_xt:	local
+;		jp	!docol__xt		; : RECURSIVE ( -- ; -- )
+;		dw	!quest_comp_xt		;   ?COMP
+;		dw	!reveal_xt		;   REVEAL
+;		dw	!doexit__xt		; ; IMMEDIATE
+;		endl
 ;-------------------------------------------------------------------------------
 ;
 ;		PARSING
 ;
 ;-------------------------------------------------------------------------------
-fib:		dw	recursive
+fib:		dw	immediate
 		db	$03
 		db	'FIB'
 fib_xt:		local
@@ -6848,7 +6892,7 @@ lbl2:		mv	ba,[x]			; Jump to the next word
 		inc	ba			; Test if the beginning
 		dec	ba			; of the dictionary was reached
 		jrnz	lbl1
-		mv	ba,$0000		; Set new TOS to 0 (word not found)
+		sub	ba,ba			; Set new TOS to 0 (word not found)
 		pushu	ba			; Push an invalid execution token on the stack
 		jr	lbl7
 lbl3:		mv	(!zi),x			; Save the address of the next word to search
@@ -7276,8 +7320,8 @@ uninit_:	dw	plus_to
 		db	'(UNINIT)'
 uninit__xt:	local
 		jp	!docol__xt		; : (UNINIT) ( -- )
-		dw	!dolit__xt		;   -59
-		dw	-59			;   \ Execution of an uninitialized deferred word
+		dw	!dolit__xt		;   -256
+		dw	-256			;   \ Execution of an uninitialized deferred word
 		dw	!throw_xt		;   THROW
 		dw	!doexit__xt		; ;
 		endl
@@ -7450,7 +7494,7 @@ does_quest_xt:	local
 		cmp	a,$04			; is a
 		jrnz	lbl2			; call
 		mv	ba,[y]			; to the
-		mv	i,!does__xt		; (does)
+		mv	i,!does__xt		; (DOES>)
 		sub	ba,i			; execution token
 lbl2:		mv	ba,$0000		; Set new TOS to FALSE
 		jrnz	lbl1
@@ -7509,7 +7553,32 @@ lbl2:		mv	ba,$0000
 lbl1:		jp	!cont__
 		endl
 ;-------------------------------------------------------------------------------
-buffer_col:	dw	marker_qust
+anew:		dw	marker_qust
+		db	$04
+		db	'ANEW'
+anew_xt:	local
+		jp	!docol__xt		; : ANEW ( "<spaces>name" -- )
+		dw	!to_in_xt		;   >IN
+		dw	!fetch_xt		;   @
+		dw	!to_r_xt		;   >R
+		dw	!tick__xt		;   (')
+		dw	!over_xt		;   OVER
+		dw	!marker_qust_xt		;   MARKER?
+		dw	!and_xt			;   AND
+		dw	!if__xt			;   IF
+		dw	lbl2-lbl1		;
+lbl1:			dw	!execute_xt	;     EXECUTE
+		dw	!ahead__xt		;   ELSE
+		dw	lbl3-lbl2		;
+lbl2:			dw	!drop_xt	;     DROP THEN
+lbl3:		dw	!r_from_xt		;   R>
+		dw	!to_in_xt		;   >IN
+		dw	!store_xt		;   !
+		dw	!marker_xt		;   MARKER
+		dw	!doexit__xt		; ;
+		endl
+;-------------------------------------------------------------------------------
+buffer_col:	dw	anew
 		db	$07
 		db	'BUFFER:'
 buffer_col_xt:	local
@@ -8105,7 +8174,7 @@ tick_xt:	local
 		dw	!if__xt			;   IF
 		dw	lbl2-lbl1		;
 lbl1:			dw	!dolit__xt	;     -13
-			dw	-13		;     \ Undefined word exception
+			dw	-13		;     \ Undefined word
 			dw	!throw_xt	;     THROW THEN
 lbl2:		dw	!doexit__xt		; ;
 		endl
@@ -8133,7 +8202,7 @@ postpone_xt:	local
 		dw	!if__xt			;   IF
 		dw	lbl2-lbl1		;
 lbl1:			dw	!dolit__xt	;     -13
-			dw	-13		;     \ Undefined word exception
+			dw	-13		;     \ Undefined word
 			dw	!throw_xt	;     THROW THEN
 lbl2:		dw	!zer_grt_thn_xt		;   0>
 		dw	!if__xt			;   IF
@@ -8175,7 +8244,7 @@ forget:		dw	fence
 forget_xt:	local
 		jp	!docol__xt		; : FORGET ( "<spaces>name" -- )
 		dw	!tick_xt		;   '
-		dw	!dup_xt			;   DUP
+		dw	!dup_xt			;   DUP   \ xt xt
 		dw	!fence_xt		;   FENCE
 		dw	!u_less_than_xt		;   U<
 		dw	!if__xt			;   IF
@@ -8183,20 +8252,20 @@ forget_xt:	local
 lbl1:			dw	!dolit__xt	;     -15
 			dw	-15		;     \ Invalid FORGET
 			dw	!throw_xt	;     THROW THEN
-lbl2:		dw	!dup_xt			;   DUP   \ xt xt
-		dw	!to_name_xt		;   >NAME \ xt nt
-		dw	!two_minus_xt		;   2-
-		dw	!fetch_xt		;   @
-		dw	!dup_xt			;   DUP
+lbl2:		dw	!to_name_xt		;   >NAME   \ nt
+		dw	!two_minus_xt		;   2-      \ l
+		dw	!dup_xt			;   DUP     \ l l
+		dw	!fetch_xt		;   @       \ l l1
+		dw	!dup_xt			;   DUP     \ l l1 l1
 		dw	!last_xt		;   LAST
 		dw	!store_xt		;   !
-		dw	!l_to_name_xt		;   L>NAME
-		dw	!name_from_xt		;   NAME>
+		dw	!l_to_name_xt		;   L>NAME  \ l nt
+		dw	!name_from_xt		;   NAME>   \ l xt
 		dw	!lastxt_xt		;   LAST-XT
 		dw	!store_xt		;   !
-		dw	!here_xt		;   HERE
+		dw	!here_xt		;   HERE    \ l here
 		dw	!minus_xt		;   -
-		dw	!allot_xt		;   ALLOT
+		dw	!allot_xt		;   ALLOT   \ Deallocate l-here bytes
 		dw	!doexit__xt		; ;
 		endl
 ;-------------------------------------------------------------------------------
@@ -8330,8 +8399,8 @@ nb_sgn_b_xt:	local
 		dw	!if__xt			;   IF
 		dw	lbl2-lbl1		;
 lbl1:			dw	!dolit__xt	;     7
-		        dw	7		;
-		        dw	!plus_xt	;     + THEN
+			dw	7		;
+			dw	!plus_xt	;     + THEN
 lbl2:		dw	!dolit__xt		;   [CHAR] 0
 		dw	$0030			;   \ The value of '0'
 		dw	!plus_xt		;   +
@@ -8832,8 +8901,8 @@ scroll_up__xt:	local
 		dw	!minus_rot_xt		;   -ROT
 		dw	!minus_xt		;   -
 		dw	!dolit1_xt		;   1
-		dw	!scroll__xt		;   (SCROLL)
-		dw	!disp__xt		;   (DISP)
+		dw	!scroll_xt		;   SCROLL
+		dw	!at_type_xt		;   AT-TYPE
 		dw	!doexit__xt		; ;
 		endl
 ;-------------------------------------------------------------------------------
@@ -8867,8 +8936,8 @@ lbl3:		dw	!x_max_fetch_xt		;   XMAX@
 		dw	!end__xt		;   (END)
 		dw	!min_xt			;   MIN
 		dw	!dolitm1_xt		;   -1
-		dw	!scroll__xt		;   (SCROLL)
-		dw	!disp__xt		;   (DISP)
+		dw	!scroll_xt		;   SCROLL
+		dw	!at_type_xt		;   AT-TYPE
 		dw	!doexit__xt		; ;
 		endl
 ;-------------------------------------------------------------------------------
@@ -8929,7 +8998,7 @@ lbl1:			dw	!dolit0_xt	;     0
 			dw	!dup_xt		;     DUP
 			dw	!beginning__xt	;     (BEGINNING)
 			dw	!end__xt	;     (END)
-			dw	!disp__xt	;     (DISP) THEN
+			dw	!at_type_xt	;     AT-TYPE THEN
 lbl2:		dw	!lbound__xt		;   (LBOUND)
 		dw	!doto__xt		;   TO (CURRENT)
 		dw	!current__xt+3		;
@@ -8939,7 +9008,7 @@ lbl2:		dw	!lbound__xt		;   (LBOUND)
 		dw	!end__xt		;   (END)
 		dw	!lbound__xt		;   (LBOUND)
 		dw	!minus_xt		;   -
-		dw	!cls__xt		;   (CLS)
+		dw	!at_clr_xt		;   AT-CLR
 		dw	!current__xt		;   (CURRENT)
 		dw	!doto__xt		;   TO (END)
 		dw	!end__xt+3		;
@@ -9084,7 +9153,7 @@ lbl1:			dw	!beginning__xt	;     (BEGINNING)
 			dw	!end__xt	;     (END)
 			dw	!current__xt	;     (CURRENT)
 			dw	!minus_xt	;     -
-			dw	!disp__xt	;     (DISP)
+			dw	!at_type_xt	;     AT-TYPE
 			dw	!origx__xt	;     (ORIGX)
 			dw	!end__xt	;     (END)
 			dw	!plus_xt	;     +
@@ -9093,7 +9162,7 @@ lbl1:			dw	!beginning__xt	;     (BEGINNING)
 			dw	!origy__xt	;     (ORIGY)
 			dw	!plus_xt	;     +
 			dw	!dolit1_xt	;     1
-			dw	!cls__xt	;     (CLS) THEN
+			dw	!at_clr_xt	;     AT-CLR THEN
 lbl2:		dw	!doexit__xt		; ;
 		endl
 ;-------------------------------------------------------------------------------
@@ -9129,7 +9198,7 @@ replace__xt:	local
 		dw	!current__xt		;   (CURRENT)
 		dw	!plus_xt		;   +
 		dw	!dolit1_xt		;   1
-		dw	!disp__xt		;   (DISP)
+		dw	!at_type_xt		;   AT-TYPE
 		dw	!current__xt		;   (CURRENT)
 		dw	!end__xt		;   (END)
 		dw	!equals_xt		;   =
@@ -9177,7 +9246,7 @@ lbl1:			dw	!beginning__xt	;     (BEGINNING)
 			dw	!end__xt	;     (END)
 			dw	!current__xt	;     (CURRENT)
 			dw	!minus_xt	;     -
-			dw	!disp__xt	;     (DISP)
+			dw	!at_type_xt	;     AT-TYPE
 			dw	!right__xt	;     (RIGHT)
 			dw	!doexit__xt	;     EXIT THEN
 lbl2:		dw	!drop_xt		;   DROP
@@ -9224,7 +9293,7 @@ lbl2:		dw	!drop_xt		;   DROP
 ;			dw	!minus_xt	;     -
 ;			dw	!one_plus_xt	;     1+
 ;			dw	!dup_xt		;     DUP
-;			dw	!scroll__xt	;     (SCROLL)
+;			dw	!scroll_xt	;     SCROLL
 ;			dw	!y_max_fetch_xt	;     YMAX@
 ;			dw	!swap_xt	;     SWAP
 ;			dw	!minus_xt	;     -
@@ -9236,7 +9305,7 @@ lbl2:		dw	!drop_xt		;   DROP
 ;		dw	!origy__xt		;   (ORIGY)
 ;		dw	!beginning__xt		;   (BEGINNING)
 ;		dw	!end__xt		;   (END)       \ n n c-addr u
-;		dw	!disp__xt		;   (DISP)
+;		dw	!at_type_xt		;   AT-TYPE
 ;		dw	!position__xt		;   (POSITION)  \ n n
 ;		dw	!at_x_y_xt		;   AT_XY
 ;		dw	!doexit__xt		; ;
@@ -9283,7 +9352,7 @@ lbl1a:			dw	!y_max_fetch_xt			;     YMAX@
 			dw	!minus_xt			;     -
 			dw	!one_plus_xt			;     1+
 			dw	!dup_xt				;     DUP
-			dw	!scroll__xt			;     (SCROLL)
+			dw	!scroll_xt			;     SCROLL
 			dw	!y_max_fetch_xt			;     YMAX@
 			dw	!swap_xt			;     SWAP
 			dw	!minus_xt			;     -
@@ -9295,7 +9364,7 @@ lbl2a:		dw	!dolit0_xt				;   0
 		dw	!origy__xt				;   (ORIGY)
 		dw	!beginning__xt				;   (BEGINNING)
 		dw	!end__xt				;   (END)       \ n n c-addr u
-		dw	!disp__xt				;   (DISP)
+		dw	!at_type_xt				;   AT-TYPE
 		dw	!position__xt				;   (POSITION)  \ n n
 		dw	!at_x_y_xt				;   AT_XY       \ end of (INIT-EDIT)
 lbl1:			dw	!e_key_xt			;   BEGIN EKEY CASE
@@ -9550,7 +9619,7 @@ lbl5:		dw	!two_r_from_xt			;   2R>
 		endl
 ;-------------------------------------------------------------------------------
 ;
-;
+;		INPUT
 ;
 ;-------------------------------------------------------------------------------
 accept:		dw	to_number
@@ -9684,6 +9753,10 @@ lbl4:		dw	!user_refill_xt		;   USER-REFILL
 		dw	!doexit__xt		; ;
 		endl
 ;-------------------------------------------------------------------------------
+;
+;		COMMENTS AND CONDITIONAL COMPILATION
+;
+;-------------------------------------------------------------------------------
 paren:		dw	refill
 		db	$81
 		db	'('
@@ -9744,32 +9817,7 @@ dot_paren_xt:	local
 		dw	!doexit__xt		; ; IMMEDIATE
 		endl
 ;-------------------------------------------------------------------------------
-anew:		dw	dot_paren
-		db	$04
-		db	'ANEW'
-anew_xt:	local
-		jp	!docol__xt		; : ANEW ( "<spaces>name" -- )
-		dw	!to_in_xt		;   >IN
-		dw	!fetch_xt		;   @
-		dw	!to_r_xt		;   >R
-		dw	!tick__xt		;   (')
-		dw	!over_xt		;   OVER
-		dw	!marker_qust_xt		;   MARKER?
-		dw	!and_xt			;   AND
-		dw	!if__xt			;   IF
-		dw	lbl2-lbl1		;
-lbl1:			dw	!execute_xt	;     EXECUTE
-		dw	!ahead__xt		;   ELSE
-		dw	lbl3-lbl2		;
-lbl2:			dw	!drop_xt	;     DROP THEN
-lbl3:		dw	!r_from_xt		;   R>
-		dw	!to_in_xt		;   >IN
-		dw	!store_xt		;   !
-		dw	!marker_xt		;   MARKER
-		dw	!doexit__xt		; ;
-		endl
-;-------------------------------------------------------------------------------
-brkt_def:	dw	anew
+brkt_def:	dw	dot_paren
 		db	$89
 		db	'[DEFINED]'
 brkt_def_xt:	local
@@ -10400,8 +10448,8 @@ lbl1:			dw	!refill_xt		;   BEGIN REFILL
 			dw	!if__xt			;   WHILE
 			dw	lbl3-lbl2		;
 lbl2:				dw	!interpret_xt	;     INTERPRET
-			        dw	!again__xt	;   REPEAT
-			        dw	lbl3-lbl1	;
+				dw	!again__xt	;   REPEAT
+				dw	lbl3-lbl1	;
 lbl3:		dw	!r_from_xt			;   R>
 		dw	!to_in_xt			;   >IN
 		dw	!store_xt			;   !            \ Restore >IN
