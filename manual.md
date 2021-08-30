@@ -43,7 +43,7 @@ Author: Dr. Robert A. van Engelen, 2021
   - [The \[ and \] brackets](#the--and--brackets)
   - [Immediate execution](#immediate-execution)
   - [Literals](#literals)
-  - [Postponing](#postponing)
+  - [Postponing execution](#postponing-execution)
   - [Compile-time conditionals](#compile-time-conditionals)
 - [Source input and parsing](#source-input-and-parsing)
 - [Files](#files)
@@ -113,9 +113,10 @@ To list the words stored in the Forth dictionary, type (↲ is ENTER):
 
     WORDS ↲
 
-Hit any key to continue or ON/BRK to stop.  ON/BRK generally terminates the
-execution of a Forth500 program or subroutine associated with a word.  To list
-words that fully and partially match a given name, type:
+Hit any key to continue or BREAK to stop.  BREAK generally terminates the
+execution of a Forth500 subroutine associated with a word.
+
+To list words that fully and partially match a given name, type:
 
     WORDS NAME ↲
 
@@ -150,7 +151,7 @@ unsigned.  Decimal, hexadecimal and binary number systems are supported:
 | ------- | --- | --------------------------------------------------------------
 | `TRUE`  |  -1 | Boolean true is -1
 | `FALSE` |   0 | Boolean false is 0
-| `123`   | 123 | decimal number (if the current base is `decimal`)
+| `123`   | 123 | decimal number (if the current base is `DECIMAL`)
 | `-1`    |  -1 |
 | `0`     |   0 |
 | `$FF`   | 255 | hexadecimal number
@@ -399,7 +400,7 @@ Word definitions are typically annotated with their stack effect, in this case
 there is no effect `( -- )`, see the next section on how this notation is used
 in practice.
 
-This ends our tutorial introduction to the essential basics of Forth.
+This ends our introduction to the essential basics of Forth.
 
 ## Stack effects
 
@@ -456,8 +457,9 @@ Return stack effects are prefixed with `R:`.  For example:
 
 This word moves _x_ from the stack to the so-called "return stack".  The return
 stack is used to keep return addresses of words executed and to store temporary
-values.  It is important to keep the return stack balanced.  This prevents
-words from returning to an incorrect return address and crashing the system.
+values.  When using the return stack to store values temporarily in your code,
+it is very important to keep the return stack balanced.  This prevents words
+from returning to an incorrect return address and crashing the system.
 
 ## Stack manipulation
 
@@ -698,7 +700,8 @@ point numbers requires scaling the result, for example with a new word:
 
 There is a slight risk of overflowing the intermediate product when the
 multiplicants are large.  If this is a potential hazard then note that this can
-be avoided by scaling the multiplicants instead of the result:
+be avoided by scaling the multiplicants instead of the result with a small loss
+in precision of the result:
 
     : 10./ 10. D/ ; ↲
     : *.00 10./ 2SWAP 10./ D* ; ↲
@@ -1369,7 +1372,8 @@ The following words define a structure and its fields:
 The `FIELD:` word is the same as `CELL +FIELD`, `CFIELD:` is the same as `1
 CHARS +FIELD` and `2FIELD` is the same as `2 CELLS +FIELD`.
 
-For example:
+Fields behave like variables and can be assigned with `!`, `ON` and `OFF` and
+fetched with `@`.  For example:
 
     BEGIN-STRUCTURE pair ↲
       FIELD: pair.first ↲
@@ -1476,13 +1480,18 @@ The following words can be used to inspect words and dictionary contents:
 | `LAST-XT`     | ( -- _xt_ )              | return the execution token of the last defined word
 | `WORDS`       | ( [ "name" ] -- )        | displays all words in the dictionary matching (part of) the optional "name" 
 
+Words named `xxx>yyy` are pronounced "xxx to yyy", words named `>xxx` are
+pronounced "to xxx" and words named `xxx>` are pronounced "xxx from".
+See the [standard Forth word list](https://forth-standard.org/standard/alpha)
+with pronounciations of all standard words.
+
 See also [dictionary structure](#dictionary-structure).
 
 ## Control flow
 
 ### Conditionals
 
-The immediate words `IF`, `ELSE` and `THEN` executes a branch based on a single
+The immediate words `IF`, `ELSE` and `THEN` execute a branch based on a single
 condition:
 
     test IF
@@ -1702,25 +1711,29 @@ literal in `now-foo`.
 The `2LITERAL` word compiles double integers (two cells).  The `SLITERAL` word
 compiles strings:
 
-| word       | stack effect                         | comment
+| word       | stack effect ( _before_ -- _after_ ) | comment
 | ---------- | ------------------------------------ | --------------------------
-| `LITERAL`  | ( _x_ -- ; -- _x_ )                  | compiles the _x_ as a literal
-| `2LITERAL` | ( _dx_ -- ; -- _dx_ )                | compiles the _dx_ as a double literal
-| `SLITERAL` | ( _c-addr1_ _u_ ; -- _c-addr2_ _u_ ) | compiles the string _c-addr_ of size _u_ as a string literal
-| `[CHAR]`   | ( "name" -- ; -- _char_ )            | returns the first character of "name" on the stack
-| `[']`      | ( "name" -- ; -- _xt_ )              | returns the execution token of "name" on the stack
+| `LITERAL`  | ( _x_ -- ; -- _x_ )                  | compiles _x_ as a literal
+| `2LITERAL` | ( _dx_ -- ; -- _dx_ )                | compiles _dx_ as a double literal
+| `SLITERAL` | ( _c-addr1_ _u_ ; -- _c-addr2_ _u_ ) | compiles string _c-addr_ of size _u_ as a string literal
+| `[CHAR]`   | ( "name" -- ; -- _char_ )            | compiles the first character of "name" as a literal
+| `[']`      | ( "name" -- ; -- _xt_ )              | compiles "name" as an execution token literal _xt_
+
+The `SLITERAL` word compiles the string address _c-addr1_ and size _u_ by
+copying the string to code.  The copied string is returned at runtime as
+_c-addr2_ _u_.
 
 The `[CHAR]` word parses a name and compiles the first character as a literal.
 This is the compile-time equivalent of `CHAR`.  For example, `[CHAR] $` is the
 same as `[ CHAR $ ] LITERAL`.
 
-The `[']` word parses a name and compiles the execution token as a literal.
-This is the compile-time equivalent of `'` (tick).  For example, `['] NOOP` is
-the same as `[ ' NOOP ] LITERAL`.
+The `[']` word parses the name of a word and compiles the word's execution
+token as a literal.  This is the compile-time equivalent of `'` (tick).  For
+example, `['] NOOP` is the same as `[ ' NOOP ] LITERAL`.
 
-### Postponing
+### Postponing execution
 
-Immediate words cannot be compiled unless we postpone their execution with
+Immediate words cannot be compiled, unless we postpone their execution with
 `POSTPONE`.  The `POSTPONE` word parses a name marked `IMMEDIATE` and compiles
 it to execute when the colon definition executes.  If the name is not
 immediate, then `POSTPONE` compiles the word's execution token as a literal
@@ -1794,7 +1807,7 @@ controlled by the following words:
 
 The following words parse the current source of input:
 
-| word       | stack effect                         | comment
+| word       | stack effect ( _before_ -- _after_ ) | comment
 | ---------- | ------------------------------------ | --------------------------
 | `PARSE`    | ( _char_ "chars" -- _c-addr_ _u_ )   | parses "chars" up to a matching _char_, returns the parsed characters as string _c-addr_ _u_
 | `\"-PARSE` | ( _char_ "chars" -- _c-addr_ _u_ )   | same as `PARSE` but also converts escapes to raw characters in _c-addr_ _u_, see `S\"` in [string constants](#string-constants)
@@ -1812,7 +1825,7 @@ considered delimiters.
 The following words return _ior_ to indicate success (zero) or failure (nonzero
 [file error](#file-errors) code)
 
-| word              | stack effect                                    | comment
+| word              | stack effect ( _before_ -- _after_ )            | comment
 | ----------------- | ----------------------------------------------- | --------
 | `FILES`           | ( [ "glob" ] -- )                               | lists files matching optional "glob" with wildcards `*` and `?`
 | `FILE-STATUS`     | ( _c-addr_ _u_ -- _f-addr_ _ior_ )              | if file with name _c-addr_ _u_ exists, return _ior_=0
@@ -1862,6 +1875,8 @@ drive, for example:
 Only one `*` for the file name can be used and only one `*` for the file
 extension can be used.
 
+Press BREAK to stop the listing.
+
 ### File errors
 
 File I/O _ior_ error codes returned by file operations, _ior_=0 means no error:
@@ -1885,7 +1900,7 @@ File I/O _ior_ error codes returned by file operations, _ior_=0 means no error:
 
 ## Exceptions
 
-| word     | stack effect                         | comment
+| word     | stack effect ( _before_ -- _after_ ) | comment
 | -------- | ------------------------------------ | ----------------------------
 | `ABORT`  | ( ... -- ... )                       | abort execution and throw -1
 | `ABORT"` | ( "string" -- ; ... _x_ -- ... )     | if _x_ is nonzero, display "string" message and throw -2
@@ -1904,15 +1919,20 @@ but catches exceptions thrown.  If an exception _x_ is thrown, then the stack
 has the state before `CATCH` with _xt_ removed and the nonzero exception code
 _x_ as the new TOS.  Otherwise,  a zero is left on the stack.  For example:
 
-    : try-to-divide ( -- )
-      dividend divisor ['] / CATCH IF ↲
+    : try-to-divide ( dividend divisor -- )
+      ['] / CATCH IF ↲
         ." cannot divide by zero" 2DROP \ remove dividend and divisor ↲
       ELSE ↲
         ." result=" . ↲
-      THEN ↲
+      THEN ; ↲
+    9 3 try-to-divide ↲
+    result=3 OK[0]
+    9 0 try-to-divide ↲
+    cannot divide by zero OK[0]
 
-`CATCH` restored the stack pointer when an exception is thrown, but the stack
-values may be changed by the word executed and thus may not be usable.
+`CATCH` restores the stack pointers when an exception is thrown, but the stack
+values may be changed by the word executed and thus may not holds the original
+values before `CATCH`.
 
 To throw and catch any errors when opening a file read-only, read it in blocks
 of 256 bytes into the `PAD` to display on screen, and close it:
@@ -1936,11 +1956,12 @@ of 256 bytes into the `PAD` to display on screen, and close it:
       REPEAT
       2DROP
       fclose CR ;
-    : some ( -- )
+    : test-more ( -- )
       S" somefile.txt" ['] more CATCH ABORT" an error occurred" ;
 
-The following standard Forth exception codes may be thrown by built-in Forth500
-words:
+The following [standard Forth exception
+codes](https://forth-standard.org/standard/exception) may be thrown by built-in
+Forth500 words:
 
 | code | exception
 | ---- | -----------------------------------------------------------------------
@@ -2002,7 +2023,7 @@ words:
 | -56  | `QUIT`
 | -57  | exception in sending or receiving a character
 | -58  | `[IF]`, `[ELSE]`, or `[THEN]` exception
-| -256 | execution of an uninitialized deferred word
+| -256 | execution of an uninitialized deferred word (Forth500)
 
 ## Environment queries
 
@@ -2014,7 +2035,7 @@ Forth](https://forth-standard.org/standard/usage#usage:env) `ENVIRONMENT?`.
 
 The Forth500 dictionary is organized as follows:
 
-         low address in the 11th segment $Bxx00
+         low address in the 11th segment $Bxxxx
           _________
     +--->| $0000   |     last entry link is zero (2 bytes)
     |    |---------|
@@ -2023,21 +2044,21 @@ The Forth500 dictionary is organized as follows:
     |    | (DOCOL) |     "(DOCOL)" word characters (7 bytes)
     |    |---------|
     |    | code    |     machine code
-    |    |---------|
+    |    |=========|
     +<==>+ link    |     link to previous entry (2 bytes)
     |    |---------|
     :    :         :
     :    :         :
     :    :         :
-    |    |---------|
+    |    |=========|
     +<==>| link    |     link to previous entry (2 bytes)
     |    |---------|
     |    | $80+5   |     length of "aword" (1 byte) with IMMEDIATE bit set
     |    |---------|
-    |    | aword   |     "my-word" word characters (7 bytes)
+    |    | aword   |     "aword" word characters (5 bytes)
     |    |---------|
     |    | code    |     Forth code and/or data
-    |    |---------|
+    |    |=========|
     +<---| link    |<--- LAST link to previous entry (2 bytes)
          |---------|
          | 7       |     length of "my-word" (1 byte)
@@ -2045,17 +2066,17 @@ The Forth500 dictionary is organized as follows:
          | my-word |     "my-word" word characters (7 bytes)
          |---------|
          | code    |<--- LAST-XT Forth code and/or data
-         |---------|<--- HERE pointer to free space
+         |=========|<--- HERE pointer to free space
          |         |
          | free    |
          | space   |
          |         |
-         |---------|<--- dictionary limit
+         |=========|<--- dictionary limit
          |         |
          | data    |     stack of 200 cells (400 bytes)
          | stack   |     grows toward lower addresses
          |         |<--- SP stack pointer
-         |---------|
+         |=========|
          |         |
          | return  |     return stack of 200 cells (400 bytes)
          | stack   |     grows toward lower addresses
@@ -2079,4 +2100,4 @@ Immediate words are marked with the high bit 7 set ($80).  Hidden words have
 the "smudge" bit 6 ($40) set.  A word is hidden until successfully compiled.
 
 
-_Copyright Robert A. van Engelen (c) 2021_
+_This document is Copyright Robert A. van Engelen (c) 2021_
