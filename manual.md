@@ -85,9 +85,9 @@ characters excluding space, tab, newline, and other control characters.  Words
 can be entered simply by typing them in as long as they are separated by
 spacing.  Words are defined for subroutines, for named constants and for global
 variables and data.  Some words may execute at compile time to compile the body
-of subroutine definitions and to implement control flow such as branched and
-loops.  As such, the syntax blends compile-time and runtime behaviors that are
-only distinguishable by naming and naming conventions.
+of subroutine definitions and to implement control flow such as conditional
+branches and loops.  As such, the syntax blends compile-time and runtime
+behaviors that are distinguishable by naming and naming conventions of words.
 
 You can enter Forth words at the Forth500 interactive prompt.  The following
 special keys can be used:
@@ -126,8 +126,8 @@ For example, `WORDS DUP` lists all words with names that contain the part `DUP`
 Words like `DUP` operate on the stack.  `DUP` duplicates the top value,
 generally called TOS: "Top Of Stack".  All computations in Forth occur on the
 stack.  Words may take values from the stack, by popping them, and push return
-values on the stack.  Besides words, type literal integer values to push them
-onto the stack:
+values on the stack.  Besides words, you can enter literal integer values to
+push them onto the stack:
 
     TRUE 123 DUP .S ↲
     -1 123 123 OK[3]
@@ -165,7 +165,8 @@ The `.` word prints the TOS and pops it off the stack:
 
 Two single stack integers can be combined to form a 32-bit signed or unsigned
 integer.  A double integer number is pushed (as two single integers) when the
-number is written with a `.` anywhere, but we prefer the `.` at the end:
+number is written with a `.` anywhere among the digits, but we prefer the `.`
+at the end:
 
     123. D. ↲
     123 OK[0] 
@@ -191,7 +192,7 @@ word starts a new line by printing a carriage return and newline.
 Let's try it out:
 
     hello ↲
-    Hello, World!
+    Hello, World! OK[0]
 
 Some words like `."` and `;` are compile-time only, which means that they can
 only be used in colon definitions.  Two other compile-time words are `DO` and
@@ -206,24 +207,29 @@ number as an argument, then displays that many `hello` lines:
     : hellos 0 DO hello LOOP ; ↲
     2 hellos ↲
     Hello, World!
-    Hello, World!
+    Hello, World! OK[0]
 
-It is good practice to define words with short subroutines.  It makes programs
-much easier to understand and maintain.  Because words operate on the stack,
-pretty much any sequence of words can be moved into a new defined word and
-reused in other colon definitions.  This keeps definitions short and
-understandable.  For example, we can redefine `greetings` to use `hellos`:
+Something interesting has happened here, that is typical Forth: `hellos` is the
+same as `greetings` but without the `10` loop limit.  We just specify the loop
+limit on the stack as an argument to `hellos`.  Therefore we can redefine
+`greetings` to use `hellos`:
 
     : greetings 10 hellos ; ↲
 
-But what if we want to change the message?  Forth allows you to redefine words
-at any time, but this does not change the behavior of any previously defined
-words that may be used by other previously defined words:
+It is good practice to define words with short definitions.  It makes programs
+much easier to understand, maintain and reuse.  Because words operate on the
+stack, pretty much any sequence of words can be moved into a new defined word
+and reused in other colon definitions.  This keeps definitions short and
+understandable.
+
+But what if we want to change the message of `hellos`?  Forth allows you to
+redefine words at any time, but this does not change the behavior of any
+previously defined words that may be used by other previously defined words:
 
     : hello ." Hola, Mundo!" CR ; ↲
     2 hellos ↲
     Hello, World!
-    Hello, World!
+    Hello, World! OK[0]
 
 Only new words that we add after this will use our new `hello` definition.
 Basically, the Forth dictionary is searched from the most recently defined
@@ -231,7 +237,7 @@ word to the oldest defined word.
 
 Old definitions can be deleted with everything defined after by forgetting:
 
-    forget hello
+    forget hello ↲
 
 Because we defined two `hello` words, we should forget `hello` twice to delete
 the new and the old `hello`.  Forgetting means that everything after the
@@ -306,11 +312,12 @@ the last `ENDOF` and `ENDCASE`.  In the default branch the `CASE` value is the
 TOS, which can be inspected, but should not be dropped before `ENDCASE`.
 
 Constant words push their value on the stack, wheras variable words push the
-address of their value on the stack to be fetched with `@` and new values are
-stored with `!`.
+address of their value on the stack to fetch with `@` and to store a new value
+with `!`.
 
-So-called Forth values offer the advantage of implicit fetch like constants.
-Let's replace the `VARIABLE language` with a `VALUE` initialized to `#english`:
+So-called Forth value words offer the advantage of implicit fetch like
+constants.  To illustrate value words, let's replace the `VARIABLE language`
+with `VALUE language` initialized to `#english`:
 
     #english VALUE language ↲
 
@@ -349,8 +356,10 @@ returns the counter value:
     0 2 4 6 8 OK[0]
 
 Again, be warned that the loop terminates when the counter *equals* the final
-value, not exceeds it.  Therefore, using the wrong loop `9 0 ?DO I . 2 +LOOP`
-would never terminate.
+value, not exceeds it!  Therefore, using the wrong loop `9 0 ?DO I . 2 +LOOP`
+never terminates, because the counter is an even integer that wraps around (when
+the maximum positive integer value is reached) and the limit is the odd integer
+9.
 
 A `BEGIN`-`WHILE`-`REPEAT` is a logically-controlled loop with which we can do
 the same as follows by pushing a `0` to use as a counter on top of the stack:
