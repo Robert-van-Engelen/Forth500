@@ -413,7 +413,7 @@ Forth source code is loaded from a file with `INCLUDED`:
 
     S" program.fs" INCLUDED ↲
 
-Where `S" program.fs"` specifies are string constant with the file name.
+Where `S" program.fs"` specifies a string constant with the file name.
 
 To list files on the current drive (E: by default):
 
