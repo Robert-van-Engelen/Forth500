@@ -413,13 +413,15 @@ Forth source code is loaded from a file with `INCLUDED`:
 
     S" program.fs" INCLUDED ↲
 
-Where `S" program.fs"` specifies a string constant with the file name.
+Where `S" program.fs"` specifies a string constant with the file name.  A drive
+letter such as F: can be included to load from a specific drive, which becomes
+the current drive (E: by default).
 
-To list files on the current drive (E: by default):
+To list files on the current drive:
 
     FILES ↲
 
-You can specify a drive and glob pattern with `FILES`:
+You can also specify a drive and glob pattern with `FILES`:
 
     FILES F:*.fs ↲
 
