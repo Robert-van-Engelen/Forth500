@@ -1517,6 +1517,13 @@ See also [dictionary structure](#dictionary-structure).
 
 ## Control flow
 
+A colon definition can be exited with `EXIT` to return to the caller.  To
+recursively call the current word, use `RECURSE` see [recursion](#recursion).
+See also [exceptions](#exceptions) to `THROW` and `CATCH` exceptions and to use
+`ABORT` or `ABORT"` to abort and return control to the keyboard.
+
+The next two sections introduce conditional branches and loops.
+
 ### Conditionals
 
 The immediate words `IF`, `ELSE` and `THEN` execute a branch based on a single
@@ -1939,6 +1946,8 @@ File I/O _ior_ error codes returned by file operations, _ior_=0 means no error:
 | `CATCH`  | ( _xt_ -- ... 0 ) or ( _xt_ -- _x_ ) | execute _xt_, if an exception _x_ occurs then restore the stack and return _x_, otherwise return 0
 | `'`      | ( "name" -- _xt_ )                   | (tick) returns the execution token of "name" on the stack
 | `[']`    | ( "name" -- ; -- _xt_ )              | compiles "name" as an execution token literal _xt_
+
+`ABORT` and `ABORT"` return control to the keyboard to enter commands.
 
 Note that `test ABORT" test failed"` throws -2 if `test` leaves a nonzero on
 the stack.  This construct can be used to check return values and perform
