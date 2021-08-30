@@ -4,8 +4,8 @@ Author: Dr. Robert A. van Engelen, 2021
 
 ## Table of contents
 
-- [Forth](#forth)
-- [Quick tutorial](#quick-tutorial)
+- [Forth500](#forth500)
+- [Quick Forth tutorial](#quick-forth-tutorial)
 - [Stack effects](#stack-effects)
 - [Stack manipulation](#stack-manipulation)
 - [Integer constants](#integer-constants)
@@ -52,7 +52,7 @@ Author: Dr. Robert A. van Engelen, 2021
 - [Environmental queries](#environmental-queries)
 - [Dictionary structure](#dictionary-structure)
 
-## Forth
+## Forth500
 
 Forth500 is a [standard Forth 2012](https://forth-standard.org/standard/intro)
 system for the SHARP PC-E500(S) pocket computer.  This pocket computer sports a
@@ -73,7 +73,7 @@ lot of freedom and power at your fingertips.  But this comes with a healthy
 dose of responsibility to do things right:  errors can lead to system crashes.
 Fortunately, the PC-E500(S) easily recovers from a system crash with a reset.
 
-## Quick tutorial
+## Quick Forth tutorial
 
 This section is intentionally kept simple by avoiding technical jargon and
 unnecessary excess.  Familiarity with the concepts of stacks and dictionaries
