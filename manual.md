@@ -409,6 +409,23 @@ Word definitions are typically annotated with their stack effect, in this case
 there is no effect `( -- )`, see the next section on how this notation is used
 in practice.
 
+Forth source code is loaded from a file with `INCLUDED`:
+
+    S" program.fs" INCLUDED ↲
+
+Where `S" program.fs" specifies are string constant with the file name.
+
+To list files on the current drive (E: by default):
+
+    FILES ↲
+
+You can specify a drive and glob pattern with `FILES`:
+
+    FILES F:*.fs ↲
+
+This lists all Forth .fs source code files on the F: drive and makes the F:
+drive the current drive.
+
 This ends our introduction to the essential basics of Forth.
 
 ## Stack effects
@@ -1837,9 +1854,11 @@ The following words return _ior_ to indicate success (zero) or failure (nonzero
 | word              | stack effect ( _before_ -- _after_ )            | comment
 | ----------------- | ----------------------------------------------- | --------
 | `FILES`           | ( [ "glob" ] -- )                               | lists files matching optional "glob" with wildcards `*` and `?`
-| `FILE-STATUS`     | ( _c-addr_ _u_ -- _f-addr_ _ior_ )              | if file with name _c-addr_ _u_ exists, return _ior_=0
+| `INCLUDED`        | ( _c-addr_ _u_ -- )                             | load Forth source code file named by the string _c-addr_ _u_
+| `INCLUDE-FILE`    | ( _fileid_ -- )                                 | load Forth source code from _fileid_
 | `DELETE-FILE`     | ( _c-addr_ _u_ -- _ior_ )                       | delete file with name _c-addr1_ _u1_
 | `RENAME-FILE`     | ( _c-addr1_ _u1_ _c-addr2_ _u2_ -- _ior_ )      | rename file with name _c-addr1_ _u1_ to _c-addr2_ _u2_
+| `FILE-STATUS`     | ( _c-addr_ _u_ -- _f-addr_ _ior_ )              | if file with name _c-addr_ _u_ exists, return _ior_=0
 | `R/O`             | ( -- _fam_ )                                    | open file for read only
 | `W/O`             | ( -- _fam_ )                                    | open file for write only
 | `R/W`             | ( -- _fam_ )                                    | open file for reading and writing
