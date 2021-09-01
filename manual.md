@@ -81,8 +81,8 @@ is assumed.  Experience with C makes it easier to follow the use of addresses
 (pointers) to integer values, strings and other data in Forth.
 
 A Forth system is a dictionary of words.  A word can be any sequence of
-characters excluding space, tab, newline, and other control characters.  Words
-can be entered simply by typing them in as long as they are separated by
+characters but excluding space, tab, newline, and other control characters.
+Words can be entered simply by typing them in as long as they are separated by
 spacing.  Words are defined for subroutines, for named constants and for global
 variables and data.  Some words may execute at compile time to compile the body
 of subroutine definitions and to implement control flow such as conditional
@@ -105,9 +105,9 @@ special keys can be used:
 To exit Forth500 and return to BASIC, enter `bye`.  To reenter Forth500 from
 BASIC, `CALL &Bxx00` again where `xx` is the high-order address of Forth500.
 
-Forth500 is case insensitive.  Words may be typed in either case or use mixed
-case.  In the following, built-in words are shown in UPPER CASE.  User-defined
-words are shown in lower case.
+Forth500 is case insensitive.  Words may be typed in upper or lower case or in
+mixed case.  In this manual all built-in words are shown in UPPER CASE.
+User-defined words are shown in lower case.
 
 To list the words stored in the Forth dictionary, type (↲ is ENTER):
 
@@ -158,7 +158,8 @@ unsigned.  Decimal, hexadecimal and binary number systems are supported:
 | `#-12`  | -12 | decimal number (regardless of the current base)
 | `%1000` |   8 | binary number
 
-The `.` word prints the TOS and pops it off the stack:
+Words for arithmetic like `+` pop the TOS and 2OS ("Second on Stack") to return
+the sum.  The `.` word can then be used to print the TOS:
 
     1 2 + . ↲
     3 OK[0]
@@ -409,13 +410,14 @@ Word definitions are typically annotated with their stack effect, in this case
 there is no effect `( -- )`, see the next section on how this notation is used
 in practice.
 
-Forth source code is loaded from a file with `INCLUDED`:
+Forth source code is loaded from a file with `INCLUDE` or with `INCLUDED`:
 
-    S" program.fs" INCLUDED ↲
+    INCLUDE program1.fs ↲
+    S" program2.fs" INCLUDED ↲
 
-Where `S" program.fs"` specifies a string constant with the file name.  A drive
-letter such as F: can be included to load from a specific drive, which becomes
-the current drive (E: by default).
+where `S" program2.fs"` specifies a string constant with the file name.  A
+drive letter such as F: can be specified to load from a specific drive, which
+becomes the current drive (the default drive is E:).
 
 To list files on the current drive:
 
@@ -1004,6 +1006,7 @@ The following words return key presses and control the key buffer:
 | `INKEY`       | ( -- _char_ )            | check for a key press returning the key as _char_, clears the key buffer
 | `KEY-CLEAR`   | ( -- )                   | empty the key buffer
 | `>KEY-BUFFER` | ( _c-addr_ _u_ -- )      | fill the key buffer with the string of characters at address _c-addr_ size _u_
+| `MS`          | ( _u_ -- )               | stops execution for _u_ milliseconds
 
 ## Character output
 
@@ -1118,6 +1121,7 @@ The `BEEP` word emits sound with the specified duration and tone:
 | word   | stack effect     | comment
 | ------ | ---------------- | --------------------------------------------------
 | `BEEP` | ( _u1_ _u2_ -- ) | beeps with tone _u1_ for _u2_ milliseconds
+| `MS`   | ( _u_ -- )       | stops execution for _u_ milliseconds
 
 ## The return stack
 
@@ -1866,6 +1870,7 @@ The following words return _ior_ to indicate success (zero) or failure (nonzero
 | word              | stack effect ( _before_ -- _after_ )            | comment
 | ----------------- | ----------------------------------------------- | --------
 | `FILES`           | ( [ "glob" ] -- )                               | lists files matching optional "glob" with wildcards `*` and `?`
+| `INCLUDE`         | ( "name" -- )                                   | load Forth source code file "name"
 | `INCLUDED`        | ( _c-addr_ _u_ -- )                             | load Forth source code file named by the string _c-addr_ _u_
 | `INCLUDE-FILE`    | ( _fileid_ -- )                                 | load Forth source code from _fileid_
 | `DELETE-FILE`     | ( _c-addr_ _u_ -- _ior_ )                       | delete file with name _c-addr1_ _u1_
@@ -2133,13 +2138,32 @@ The `LAST` variable holds the address of the last entry in the dictionary.
 This is where the search for dictionary words starts.
 
 The `LAST-XT` variable holds the address of the last compiled execution token,
-which is the location where the machine code starts.
+which is the location where the machine code of the last word starts.
 
-Code is either machine code or starts with a jump or call instruction of 3
-bytes, followed by Forth code (a sequence of execution tokens) or data.
+Code is either machine code or starts with a jump or call machine code
+instruction of 3 bytes, followed by Forth code (a sequence of execution tokens
+in a colon definition) or data (constants, variables, values and other words
+created with `CREATE`).
 
 Immediate words are marked with the high bit 7 set ($80).  Hidden words have
 the "smudge" bit 6 ($40) set.  A word is hidden until successfully compiled.
+`HIDE` hides the last defined word by setting the smudge bit.  `REVEAL` reveals
+it.  Incomplete colon definitions with compilation errors should never be
+revealed.
+
+There are two words to search the dictionary:
+
+| word        | stack effect ( _before_ -- _after_ )
+| ----------- | ----------------------------------------------------------------
+| `FIND`      | ( _c-addr_ -- _xt_ 1 ) if found and word is immediate, ( _c-addr_ -- _xt_ -1 ) if found and not immediate, otherwise ( _c-addr_ -- _c-addr_ 0 ) 
+| `FIND-WORD` | ( _c-addr_ _u_ -- _xt_ 1 ) if found and word is immediate, ( _c-addr_ _u_ -- _xt_ -1 ) if found and not immediate, otherwise ( _c-addr_ _u_ -- 0 0 ) 
+
+`FIND` takes a counted string _c-addr_ whereas `FIND-WORD` takes a string
+_c-addr_ of size _u_ to search.  The search is case insensitive.  Hidden words
+are not searchable but are displayed by `WORDS`.
+
+`:NONAME` code has no dictionary entry.  The code is just part of the
+dictionary space as a block of code without link and name header.
 
 
 _This document is Copyright Robert A. van Engelen (c) 2021_
