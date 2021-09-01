@@ -1138,10 +1138,10 @@ The following words move cells between both stacks:
 | `>R`     | ( _x_ -- ; R: -- _x_ )                            | move the TOS to the return stack
 | `DUP>R`  | ( _x_ -- _x_ ; R: -- _x_ )                        | copy the TOS to the return stack
 | `2>R`    | ( _xd_ -- ; R: -- _xd_ )                          | move the double TOS to the return stack
-| `R@`     | ( -- _x_ ; R: _x_ -- _x_ )                        | copy the return stack TOS to the stack
-| `2R@`    | ( -- _xd_ ; R: _xd_ -- _xd_ )                     | copy the return stack double TOS to the stack
-| `R'@`    | ( -- _x2_ ; R: _x1_ _x2_ -- _x1_ _x2_ )           | copy the return stack 2OS to the stack
-| `R"@`    | ( -- _x3_ ; R: _x1_ _x2_ _x3_ -- _x1_ _x2_ _x3_ ) | copy the return stack 3OS to the stack
+| `R@`     | ( R: _x_ -- _x_ ; -- _x_ )                        | copy the return stack TOS to the stack
+| `2R@`    | ( R: _xd_ -- _xd_ ; -- _xd_ )                     | copy the return stack double TOS to the stack
+| `R'@`    | ( R: _x1_ _x2_ -- _x1_ _x2_ ; -- _x1_ )           | copy the return stack 2OS to the stack
+| `R"@`    | ( R: _x1_ _x2_ _x3_ -- _x1_ _x2_ _x3_ ; -- _x1_ ) | copy the return stack 3OS to the stack
 | `R>`     | ( R: _x_ -- ; -- _x_ )                            | move the TOS from the return stack to the stack
 | `R>DROP` | ( R: _x_ -- ; -- )                                | drop the return stack TOS
 | `2R>`    | ( R: _xd_ -- ; -- _xd_ )                          | move the double TOS from the return stack to the stack
