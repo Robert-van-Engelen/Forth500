@@ -169,16 +169,16 @@ integer.  A double integer number is pushed (as two single integers) when the
 number is written with a `.` anywhere among the digits, but we prefer the `.`
 at the end:
 
-    123. D. ↲
-    123 OK[0] 
+    123. 456. D+ D. ↲
+    579 OK[0] 
 
 The use of `.` for double integers is unfortunate, because the number is not a
 floating point number.  The `.` is traditional in Forth and still part of the
 Forth standard.
 
-The `D.` word prints a signed double integer and pops it from the stack.  Words
-that operate on two integers as doubles are typically identified by `Dxxx` and
-`2xxx`.
+The `D+` word adds two double integers and the `D.` word prints a signed double
+integer and pops it from the stack.  Words that operate on two integers or
+doubles are typically identified by `Dxxx` and `2xxx`.
 
 Words that execute subroutines are defined with a `:` (colon) and end with `;`:
 
@@ -289,7 +289,7 @@ The `?` word is a shorthand for `@ .` to display the value of a variable:
 Like the built-in `?` word, a large portion of the Forth system is defined in
 Forth itself.
 
-Instead of nesting multiple `IF-ELSE-THEN` branches to cover additional
+Instead of nesting multiple `IF`-`ELSE`-`THEN` branches to cover additional
 languages, we should use `CASE`-`OF`-`ENDOF`-`ENDCASE` and enumerate the
 languages as follows:
 
@@ -601,9 +601,9 @@ Words involving division and modulo may throw exception -10 "Division by zero":
 | `*/`     | ( _n1_ _n2_ _n3_ -- (_n1_\*_n2_/_n3_) )
 | `*/MOD`  | ( _n1_ _n2_ _n3_ -- (_n1_\*_n2_%_n3_) (_n1_\*_n2_/_n3_) )
 | `MAX`    | ( _n1_ _n2_ -- _n1_ ) if _n1_>_n2_ otherwise ( _n1_ _n2_ -- _n2_ )
-| `UMAX`   | ( _u1_ _u2_ -- _u1_ ) if _u1_U>_u2_ otherwise ( _u1_ _u2_ -- _u2_ )
+| `UMAX`   | ( _u1_ _u2_ -- _u1_ ) if _u1_>_u2_ unsigned otherwise ( _u1_ _u2_ -- _u2_ )
 | `MIN`    | ( _n1_ _n2_ -- _n1_ ) if _n1_<_n2_ otherwise ( _n1_ _n2_ -- _n2_ )
-| `UMIN`   | ( _u1_ _u2_ -- _u1_ ) if _u1_U<_u2_ otherwise ( _u1_ _u2_ -- _u2_ )
+| `UMIN`   | ( _u1_ _u2_ -- _u1_ ) if _u1_<_u2_ unsigned otherwise ( _u1_ _u2_ -- _u2_ )
 | `AND`    | ( _x1_ _x2_ -- (_x1_&_x2_) )
 | `OR`     | ( _x1_ _x2_ -- (_x1_\|_x2_) )
 | `XOR`    | ( _x1_ _x2_ -- (_x1_^_x2_) )
@@ -637,8 +637,10 @@ when `radius` exceeds 92, but `radius 355 113 */` gives the correct result.
 
 The _after_ stack effects include the operations % (mod), & (bitwise and), |
 (bitwise or), ^ (bitwise xor), ~ (bitwise not/invert), << (bitshift left)
-and >> (bitshift right).  The `U<` and `U>` comparisons are unsigned, see
-[numeric comparisons](#numeric-comparisons).
+and >> (bitshift right).
+
+The `<` and `>` comparisons are signed while the `U<` and `U>` comparisons are
+unsigned, see [numeric comparisons](#numeric-comparisons).
 
 ### Double arithmetic
 
@@ -653,8 +655,8 @@ involving division and modulo may throw exception -10 "Division by zero":
 | `D/`      | ( _d1_ _d2_ -- (_d1_/_d2_) )
 | `DMOD`    | ( _d1_ _d2_ -- (_d1_%_d2_) )
 | `D/MOD`   | ( _d1_ _d2_ -- (_d1_%_d2_) (_d1_/_d2_) )
-| `DMAX`    | ( _d1_ _d2_ -- _d1_ ) if _d1_D>_d2_ otherwise ( _d1_ _d2_ -- _d2_ )
-| `DMIN`    | ( _d1_ _d2_ -- _d1_ ) if _d1_D<_d2_ otherwise ( _d1_ _d2_ -- _d2_ )
+| `DMAX`    | ( _d1_ _d2_ -- _d1_ ) if _d1_>_d2_ otherwise ( _d1_ _d2_ -- _d2_ )
+| `DMIN`    | ( _d1_ _d2_ -- _d1_ ) if _d1_<_d2_ otherwise ( _d1_ _d2_ -- _d2_ )
 | `DABS`    | ( _d_ -- _+d_ )
 | `DNEGATE` | ( _d_ -- (-_d_) )
 | `D2*`     | ( _d_ -- (_d_\*2) )
@@ -755,25 +757,25 @@ integer values.
 | word     | stack effect ( _before_ -- _after_ )
 | -------- | -------------------------------------------------------------------
 | `<`      | ( _n1_ _n2_ -- true ) if _n1_<_n2_ otherwise ( _n1_ _n2_ -- false )
-| `=`      | ( _x1_ _x2_ -- true ) if _x1_=_x2_ otherwise ( _x1_ _x2_ -- false )
 | `>`      | ( _n1_ _n2_ -- true ) if _n1_>_n2_ otherwise ( _n1_ _n2_ -- false )
-| `<>`     | ( _x1_ _x2_ -- true ) if _x1_≠_x2_ otherwise ( _n1_ _n2_ -- false )
+| `=`      | ( _x1_ _x2_ -- true ) if _x1_=_x2_ otherwise ( _x1_ _x2_ -- false )
+| `<>`     | ( _x1_ _x2_ -- true ) if _x1_<>_x2_ otherwise ( _x1_ _x2_ -- false )
 | `U<`     | ( _u1_ _u2_ -- true ) if _u1_<_u2_ otherwise ( _u1_ _u2_ -- false )
 | `U>`     | ( _u1_ _u2_ -- true ) if _u1_>_u2_ otherwise ( _u1_ _u2_ -- false )
-| `D<`     | ( _d1_ _d2_ -- true ) if _d1_<_d2_ otherwise ( _n1_ _n2_ -- false )
-| `D=`     | ( _d1_ _d2_ -- true ) if _d1_=_d2_ otherwise ( _n1_ _n2_ -- false )
-| `D>`     | ( _d1_ _d2_ -- true ) if _d1_>_d2_ otherwise ( _n1_ _n2_ -- false )
-| `D<>`    | ( _d1_ _d2_ -- true ) if _d1_≠_d2_ otherwise ( _n1_ _n2_ -- false )
+| `D<`     | ( _d1_ _d2_ -- true ) if _d1_<_d2_ otherwise ( _d1_ _d2_ -- false )
+| `D>`     | ( _d1_ _d2_ -- true ) if _d1_>_d2_ otherwise ( _d1_ _d2_ -- false )
+| `D=`     | ( _xd1_ _xd2_ -- true ) if _xd1_=_xd2_ otherwise ( _xd1_ _xd2_ -- false )
+| `D<>`    | ( _xd1_ _xd2_ -- true ) if _xd1_<>_xd2_ otherwise ( _xd1_ _xd2_ -- false )
 | `DU<`    | ( _ud1_ _ud2_ -- true ) if _ud1_<_ud2_ otherwise ( _ud1_ _ud2_ -- false )
 | `DU>`    | ( _ud1_ _ud2_ -- true ) if _ud1_>_ud2_ otherwise ( _ud1_ _ud2_ -- false )
 | `0<`     | ( _n_ -- true ) if _n_<0 otherwise ( _n_ -- false )
-| `0=`     | ( _n_ -- true ) if _n_=0 otherwise ( _n_ -- false )
 | `0>`     | ( _n_ -- true ) if _n_>0 otherwise ( _n_ -- false )
-| `0<>`    | ( _n_ -- true ) if _n_≠0 otherwise ( _n_ -- false )
+| `0=`     | ( _x_ -- true ) if _x_=0 otherwise ( _x_ -- false )
+| `0<>`    | ( _x_ -- true ) if _x_<>0 otherwise ( _x_ -- false )
 | `D0<`    | ( _d_ -- true ) if _d_<0 otherwise ( _d_ -- false )
-| `D0=`    | ( _d_ -- true ) if _d_=0 otherwise ( _d_ -- false )
 | `D0>`    | ( _d_ -- true ) if _d_>0 otherwise ( _d_ -- false )
-| `D0<>`   | ( _d_ -- true ) if _d_≠0 otherwise ( _d_ -- false )
+| `D0=`    | ( _xd_ -- true ) if _xd_=0 otherwise ( _xd_ -- false )
+| `D0<>`   | ( _xd_ -- true ) if _xd_<>0 otherwise ( _xd_ -- false )
 | `WITHIN` | ( _n1_\|_u1_ _n2_\|_u2_ _n3_\|_u3_ -- flag )
 
 The `WITHIN` word applies to signed and unsigned single integers on the stack,
