@@ -1323,7 +1323,8 @@ words can be used:
 
 Allocation is limited by the remaining free space in the dictionary returned by
 the `UNUSED` word.  Note that the `ALLOT` value may be negative to release
-space, which should only release space allocated with a prior `ALLOT`.
+space.  Only release space with `ALLOT` after allocation with `ALLOT` when no
+new words were defined!
 
 The `CREATE` word adds an entry to the dictionary, typically followed by words
 to allocate and store data assocated with the new word.  For example, we can
