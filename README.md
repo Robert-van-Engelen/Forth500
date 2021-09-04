@@ -6,7 +6,7 @@ A Forth 2012 system based on the excellent ANS Forth compiler for the PC-E500(S)
 
 The PC-E500 is a powerful pocket computer introduced in 1989 that saw a [PC-E500S](https://en.wikipedia.org/wiki/Sharp_PC-E500S) successor in 1995.
 
-I've rewritten large parts of the code to optimize for speed and code size. The `docol` fetch-execute cycle is 40% more efficient.  Words are case-insensitive and can be typed in upper/lower/mixed case.  Included are the binaries for unexpanded 32KB machines and expanded >96KB machines.  Also included is the XASM assembler written by N. Kon for the SC62015 CPU with the documentation translated to English.  XASM is required to rebuild the Forth500 system from assembly.  The [Forth500.s](Forth500.s) source code is heavily documented and PC-E500 technical [resources](resources) are included.
+I've rewritten large parts of the code to optimize for speed, code size and compliance with standard Forth 2012. The `docol` fetch-execute cycle is 40% more efficient.  Words are now case-insensitive and can be typed in upper/lower/mixed case.  Included are the binaries for unexpanded 32KB machines and expanded >96KB machines.  Also included is the XASM assembler written by N. Kon for the SC62015 CPU with the documentation translated to English.  XASM is required to rebuild the Forth500 system from assembly.  The [Forth500.s](Forth500.s) source code is heavily documented and PC-E500 technical [resources](resources) are included.
 
 I also wrote a new [Forth500 User Guide](manual.md) to introduce standard Forth and the Forth500 system.
 
