@@ -51,6 +51,10 @@ Author: Dr. Robert A. van Engelen, 2021
 - [Exceptions](#exceptions)
 - [Environmental queries](#environmental-queries)
 - [Dictionary structure](#dictionary-structure)
+- [Examples](#examples)
+  - [SQRT](#sqrt)
+  - [GCD](#gcd)
+  - [Strings](#strings)
 
 ## Forth500
 
@@ -929,6 +933,9 @@ To let the user edit the name:
 
     name name-max name-len @ DUP 0 EDIT DROP name-len ! ↲
 
+See also the example [strings](#strings) for an improved implementation of
+string buffers that hold the maximum and actual string lengths.
+
 The following words move and copy characters in and between string buffers:
 
 | word     | stack effect                   | comment
@@ -1323,8 +1330,8 @@ words can be used:
 
 Allocation is limited by the remaining free space in the dictionary returned by
 the `UNUSED` word.  Note that the `ALLOT` value may be negative to release
-space.  Only release space with `ALLOT` after allocation with `ALLOT` when no
-new words were defined!
+space.  Release space only with `ALLOT` after allocating space with `ALLOT`
+when no new words were defined.
 
 The `CREATE` word adds an entry to the dictionary, typically followed by words
 to allocate and store data assocated with the new word.  For example, we can
@@ -2167,6 +2174,285 @@ are not searchable but are displayed by `WORDS`.
 
 `:NONAME` code has no dictionary entry.  The code is just part of the
 dictionary space as a block of code without link and name header.
+
+## Examples
+
+### SQRT
+
+The square root of a number is approximated with Newton's method.  Given an
+initial guess _x_ for _f_(_x_) = 0, an improved guess is _x_' = _x_ -
+_f_(_x_)/_f_'(_x_).  This is iterated with _x_=_x'_ until convergence.
+
+To compute _sqrt_(_a_), let _f_(_x_) = _x_^2 - _a_ to find the answer _x_ with
+Newton's method such that _f_(_x_) = 0.  Therefore, _x'_ = _x_ -
+(_x_^2-_a_)/(2 _x_) = (_x_ + _a_/_x_)/2.
+
+Because we operate with integers, the convergence check should consider the
+previous two estimates of _x_ to avoid oscillation.  The outline of the
+algorithm is:
+
+    y = 1                    \ estimate before the previous estimate
+    x = 1                    \ previous estimate
+    begin
+      x' = (x+a/x)/2         \ improved estimate
+      while x'<>x and x'<>y  \ convergence?
+        y = x                \ update estimates
+        x = x'
+    again
+
+This algorithm assumes that _a_ is positive.  Negative _a_ are invalid and will
+raise a division by zero exception.  If _a_ is zero then we also raise an
+exception, which should be avoided by setting _x_ to zero when _a_ is zero.
+
+To implement the algorithm in Forth, we place _a_ on the return stack, because
+we only need _a_ to compute _x'_.  We place _y_ and _x_ on the stack and
+compute the new estimate _x'_ as the TOS above them.
+
+    : sqrt ( n -- sqrt )
+      DUP IF              \ if a<>0
+        >R                \ move a to the return stack
+        1 1               \ -- y x where y=1 and x=1 initially
+        BEGIN
+          R@              \ -- y x a
+          OVER /          \ -- y x (a/x)
+          OVER + 2/       \ -- y x x' where x'=(a/x+x)/2
+          ROT             \ -- x x' y
+          OVER <> WHILE   \ while x'<>y
+          2DUP <> WHILE   \ and while x'<>x
+        REPEAT THEN
+        DROP              \ -- x
+        R>DROP            \ drop a from the return stack
+      THEN ;
+
+Note that the second `WHILE` requires a `THEN` after `REPEAT`, see
+[loops](#loops).
+
+A minor issue is the potential integer overflow to a negative value in
+(_a_/_x_+_x_) before dividing by 2.  This can lead to all sorts of problems,
+such as non-termination of the loop.  This problem can be remedied by an
+unsigned division by 2 with `1 RSHIFT` to replace `2/`.
+
+The double integer square root implementation:
+
+    : dsqrt ( d -- dsqrt )
+      2DUP D0<> IF
+        2>R
+        1. 1.
+        BEGIN
+          2R@
+          2OVER D/
+          2OVER D+ 2. D/
+          2ROT
+          2OVER D<> WHILE
+          2OVER 2OVER D<> WHILE
+        REPEAT THEN
+        2DROP
+        R>DROP R>DROP
+      THEN ;
+
+### GCD
+
+The greatest common denominator of two integers is computed with Euclid's
+algorithm in Forth as follows:
+
+    : gcd ( n1 n2 -- gcd )
+      BEGIN ?DUP WHILE TUCK MOD REPEAT ;
+
+The double integer version:
+
+    : dgcd ( d1 d2 -- dgcd )
+      BEGIN 2DUP D0<> WHILE 2TUCK DMOD REPEAT 2DROP ;
+
+### Strings
+
+This example is an implementation with string buffers residing in the
+dictionary, which is pretty standard practice in Forth.  Each buffer includes
+the maximum length of the string as its first byte followed by the actual
+length of the string in the second byte.  The string contents follow these two
+bytes.  This implementation is concise by reusing words as much as possible to
+avoid unnecessary complexity.
+
+We first define four auxilliary words to obtain the max length, the current
+length, the unused space and to set a new length limited by the max length:
+
+    : strmax ( string -- max )
+      2- C@ ;
+
+    : strlen ( string -- len )
+      1- C@ ;
+
+    : strunused ( string -- unused )
+      DUP strmax SWAP strlen - ;
+
+    : strupdate ( string len -- )
+      OVER strmax UMIN SWAP 1- C! ;
+
+The `string:` word creates a string buffer given a maximum length:
+
+    : string: ( max "name" -- ; string len )
+      CREATE DUP C, 0 C, ALLOT
+      DOES> 2+ DUP strlen ;
+
+For example, let's define a `name` to store up to 30 characters:
+
+    30 string: name ↲
+
+A string returns the string address of its first character and the length of
+the string.  This makes it simpler to use our strings as the usual constant
+string arguments to standard Forth words, such as `TYPE`:
+
+    name TYPE ↲
+    OK[0]
+
+This displays nothing because the string is initially empty.
+
+To safely copy a (constant) string to a string buffer by limiting the number of
+characters copied to guard against overflowing the buffer:
+
+    : strcpy ( c-addr u string len -- )
+      DROP DUP ROT strupdate  \ set the new length
+      DUP strlen CMOVE ;
+
+For example:
+
+    S" John" name strcpy ↲
+    name TYPE ↲
+    John OK[0]
+
+To safely concatenate a string to another by limiting the number of characters
+appended to guard against overflowing the buffer:
+
+    : strcat ( c-addr u string len -- )
+      >R                        \ save the old length
+      SWAP OVER strunused UMIN  \ limit the added length
+      2DUP R@ + strupdate       \ set the new length = old length + added
+      SWAP R> + SWAP CMOVE ;
+
+For example:
+
+    S"  Doe" name strcat ↲
+    name TYPE ↲
+    John Doe OK[0]
+
+Forth words that work with constant strings, such as `TYPE`, `SEARCH` and `S=`,
+also work with our string buffers:
+
+    S" Do" name SEARCH . . 2 SWAP TYPE ↲
+    -1 1 Do OK[0]
+
+    S" John" name 4 MIN S= . ↲
+    -1 OK[0]
+
+We can also accept user input into a string:
+
+    : straccept ( string len -- )
+      DROP DUP DUP strmax ACCEPT strupdate ;
+
+    : stredit ( string len -- )
+      >R DUP strmax R>  \ -- string max len
+      DUP               \ place cursor at the end (length)
+      0                 \ allow edits to the begin position
+      EDIT strupdate ;
+
+For example:
+
+    name straccept ↲
+    John ↲
+    name stredit ↲
+     Doe ↲
+    name TYPE ↲
+    John Doe OK[0]
+
+Slicing a substring from a (constant) string returns the (constant) substring
+address and its length:
+
+    : slice ( c-addr1 u1 pos len -- c-addr2 u2 )
+      >R         \ save len
+      OVER UMIN  \ -- c-addr u1 pos where pos is limited to u1
+      TUCK       \ -- c-addr pos u1 pos
+      - R> UMIN  \ -- c-addr pos len where pos+len is limited to u1
+      >R + R> ;
+
+where _pos_ and _len_ take a slice from string _c-addr1_ _u1_ to return the
+substring _c-addr2_ _u2_ located in _c-addr1_ at position _pos_ with length
+_len_.  If _pos_ exceeds the string length _u1_ then _u2_=0. If _pos_+_len_
+exceeds the string length _u1_ then _u2_<_len_.
+
+For example:
+
+    name 5 3 slice TYPE ↲
+    Doe OK[0]
+
+Note that we can safely take slices of slices:
+
+    name 4 4 slice 1 2 slice TYPE ↲
+    Do OK[0]
+
+Slicing can be used to modify a string by copying or concatenating a slice of
+the string to itself:
+
+    name 5 3 slice name strcat ↲
+    name TYPE ↲
+    John DoeDoe OK[0]
+    name 0 8 slice name strcpy ↲
+    name TYPE ↲
+    John Doe OK[0]
+
+Inserting and deleting characters can be done with slicing and a temporary
+buffer, such as the `PAD` of 256 bytes:
+
+    : strtmp 254 PAD C! PAD 2+ PAD 1+ C@ ;
+
+For example, to copy "John" from `name`, insert " J." and append " Doe" from
+`name` into the string temporary:
+
+    name 0 4 slice strtmp strcpy ↲
+    S"  J." strtmp strcat ↲
+    name 5 3 slice strtmp strcat ↲
+    strmp TYPE ↲
+    John J. Doe OK[0]
+
+Additional words to convert characters and string buffers to upper and lower
+case:
+
+    : >upper ( char -- char )
+      [CHAR] a [CHAR] { WITHIN IF $20 - THEN ;
+
+    : >lower ( char -- char )
+      [CHAR] A [CHAR] [ WITHIN IF $20 + THEN ;
+
+    : strupper ( string u -- )
+      0 ?DO DUP I + DUP C@ >upper C! LOOP DROP ;
+
+    : strlower ( string u -- )
+      0 ?DO DUP I + DUP C@ >lower C! LOOP DROP ;
+
+For example:
+
+    name strupper name TYPE ↲
+    JOHN DOE OK[0]
+
+The `sfield:` word adds a string member to a structure:
+
+    : sfield: ( u len "name" -- u ; addr -- addr )
+      CREATE
+        >R 2+ DUP , R@ + R>
+      DOES>
+        DUP 2- LITERAL C!  \ make sure string max is set
+        1+ DUP C@ 1+ SWAP ;
+
+For example an address with a 30 max character street name:
+
+    BEGIN-STRUCTURE address ↲
+      30 sfield: address.street ↲
+      FIELD:     address.number ↲
+    END-STRUCTURE ↲
+    : address: address BUFFER: ; ↲
+    address: home ↲
+    S" Pleasantville" home address.street strcpy ↲
+    555 home address.number ! ↲
+    home address.street TYPE SPACE home address.number ? ↲
+    Pleasantville 555
 
 
 _This document is Copyright Robert A. van Engelen (c) 2021_
