@@ -1804,41 +1804,41 @@ The immediate `[` word switches `STATE` to `FALSE` and `]` switches `STATE` to
 temporarily switch to interpret mode and execute words, rather than compiling
 them.  For example:
 
-    : my-word       [ ." compiling my-word" CR ] ." executing my-word" CR ;
+    : my-word       [ .( here=) HERE . ] ." executing my-word" CR ;
 
-This example displays `compiling my-word...` when `my-word` is compiled and
-displays `executing my-word` when `my-word` is executed.
+This example displays `here=<CR><address>` when `my-word` is compiled and displays
+`executing my-word` when `my-word` is executed.
 
 It is a good habit to define words to break up longer definitions, so we can
 rewrite this as follows:
 
-    : "compiling"   ." compiling my-word" CR ;
-    : my-word       [ "compiling" ] ." executing my-word" CR ;
+    : "here"    ." here=" CR HERE . ;
+    : my-word   [ "here" ] ." executing my-word" CR ;
 
-Note that the immediate `.(` word can be used to display compile-time messages,
-see also [immediate execution](#immediate-execution).
+Note that the immediate `.(` word is used to display compile-time messages, see
+also [immediate execution](#immediate-execution).
 
 ### Immediate execution
 
 Consider:
 
-    : "compiling"   ." compiling my-word" CR ;
-    : my-word       [ "compiling" ] ." executing my-word" CR ;
+    : "here"    ." here=" CR HERE . ;
+    : my-word   [ "here" ] ." executing my-word" CR ;
 
-The `[` and `]` are not necessary if we make `"compiling"` `IMMEDIATE` to
-execute immediately:
+The `[` and `]` are not necessary if we make `"here"` `IMMEDIATE` to execute
+immediately:
 
-    : [compiling]   ." compiling my-word" CR ; IMMEDIATE
-    : my-word       [compiling] ." executing my-word" CR ;
+    : [here]    ." here=" CR HERE . ; IMMEDIATE
+    : my-word   [here] ." executing my-word" CR ;
 
-Using brackets with `[compiling]` is another good habit as a reminder that we
+Using brackets with `[here]` is another good habit as a reminder that we
 execute an immediate word when it affects compilation.
 
 This example illustrates how `IMMEDIATE` is used.  Because displaying
 information while compiling is generally considered useful, the `.(` word is
 marked immediate to display text followed by a `CR` during compilation:
 
-    : my-word       .( compiling my-word) ." executing my-word" CR ;
+    : my-word   .( compiling my-word) ." executing my-word" CR ;
 
 All [control flow](#control-flow) words execute immediately to compile
 conditionals and loops.
