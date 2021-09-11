@@ -70,4 +70,4 @@ The following bug fixes and improvements were made to the original pceForth code
 - added `PRINTER` to connect to printer and check printer status
 - optimized `?STACK` stack check in assembly
 - added stack overflow/underflow checks to all loop words
-- changed return addresses size from 3 bytes to 2 bytes (1 cell) for standard Forth compliance, support "caller cancelling" with `R>DROP` and "continuation passing"
+- changed return address size from 3 bytes to 2 bytes (1 cell) for standard Forth compliance, support "caller cancelling" with `R>DROP` and "continuation passing"

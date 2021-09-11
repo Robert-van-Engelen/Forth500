@@ -2,6 +2,9 @@
 
 Use a cassette interface, such as CE-126p or CE-124.
 
+Instead of the wav file, a RS-232 interface can be used.  This requires a
+uuencoded object file to transfer and install the binary.
+
 On the PC-E500 execute:
 
     > POKE &BFE03,&1A,&FD,&0B,0,&FC,0: CALL &FFFD8
@@ -45,6 +48,3 @@ To remove Forth from memory and release its allocated RAM space:
 the wav file as follows:
 
     $ bin2wav --pc=E500 --type=bin --addr=0xB0000 Forth500.bin
-
-Instead of the wav file, a RS-232 interface can be used.  This requires a
-uuencoded object file to transfer and install the binary.
