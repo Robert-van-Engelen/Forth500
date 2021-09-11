@@ -52,9 +52,12 @@ Author: Dr. Robert A. van Engelen, 2021
 - [Environmental queries](#environmental-queries)
 - [Dictionary structure](#dictionary-structure)
 - [Examples](#examples)
-  - [SQRT](#sqrt)
   - [GCD](#gcd)
+  - [SQRT](#sqrt)
+  - [RAND](#rand)
   - [Strings](#strings)
+  - [Enums](#enums)
+  - [Slurp](#slurp)
 
 ## Forth500
 
@@ -106,12 +109,13 @@ special keys can be used:
 | CURSOR KEYS | move cursor up/down/left/right on the line
 | C/CE        | clears the line
 
-To exit Forth500 and return to BASIC, enter `bye`.  To reenter Forth500 from
-BASIC, `CALL &Bxx00` again where `xx` is the high-order address of Forth500.
+To exit Forth500 and return to BASIC, enter `bye`.  This saves the Forth500
+state in memory.  To reenter Forth500 from BASIC, `CALL &Bxx00` again where
+`xx` is the high-order address of Forth500.
 
 Forth500 is case insensitive.  Words may be typed in upper or lower case or in
 mixed case.  In this manual all built-in words are shown in UPPER CASE.
-User-defined words are shown in lower case.
+User-defined words in the examples are shown in lower case.
 
 To list the words stored in the Forth dictionary, type (↲ is ENTER):
 
@@ -128,17 +132,18 @@ For example, `WORDS DUP` lists all words with names that contain the part `DUP`
 (the search is case sensitive).
 
 Words like `DUP` operate on the stack.  `DUP` duplicates the top value,
-generally called TOS: "Top Of Stack".  All computations in Forth occur on the
+generally called TOS "Top Of Stack".  All computations in Forth occur on the
 stack.  Words may take values from the stack, by popping them, and push return
-values on the stack.  Besides words, you can enter literal integer values to
-push them onto the stack:
+values on the stack.  Besides words, you can also enter literal integer values
+to push them onto the stack:
 
     TRUE 123 DUP .S ↲
     -1 123 123 OK[3]
 
 where `TRUE` pushes -1, `123` pushes 123, `DUP` duplicates the TOS and `.S`
 shows the stack values.  `OK[3]` indicates that currently there are three
-values on the stack.
+values on the stack.  Also when debugging words, it helps to use `.S` to see
+what's currently on the stack.
 
 You can spread the code over multiple lines.  It does not matter if you hit
 ENTER at the end or if you hit ENTER to input more than one line.
@@ -162,8 +167,8 @@ unsigned.  Decimal, hexadecimal and binary number systems are supported:
 | `#-12`  | -12 | decimal number (regardless of the current base)
 | `%1000` |   8 | binary number
 
-Words for arithmetic like `+` pop the TOS and 2OS ("Second on Stack") to return
-the sum.  The `.` word can then be used to print the TOS:
+Words for arithmetic like `+` pop the TOS and 2OS "Second on Stack" to return
+the sum.  The `.` ("dot") word can then be used to print the TOS:
 
     1 2 + . ↲
     3 OK[0]
@@ -184,15 +189,17 @@ The `D+` word adds two double integers and the `D.` word prints a signed double
 integer and pops it from the stack.  Words that operate on two integers or
 doubles are typically identified by `Dxxx` and `2xxx`.
 
-Words that execute subroutines are defined with a `:` (colon) and end with `;`:
+Words that execute subroutines are defined with a `:` ("colon") and end with
+a `;` ("semicolon"):
 
-    : hello ." Hello, World!" CR ; ↲
+    : hello     ." Hello, World!" CR ; ↲
 
 This defines the word `hello` that displays the obligatory "Hello, World!"
-message.  The definition ends with a `;` (semicolon).  The `."` word parses a
-sequence of character until `"`.  These characters are display on screen.  Note
-that `."` is a normal word and must therefore be followed by a space.  The `CR`
-word starts a new line by printing a carriage return and newline.
+message.  Separating the word with its definition using tab spacing visually
+assists to identify word definitions more easily.  The `."` word parses a
+sequence of character until `"`.  These characters are displayed on screen.
+Note that `."` is a normal word and must therefore be followed by a space.  The
+`CR` word starts a new line by printing a carriage return and newline.
 
 Let's try it out:
 
@@ -206,39 +213,40 @@ only be used in colon definitions.  Two other compile-time words are `DO` and
     : greetings 10 0 DO hello LOOP ; ↲
     greetings ↲
 
-This displays 10 lines with Hello, World!  Let's add a word that takes a
+This displays 10 lines with "Hello, World!"  Let's add a word that takes a
 number as an argument, then displays that many `hello` lines:
 
-    : hellos 0 DO hello LOOP ; ↲
+    : hellos    0 DO hello LOOP ; ↲
     2 hellos ↲
     Hello, World!
     Hello, World! OK[0]
 
 Something interesting has happened here, that is typical Forth: `hellos` is the
 same as `greetings` but without the `10` loop limit.  We just specify the loop
-limit on the stack as an argument to `hellos`.  Therefore we can redefine
+limit on the stack as an argument to `hellos`.  Therefore we can refactor
 `greetings` to use `hellos`:
 
     : greetings 10 hellos ; ↲
 
 It is good practice to define words with short definitions.  It makes programs
 much easier to understand, maintain and reuse.  Because words operate on the
-stack, pretty much any sequence of words can be moved into a new defined word
-and reused in other colon definitions.  This keeps definitions short and
-understandable.
+stack, pretty much any sequence of words can be moved from a definition into a
+new word to replace the sequence with a single word.  This keeps definitions
+short and understandable.
 
 But what if we want to change the message of `hellos`?  Forth allows you to
 redefine words at any time, but this does not change the behavior of any
-previously defined words that may be used by other previously defined words:
+previously defined words that are used by other previously defined words:
 
-    : hello ." Hola, Mundo!" CR ; ↲
+    : hello     ." Hola, Mundo!" CR ; ↲
     2 hellos ↲
     Hello, World!
     Hello, World! OK[0]
 
 Only new words that we add after this will use our new `hello` definition.
 Basically, the Forth dictionary is searched from the most recently defined
-word to the oldest defined word.
+word to the oldest defined word.  An older definition of a word is no longer
+searchable.
 
 Old definitions can be deleted with everything defined after by forgetting:
 
@@ -264,18 +272,19 @@ If you are new to Forth this may look strange with the `IF` and `THEN` out of
 place.  A `THEN` closes the `IF` (some Forth's allow both `ENDIF` and `THEN`).
 By comparison to C, `spanish @ IF x ELSE y` is similar to `*spanish ? x : y`.
 The variable `spanish` places the address of its value on the stack.  The value
-is fetched (dereferenced) with the word `@`.  If the value is nonzero (true),
-then the statements after `IF` are executed.  Otherwise, the statements after
-`ELSE` are executed.
+is fetched (dereferenced) with the word `@` ("fetch").  If the value is nonzero
+(true), then the statements after `IF` are executed.  Otherwise, the statements
+after `ELSE` are executed.
 
 To set the `spanish` variable to true:
 
     TRUE spanish ! ↲
 
-where the store word `!` saves the 2OS value to the memory cell indicated by
-the TOS address.  Observe this stack order carefully!  Otherwise you will end
-up writing data to arbitrary memory locations.  The `!` reminds you of this
-potential danger.
+where the word `!` ("store") stores the 2OS value to the memory cell addressed
+by the TOS, which is the variable `spanish` in this example.
+
+Observe this stack order carefully!  Otherwise you will end up writing data to
+arbitrary memory locations.  The `!` reminds you of this potential danger.
 
 For convenience, the words `ON` and `OFF` can be used:
 
@@ -291,7 +300,12 @@ The `?` word is a shorthand for `@ .` to display the value of a variable:
     : ? @ . ;
 
 Like the built-in `?` word, a large portion of the Forth system is defined in
-Forth itself.
+Forth itself.  Also `ON` and `OFF` are defined in Forth:
+
+    : ON    TRUE SWAP ! ;
+    : OFF   FALSE SWAP ! ;
+
+where `SWAP` swaps the TOS and 2OS.
 
 Instead of nesting multiple `IF`-`ELSE`-`THEN` branches to cover additional
 languages, we should use `CASE`-`OF`-`ENDOF`-`ENDCASE` and enumerate the
@@ -303,16 +317,16 @@ languages as follows:
     VARIABLE language #english language ! ↲
     : hello ↲
       language @ CASE ↲
-        #english OF ." Hello, World!" ENDOF ↲
-        #spanish OF ." Hola, Mundo!" ENDOF ↲
-        #french OF ." Salut Mondial!" ENDOF ↲
+        #english OF ." Hello, World!"  ENDOF ↲
+        #spanish OF ." Hola, Mundo!"   ENDOF ↲
+        #french  OF ." Salut Mondial!" ENDOF ↲
         ." Unknown language" ↲
       ENDCASE ↲
       CR ; ↲
     hello ↲
     Hello, World!
 
-Note that a default case is not really necessary, but can be inserted between
+Note that the default case is not really necessary, but can be inserted between
 the last `ENDOF` and `ENDCASE`.  In the default branch the `CASE` value is the
 TOS, which can be inspected, but should not be dropped before `ENDCASE`.
 
@@ -320,7 +334,7 @@ Constant words push their value on the stack, wheras variable words push the
 address of their value on the stack to fetch with `@` and to store a new value
 with `!`.
 
-So-called Forth value words offer the advantage of implicit fetch like
+So-called Forth value words offer the advantage of implicit fetches like
 constants.  To illustrate value words, let's replace the `VARIABLE language`
 with `VALUE language` initialized to `#english`:
 
@@ -337,6 +351,28 @@ Now with `language` as a `VALUE`, `hello` should be changed by removing the
       language CASE ↲
       ...
 
+Forth constants, variables and values contain data.  Data words are added
+to the dictionary with `CREATE` followed by words to allocate space for the
+data.  The word created returns the address pointing to its data:
+
+    CREATE data ↲
+    data . ↲
+    <address> OK[0]
+
+In this example `data` has no data allocated or stored, it just returns the
+address of the location where the data would reside.  Because addresses of
+words in the dictionary are unique, we can use this mechanism to create
+"symbolic" enumerations to replace constants (and save some space):
+
+    CREATE english ↲
+    CREATE spanish ↲
+    CREATE french ↲
+    english TO language ↲
+
+Working with `CREATE` to create data types and data structures is a more
+advanced topic.  See [CREATE and DOES>](#create-and-does) for details.  See
+also example [enums](#enums) for a more elaborate example.
+
 Earlier we saw the `DO`-`LOOP`.  The loop iterates until its internal loop
 counter when incremented *equals* the final value.  For example, this loop
 executes `hello` 10 times:
@@ -344,27 +380,28 @@ executes `hello` 10 times:
     : greetings 10 0 DO hello LOOP ; ↲
 
 Actually, `DO` cannot be recommended because the loop body is always executed
-at least once, for example when the initial value is the same as the final
-value we end up executing the loop 65536 times! (Because integers wrap around.)
-We use `?DO` instead of `DO` to avoid this problem:
+*at least once*.  When the initial value is the same as the final value we end
+up executing the loop 65536 times! (Because integers wrap around.) We use `?DO`
+instead of `DO` to avoid this problem:
 
-    : hellos 0 ?DO hello LOOP ; ↲
+    : hellos    0 ?DO hello LOOP ; ↲
     0 hellos ↲
     OK[0]
 
 This example has zero loop iterations and never executes the loop body `hello`.
-To change the step size or direction of the loop, use `+LOOP`.  The word `I`
-returns the counter value:
 
-    : evens 10 0 ?DO I . 2 +LOOP ; ↲
+To change the step size or direction of the loop, we use `+LOOP`.  The word `I`
+returns the loop counter value:
+
+    : evens     10 0 ?DO I . 2 +LOOP ; ↲
     evens ↲
     0 2 4 6 8 OK[0]
 
 Again, be warned that the loop terminates when the counter *equals* the final
-value, not exceeds it!  Therefore, using the wrong loop `9 0 ?DO I . 2 +LOOP`
-never terminates, because the counter is an even integer that wraps around (when
-the maximum positive integer value is reached) and the limit is the odd integer
-9.
+value, not exceeds it!  Therefore, using the wrong loop parameters, such as
+`9 0 ?DO I . 2 +LOOP` never terminates the loop, because the counter is an even
+integer that wraps around when the maximum positive integer value is reached
+and the limit is the odd integer 9.
 
 A `BEGIN`-`WHILE`-`REPEAT` is a logically-controlled loop with which we can do
 the same as follows by pushing a `0` to use as a counter on top of the stack:
@@ -397,7 +434,7 @@ A `BEGIN`-`UNTIL` loop is similar, but executes the loop body at least once:
 Forth has no built-in `>=`, so we use `< INVERT`.  If you really want `>=`,
 then define:
 
-    : >= < INVERT ; ↲
+    : >=    < INVERT ; ↲
 
 Until now we haven't commented our code.  Forth offers two words to comment
 code, `( a comment goes here )` and `\ a comment until the end of the line`:
@@ -416,10 +453,10 @@ in practice.
 
 Forth source code is loaded from a file with `INCLUDE` or with `INCLUDED`:
 
-    INCLUDE program1.fs ↲
-    S" program2.fs" INCLUDED ↲
+    INCLUDE program1.fth ↲
+    S" program2.fth" INCLUDED ↲
 
-where `S" program2.fs"` specifies a string constant with the file name.  A
+where `S" program2.fth"` specifies a string constant with the file name.  A
 drive letter such as F: can be specified to load from a specific drive, which
 becomes the current drive (the default drive is E:).
 
@@ -429,10 +466,10 @@ To list files on the current drive:
 
 You can also specify a drive and glob pattern with `FILES`:
 
-    FILES F:*.fs ↲
+    FILES F:*.fth ↲
 
-This lists all Forth .fs source code files on the F: drive and makes the F:
-drive the current drive.
+This lists all Forth .fth source code files on the F: drive and makes the F:
+drive the current drive.  Forth source files commonly use extension fth or fs.
 
 This ends our introduction to the essential basics of Forth.
 
@@ -456,7 +493,7 @@ stack:
 | _ud_     | an unsigned double integer 0 to 4294967295
 | _xd_     | an unspecified double integer (two unspecified single integers)
 | _addr_   | a 16-bit address
-| _c-addr_ | a 16-bit address pointing to 8-bit character(s)
+| _c-addr_ | a 16-bit address pointing to 8-bit character(s), usually a constant string
 | _f-addr_ | a 16-bit address pointing to a file status structure (Forth500)
 | _fileid_ | a nonzero single integer file identifier
 | _ior_    | a single integer nonzero system-specific error code
@@ -488,12 +525,15 @@ stack.
 Return stack effects are prefixed with `R:`.  For example:
 
 `>R` ( _x_ -- ; R: -- _x_ )
+`R>` ( R: _x_ -- ; -- _x_ )
 
-This word moves _x_ from the stack to the so-called "return stack".  The return
-stack is used to keep return addresses of words executed and to store temporary
-values.  When using the return stack to store values temporarily in your code,
-it is very important to keep the return stack balanced.  This prevents words
-from returning to an incorrect return address and crashing the system.
+The word `>R` ("to r") moves _x_ from the stack to the so-called "return
+stack".  The word `R>` ("r from") moves _x_ from the return stack to the stack.
+The return stack is used to keep return addresses of words executed and to
+store temporary values.  When using the return stack to store values
+temporarily in your code, it is very important to keep the return stack
+balanced.  This prevents words from returning to an incorrect return address
+and crashing the system.
 
 ## Stack manipulation
 
@@ -515,14 +555,14 @@ Note that `NIP` is the same as `SWAP DROP` and `TUCK` is the same as `DUP -ROT`.
 
 There are also two words to reach deeper into the stack:
 
-| word   | stack effect ( _before_ -- _after_ )       | comment
-| ------ | ------------------------------------------ | ------------------------
-| `PICK` | ( _xk_ ... _x0_ k -- _xk_ ... _x0_ _xk_ )  | duplicate k'th value down to the top
-| `ROLL` | ( _xk_ ... _x0_ k -- _xk-1_ ... _x0_ _xk_) | rotate the k'th value down to the top
+| word   | stack effect ( _before_ -- _after_ )         | comment
+| ------ | -------------------------------------------- | ----------------------
+| `PICK` | ( _xk_ ... _x0_ _k_ -- _xk_ ... _x0_ _xk_ )  | duplicate k'th value down to the top
+| `ROLL` | ( _xk_ ... _x0_ _k_ -- _xk-1_ ... _x0_ _xk_) | rotate the k'th value down to the top
 
 Note that `0 PICK` is the same as `DUP`, `1 PICK` is the same as `OVER`, `1
 ROLL` is the same as `SWAP`, `2 ROLL` is the same as `ROT` and `0 ROLL` does
-nothing.
+nothing.  Note: `PICK` and `ROLL` take _k_ _mod_ 128 cells max as a precaution.
 
 The following words operate on two cells on the stack at once (a pair of single
 integers or one double integer):
@@ -546,8 +586,8 @@ Other stack-related words:
 | `.S`    | ( -- )       | displays the stack contents
 | `N.S`   | ( _n_ -- )   | displays the top _n_ values on the stack
 
-`DEPTH` returns the depth of the stack before pushing the depth value.  The
-maximum stack depth in Forth500 is 200 cells or 100 double cells.
+`DEPTH` returns the depth of the stack, not counting the depth value returned.
+The maximum stack depth in Forth500 is 128 cells or 64 double cells.
 
 ## Integer constants
 
@@ -716,7 +756,7 @@ values must be applied when appropriate.
 A classic example is pi to compute the circumference of a circle using a
 rational approximation of pi and a fixed point radius with a 2 digit fraction.
 
-    : pi* 355 113 M*/ ; ↲
+    : pi*   355 113 M*/ ; ↲
     12.00 2VALUE radius ↲
     radius 2. D* pi* D. ↲
     7539 OK[0]
@@ -730,22 +770,22 @@ require scaling of the result.  Addition and subtraction with `D+` and `D-`
 do not require scaling either.  However, multiplying and dividing two fixed
 point numbers requires scaling the result, for example with a new word:
 
-    : *.00 D* 100. D/ ; ↲
+    : *.00  D* 100. D/ ; ↲
     radius radius *.00 pi* D. ↲
     45238 OK[0]
 
-There is a slight risk of overflowing the intermediate product when the
-multiplicants are large.  If this is a potential hazard then note that this can
-be avoided by scaling the multiplicants instead of the result with a small loss
-in precision of the result:
+There is a risk of overflowing the intermediate product when the multiplicants
+are large.  If this is a potential hazard then note that this can be avoided by
+scaling the multiplicants instead of the result with a small loss in precision
+of the result:
 
-    : 10./ 10. D/ ; ↲
-    : *.00 10./ 2SWAP 10./ D* ; ↲
+    : 10./  10. D/ ; ↲
+    : *.00  10./ 2SWAP 10./ D* ; ↲
 
 Likewise, fixed point division requires scaling.  One way to do this is
 by scaling the divisor down by 10 and the dividend up by 10 before dividing:
 
-    : /.00 10./ 2SWAP 10. D* 2SWAP D/ ;
+    : /.00  10./ 2SWAP 10. D* 2SWAP D/ ;
 
 ### Floating point arithmetic
 
@@ -818,6 +858,9 @@ The following words display integer values:
 
 Note that `0 .R` may be used to display an integer without a trailing space.
 
+Values are displayed with `EMIT` and `TYPE`, which may be redirected to a
+printer or to a file.  See [character output](#character-output).
+
 See also [pictured numeric output](#pictured-numeric-output).
 
 ### Pictured numeric output
@@ -839,7 +882,7 @@ first):
 
 For example:
 
-    : dollars <# # # S" ." HOLDS #S S" $" HOLDS #> TYPE SPACE ; ↲
+    : dollars   <# # # S" ." HOLDS #S S" $" HOLDS #> TYPE SPACE ; ↲
     1.23 dollars ↲
     $1.23  OK[0]
 
@@ -851,7 +894,7 @@ To display signed double integers, it is necessary to tuck the high order cell
 with the sign under the double number, then make the number positive and
 convert using `SIGN` at the end to get the sign a front:
 
-    : dollars TUCK DABS <# # # [CHAR] . HOLD #S [CHAR] $ HOLD DROP OVER SIGN #> TYPE SPACE ; ↲
+    : dollars   TUCK DABS <# # # [CHAR] . HOLD #S [CHAR] $ HOLD DROP OVER SIGN #> TYPE SPACE ; ↲
     -1.23 dollars ↲
     -$1.23  OK[0]
 
@@ -873,7 +916,7 @@ The following words store or display string constants:
 | `." ..."`  | ( -- )              | displays the string, can only be used in colon definitions
 | `.( ...)`  | ( -- )              | displays the string immediately, even when compiling
 
-All strings contain 8-bit characters, including special characters.
+Strings contain 8-bit characters, including special characters.
 
 The string constants created with `S"` and `S\"` are compiled to code when used
 in colon definitions.  Otherwise, the string is stored in a temporary internal
@@ -934,7 +977,7 @@ To let the user edit the name:
     name name-max name-len @ DUP 0 EDIT DROP name-len ! ↲
 
 See also the example [strings](#strings) for an improved implementation of
-string buffers that hold the maximum and actual string lengths.
+string buffers that hold both the maximum and actual string lengths.
 
 The following words move and copy characters in and between string buffers:
 
@@ -1019,7 +1062,7 @@ The following words return key presses and control the key buffer:
 
 ## Character output
 
-The following words display characters and text on the screen:
+The following words display characters and text:
 
 | word           | stack effect        | comment
 | -------------- | ------------------- | ---------------------------------------
@@ -1027,9 +1070,32 @@ The following words display characters and text on the screen:
 | `TYPE`         | ( _c-addr_ _u_ -- ) | display string _c-addr_ of size _u_
 | `REVERSE-TYPE` | ( _c-addr_ _u_ -- ) | same as `TYPE` with reversed video
 | `DUMP`         | ( _addr_ _u_ -- )   | dump _u_ bytes at address _addr_ in hexadecimal
-| `CR`           | ( -- )              | moves the cursor to a new line
+| `CR`           | ( -- )              | moves the cursor to a new line with CR-LF
 | `SPACE`        | ( -- )              | displays a single space
 | `SPACES`       | ( _n_ -- )          | displays _n_ spaces
+
+The following words can be used to control character output:
+
+| word      | stack effect    | comment
+| --------- | --------------- | -------------------------------------------------
+| `STDO`    | ( -- 1 )        | returns _fileid_=1 for standard output to the screen
+| `STDL`    | ( -- 3 )        | returns _fileid_=3 for standard output to the line printer
+| `TTY`     | ( -- _fileid_ ) | a `VALUE` with _fileid_ of a device or file to send character data to
+| `PRINTER` | ( -- _n_ )      | connects printer, returns the number of characters per line or zero if printer is off
+
+Normally `TTY` is `STDO` for screen output.  The output can be redirected by
+setting the `TTY` value to a _fileid_ of an open file with `fileid TO TTY`.
+
+When an exception occurs, including `ABORT`, `TTY` is set back to `STDO`.
+
+To redirect all character output to a printer:
+
+    : print-on  PRINTER IF STDL TO TTY THEN ;
+    : print-off STDO TO TTY ;
+
+For example:
+
+    print-on FILES F:*.* print-off ↲
 
 ## Screen and cursor operations
 
@@ -1040,7 +1106,6 @@ The following words control the screen and cursor position:
 | `AT-XY`      | ( _n1_ _n2_ -- )              | set cursor at column _n1_ and row _n2_ position
 | `AT-TYPE`    | ( _n1_ _n2_ _c-addr_ _u_ -- ) | display the string _c-addr_ _u_at column _n1_ and row _n2_
 | `AT-CLR`     | ( _n1_ _n2_ _n3_ -- )         | clear _n3_ characters at column _n1_ and row _n2_
-| `CR`         | ( -- )                        | move cursor to a new line
 | `PAGE`       | ( -- )                        | clear the screen
 | `SCROLL`     | ( _n_ -- )                    | scroll the screen _n_ lines up when _n_>0 or down when _n_<0
 | `X@`         | ( -- _n_ )                    | returns current cursor column position
@@ -1085,7 +1150,7 @@ mode to set, reset or reverse pixels:
 | `GBLIT!`  | ( _u_ _addr_ -- )              | copy 240 bytes of screen data from row _u_ (0 to 3) to address _addr_
 | `GBLIT@`  | ( _u_ _addr_ -- )              | copy 240 bytes of screen data at address _addr_ to row _u_ (0 to 3)
 
-A pattern _u_ is a 16-bit pixel pattern to draw dashes lines and boxes.  The
+A pattern _u_ is a 16-bit pixel pattern to draw dashed lines and boxes.  The
 pattern should be $ffff (-1 or `TRUE`) for solid lines and boxes.  For example,
 to reverse the current screen:
 
@@ -1096,7 +1161,7 @@ The `GDOTS` word takes an 8-bit pattern to draw a row of 8 pixels.  The `GDRAW`
 word draws a sequence of 8-bit patterns.  For example, to display a smiley at
 the upper left corner of the screen:
 
-    : smiley S\" \x3c\x42\x91\xa5\xa1\xa1\xa5\x91\x42\x3c" GDRAW ; ↲
+    : smiley    ( x y -- ) S\" \x3c\x42\x91\xa5\xa1\xa1\xa5\x91\x42\x3c" GDRAW ; ↲
     0 GMODE! PAGE CR 0 0 smiley ↲
 
       XXXXXX
@@ -1114,14 +1179,14 @@ content.  The `GBLIT!` word stores a row of screen data in a buffer and
 moves 240 bytes of screen data for one of the four rows of 40 characters.  For
 example, to save and restore the top row in the 256 byte `PAD`:
 
-    : save-top-row 0 PAD GBLIT! ; ↲
-    : restore-top-row 0 PAD GBLIT@ ; ↲
+    : save-top-row      ( -- ) 0 PAD GBLIT! ;
+    : restore-top-row   ( -- ) 0 PAD GBLIT@ ;
 
 To blit the whole screen, a buffer of 4 times 240 bytes is required:
 
-    240 4 * BUFFER: blit ↲
-    : save-screen 4 0 DO I DUP 240 * blit + GBLIT! LOOP ; ↲
-    : restore-screen 4 0 DO I DUP 240 * blit + GBLIT@ LOOP ; ↲
+    240 4 * BUFFER: blit
+    : save-screen       ( -- ) 4 0 DO I DUP 240 * blit + GBLIT! LOOP ;
+    : restore-screen    ( -- ) 4 0 DO I DUP 240 * blit + GBLIT@ LOOP ;
 
 ## Sound
 
@@ -1158,13 +1223,24 @@ The following words move cells between both stacks:
 The `N>R` and `NR>` words move _+n_+1 cells, including the cell _+n_.  For
 example `2 N>R ... NR> DROP` moves 2+1 cells to the return stack and back,
 then dropping the restored 2.  Effectively the same as executing `2>R ... 2R>`.
+Note: `N>R` and `NR>` move _+n_ _mod_ 128 cells max as a precaution.
 
 Care must be taken to prevent return stack imbalences when a colon definition
 exits.  The return stack pointer must be restored to the original state when
 the colon definition started before the colon definition exits.
 
-The maximum depth of the return stack in Forth500 is 200 cells or 100 double
-cells.
+The maximum depth of the return stack in Forth500 is 256 bytes to hold up to
+128 cells or 128 calls to secondaries.
+
+"Caller cancelling" is possible with `R>DROP` to remove a return address:
+
+    : bar  ." bar " R>DROP ;
+    : foo  ." foo " bar ." rest of foo" ;
+
+where `R>DROP` removes the return address to `foo`.  Therefore:
+
+    foo ↲
+    foobar OK[0]
 
 ## Defining new words
 
@@ -1207,7 +1283,7 @@ that contains the execution token of another word to execute indirectly:
 | word        | stack effect            | comment
 | ----------- | ----------------------- | --------------------------------------
 | `DEFER`     | ( "name" -- )           | defines a deferred word that is initially uninitialized
-| `'`         | ( "name" -- _xt_ )      | (tick) returns the execution token of "name" on the stack
+| `'`         | ( "name" -- _xt_ )      | tick returns the execution token of "name" on the stack
 | `[']`       | ( "name" -- ; -- _xt_ ) | compiles "name" as an execution token literal _xt_
 | `IS`        | ( _xt_ "name" -- )      | assign "name" the execution token _xt_ of another word
 | `ACTION-OF` | ( "name" -- _xt_ )      | fetch the execution token _xt_ assigned to "name"
@@ -1245,7 +1321,24 @@ To assign one deferred word to another we use `ACTION-OF`, for example:
 
 The result is that `bar` is assigned `TRUE` to execute.  By contrast, `' foo IS
 bar` assigns `foo` to `bar` so that `bar` executes `foo` and `foo` executes
-`TRUE`.  Changing `foo` would also change `bar`.
+`TRUE`.  This means that changing `foo` would also change `bar`.
+
+The current action of a deferred word can be compiled into a definition to
+produce a static binding as follows:
+
+    : bar ... [ ACTION-OF foo COMPILE, ] ... ;
+
+where `COMPILE,` compiles the execution token on the stack into the current
+definition.  See also [the \[ and \] brackets](#the--and--brackets).  To
+streamline this method, define the immediate word `[ACTION-OF]`:
+
+    : [ACTION-OF] ACTION-OF COMPILE, ; IMMEDIATE
+
+which is used as follows:
+
+    : bar ... [ACTION-OF] foo ...
+
+Some Forth implementations use `DEFERS` to do the same.
 
 ### Noname definitions
 
@@ -1268,6 +1361,9 @@ words](#deferred-words) to store and execute the unnamed code:
     FORGET lambda ↲
     OK [0]
 
+The no-name equivalent of `CREATE` is `CREATE-NONAME`, see [CREATE and
+DOES>](#create-and-does).
+
 ### Recursion
 
 A recursive colon definition cannot use its name, which is hidden until the
@@ -1275,7 +1371,7 @@ final `;` is parsed.  This is done to avoid the possible use of incomplete
 colon definitions that can crash the system when executed.  A recursive colon
 definition should use `RECURSE` to call itself:
 
-    : factorial ( _u_ -- _ud_ ) \ _u_<=12
+    : factorial ( u -- ud ) \ u<=12
       ?DUP IF DUP 1- RECURSE ROT UMD* ELSE 1. THEN ;
 
 Mutual recursion can be accomplished with [deferred words](#deferred-words):
@@ -1286,6 +1382,9 @@ Mutual recursion can be accomplished with [deferred words](#deferred-words):
 
 `:NONAME` returns the execution token of an unnamed colon definition,
 see also [noname definitions](#noname-definitions).
+
+Do not recurse too deep.  The return stack supports up to 128 calls to
+secondaries, not counting other data stored on the return stack.
 
 ### Immediate words
 
@@ -1351,9 +1450,9 @@ example, a table of 10 primes:
 
     CREATE primes 2 , 3 , 5 , 7 , 11 , 13 , 17 , 19 , 23 , 31 , ↲
 
-The `primes` table values are accessed with address arithmetic as follows:
+The entire `primes` table is displayed using address arithmetic as follows:
 
-    : show-primes 10 0 DO primes I CELLS + ? LOOP ; ↲
+    : primes?   ( -- ) 10 0 DO primes I CELLS + ? LOOP ; ↲
 
 where `primes` returns the starting address of the table and `primes I CELLS +`
 computes the address of the cell that holds the `I`'th prime value.
@@ -1365,7 +1464,7 @@ Uninitialized space is allocated with `ALLOT`.  For example, a buffer:
 This creates a buffer `buf` of 256 bytes.  The `buf` word returns the starting
 address of this buffer.  In fact, the built-in `BUFFER:` word is defined as:
 
-    : BUFFER: CREATE ALLOT ; ↲
+    : BUFFER:   CREATE ALLOT ; ↲
 
 so that `buf` can also be created with:
 
@@ -1375,7 +1474,7 @@ The `DOES>` word compiles code until a terminating `;`.  This code is executed
 by the word we `CREATE`.  For example, `CONSTANT` is defined in Forth as
 follows:
 
-    : CONSTANT CREATE , DOES> @ ; ↲
+    : CONSTANT  CREATE , DOES> @ ; ↲
 
 A constant just fetches its data from the definition's body.
 
@@ -1390,13 +1489,18 @@ of the creating definition, not with the word we `CREATE`.  The word we
 For example, address arithmetic can be added with `DOES>` to automatically
 fetch a prime number from the `primes` table of constants:
 
-    : table: CREATE DOES> SWAP CELLS + @ ;
+    : table:    ( "name" -- ; index -- n ) CREATE DOES> SWAP CELLS + @ ;
     table: primes 2 , 3 , 5 , 7 , 11 , 13 , 17 , 19 , 23 , 31 , ↲
     3 primes . ↲
     7 OK[0]
 
 The `SWAP CELLS + @` doubles the index with `CELLS` then adds the address of
 the `primes` table to get to the address to fetch the value.
+
+`CREATE-NONAME` is similar to `CREATE`, but does not add a new word to the
+dictionary, returning the execution token of the code instead.  The execution
+toke, can be assigned to a `DEFER` word for example, see also [noname
+definitions](#noname-definitions).
 
 #### Structures
 
@@ -1445,7 +1549,7 @@ to automatically index an array is done by creating a `BUFFER:` with `DOES>`
 code to return the address of a cell given the array and array index on the
 stack:
 
-    : cell-array: CELLS BUFFER: DOES> SWAP CELLS + ; ↲
+    : cell-array:   CELLS BUFFER: DOES> SWAP CELLS + ; ↲
 
 where `CELLS BUFFER:` creates a new word and allocates the specified number of
 cells for the named array, where `BUFFER:` just calls `CREATE ALLOT` to define
@@ -1461,7 +1565,7 @@ A generic `array` word takes the number of elements and size of an element,
 where the element size is stored as a cell using `,` followed by `* ALLOT` to
 reserve space for the array data:
 
-    : array: CREATE DUP , * ALLOT DOES> SWAP OVER @ * + CELL+ ; ↲
+    : array:    CREATE DUP , * ALLOT DOES> SWAP OVER @ * + CELL+ ; ↲
     10 2 CELLS array: factorials ↲
     1.      0 factorials 2! 1.    1 factorials 2! 2.     2 factorials 2! ↲
     6.      3 factorials 2! 24.   4 factorials 2! 120.   5 factorials 2! ↲
@@ -1476,16 +1580,16 @@ and `}` to demarcate the array index expression as follows:
     1. { 0 }factorials 2! 1. { 1 }factorials 2! 2. { 2 }factorials 2! ↲
 
 By making `{` immediate, it won't compile to a useless call to the `{` excution
-token.
+token.  This array implementation has no array index bound checks.
 
 ### Markers
 
 A so-called "marker word" is created with `MARKER`.  When the word is executed,
 it deletes itself and all definitions after it.  For example:
 
-    MARKER my-program ↲
+    MARKER _program_ ↲
     ...
-    my-program ↲
+    _program_ ↲
 
 This marks `my-program` as the start of our code indicated by the `...`.  This
 code is deleted by `my-program`.
@@ -1493,12 +1597,12 @@ code is deleted by `my-program`.
 A source code file might start with the following code to delete its
 definitions when the file is parsed again:
 
-    [DEFINED] my-program [IF] my-program [THEN] ↲
-    MARKER my-program ↲
+    [DEFINED] _program_ [IF] _program_ [THEN] ↲
+    MARKER _program_ ↲
 
 `ANEW` is shorter and does the same thing:
 
-    ANEW my-program ↲
+    ANEW _program_ ↲
 
 ### Introspection
 
@@ -1700,10 +1804,7 @@ The immediate `[` word switches `STATE` to `FALSE` and `]` switches `STATE` to
 temporarily switch to interpret mode and execute words, rather than compiling
 them.  For example:
 
-    : my-word ↲
-      [ ." compiling my-word" CR ] ↲
-      ." executing my-word" CR ; ↲
-    my-word ↲
+    : my-word       [ ." compiling my-word" CR ] ." executing my-word" CR ;
 
 This example displays `compiling my-word...` when `my-word` is compiled and
 displays `executing my-word` when `my-word` is executed.
@@ -1711,35 +1812,33 @@ displays `executing my-word` when `my-word` is executed.
 It is a good habit to define words to break up longer definitions, so we can
 rewrite this as follows:
 
-    : compiling-my-word ." compiling my-word" CR ; ↲
-    : my-word ↲
-      [ compiling-my-word ] ↲
-      ." executing my-word" CR ; ↲
-    my-word ↲
+    : "compiling"   ." compiling my-word" CR ;
+    : my-word       [ "compiling" ] ." executing my-word" CR ;
 
 Note that the immediate `.(` word can be used to display compile-time messages,
 see also [immediate execution](#immediate-execution).
 
 ### Immediate execution
 
-The `[` and `]` are no longer necessary if we make `compiling-my-word`
-`IMMEDIATE` to execute immediately:
+Consider:
 
-    : [compiling-my-word] ." compiling my-word" CR ; IMMEDIATE ↲
-    : my-word ↲
-      [compiling-my-word] ↲
-      ." executing my-word" CR ; ↲
+    : "compiling"   ." compiling my-word" CR ;
+    : my-word       [ "compiling" ] ." executing my-word" CR ;
 
-Using brackets with `[compiling-my-word]` is another good habit as a reminder
-that we execute `[ compiling-my-word ]`.
+The `[` and `]` are not necessary if we make `"compiling"` `IMMEDIATE` to
+execute immediately:
+
+    : [compiling]   ." compiling my-word" CR ; IMMEDIATE
+    : my-word       [compiling] ." executing my-word" CR ;
+
+Using brackets with `[compiling]` is another good habit as a reminder that we
+execute an immediate word when it affects compilation.
 
 This example illustrates how `IMMEDIATE` is used.  Because displaying
 information while compiling is generally considered useful, the `.(` word is
 marked immediate to display text followed by a `CR` during compilation:
 
-    : my-word ↲
-      .( compiling my-word) ↲
-      ." executing my-word" CR ; ↲
+    : my-word       .( compiling my-word) ." executing my-word" CR ;
 
 All [control flow](#control-flow) words execute immediately to compile
 conditionals and loops.
@@ -1752,7 +1851,7 @@ we can create a variable and use its current value to create a literal
 constant:
 
     VARIABLE foo 123 foo ! ↲
-    : now-foo [ foo @ ] LITERAL ; ↲
+    : now-foo   [ foo @ ] LITERAL ; ↲
     456 foo ! ↲
     now-foo . ↲
     123 OK[0]
@@ -1780,7 +1879,7 @@ This is the compile-time equivalent of `CHAR`.  For example, `[CHAR] $` is the
 same as `[ CHAR $ ] LITERAL`.
 
 The `[']` word parses the name of a word and compiles the word's execution
-token as a literal.  This is the compile-time equivalent of `'` (tick).  For
+token as a literal.  This is the compile-time equivalent of `'` ("tick").  For
 example, `['] NOOP` is the same as `[ ' NOOP ] LITERAL`.
 
 ### Postponing execution
@@ -1795,19 +1894,19 @@ definition compiles code.
 An example of `POSTPONE` to compile the immedate word `THEN` to execute when
 `ENDIF` executes, making `ENDIF` synonymous to `THEN`:
 
-    : ENDIF POSTPONE THEN ; IMMEDIATE ↲
+    : ENDIF     POSTPONE THEN ; IMMEDIATE ↲
 
 An example of `POSTPONE` to compile a non-immedate word:
 
-    : compile-MAX POSTPONE MAX ; IMMEDIATE ↲
-    : foo compile-MAX ; ↲
+    : [MAX]     POSTPONE MAX ; IMMEDIATE ↲
+    : foo       [MAX] ; ↲
 
 the result of which is:
 
-    : foo MAX ;
+    : foo       MAX ;
 
-Note that `compile-MAX` is `IMMEDIATE` to compile `MAX` in the definition of
-`foo`.  Basically, `compile-MAX` acts like a macro that expands into `MAX`.
+Note that `[MAX]` is `IMMEDIATE` to compile `MAX` in the definition of `foo`.
+Basically, `[MAX]` acts like a macro that expands into `MAX`.
 
 ### Compile-time conditionals
 
@@ -1839,7 +1938,7 @@ definition:
 Likewise, we can define `2NIP` if undefined:
 
     [UNDEFINED] 2NIP [IF] ↲
-    : 2NIP ROT DROP ROT DROP ; ↲
+    : 2NIP      ROT DROP ROT DROP ; ↲
     [THEN] ↲
 
 ## Source input and parsing
@@ -1852,7 +1951,7 @@ controlled by the following words:
 | ----------- | ------------------- | ------------------------------------------
 | `TIB`       | ( -- _c-addr_ )     | a 256 character terminal input buffer
 | `FIB`       | ( -- _c-addr_ )     | a 256 character file input buffer
-| `SOURCE-ID` | ( -- _addr_ )       | a variable holding the _fileid_ of the input source (e.g. `STDI` for keyboard)
+| `SOURCE-ID` | ( -- 0|-1 )         | identifies the source input from a string (-1) with `EVALUATE` or normal (0)
 | `SOURCE`    | ( -- _c-addr_ _u_ ) | returns the current buffer (`TIB` or `FIB`) and the number of characters stored in it
 | `>IN`       | ( -- _addr_ )       | a variable holding the current input position in the `SOURCE` buffer to parse from
 | `REFILL`    | ( -- _flag_ )       | refills the current input buffer from the current source, returns true if successful
@@ -1872,6 +1971,13 @@ The names of words in the dictionary are parsed with `PARSE-NAME`.  When `BL`
 is used as delimiter, also the control characters, such as CR and LF, are
 considered delimiters.
 
+The `EVALUATE` word combines parsing and execution with a string as the source
+input:
+
+| word       | stack effect                | comment
+| ---------- | --------------------------- | -----------------------------------
+| `EVALUATE` | ( ... _c-addr_ _u_ -- ... ) | redirects input to the string _c-addr_ _u_ to parse and execute
+
 ## Files
 
 The following words return _ior_ to indicate success (zero) or failure (nonzero
@@ -1890,7 +1996,7 @@ The following words return _ior_ to indicate success (zero) or failure (nonzero
 | `W/O`             | ( -- _fam_ )                                    | open file for write only
 | `R/W`             | ( -- _fam_ )                                    | open file for reading and writing
 | `BIN`             | ( _fam_ -- _fam_ )                              | update _fam_ for "binary file" mode access (does nothing)
-| `CREATE-FILE`     | ( _c-addr_ _u_ _fam_ -- _fileid_ _ior_ )        | create new file named _c-addr_ _u_ with mode _fam_, returns _fileid_
+| `CREATE-FILE`     | ( _c-addr_ _u_ _fam_ -- _fileid_ _ior_ )        | create new file named _c-addr_ _u_ with mode _fam_, returns _fileid_ or truncate existing file to zero length
 | `OPEN-FILE`       | ( _c-addr_ _u_ _fam_ -- _fileid_ _ior_ )        | open existing file named _c-addr_ _u_ with mode _fam_, returns _fileid_ and _ior_
 | `CLOSE-FILE`      | ( _fileid_ -- _ior_ )                           | close file _fileid_
 | `READ-FILE`       | ( _c-addr_ _u1_ _fileid_ -- _u2_ _ior_ )        | read buffer _c-addr_ of size _u1_ from _fileid_, returning number of bytes _u2_ read and _ior_
@@ -1912,25 +2018,53 @@ The following words return _ior_ to indicate success (zero) or failure (nonzero
 | `RESIZE-FILE`     | ( _ud_ _fileid_ -- _ior_ )                      | resize _fileid_ to _ud_ bytes (does not truncate files, only enlarge)
 | `DRIVE`           | ( -- _addr_ )                                   | returns address _addr_ of the current drive letter
 | `FREE-CAPACITY`   | ( _c-addr_ _u_ -- _du_ _ior_ )                  | returns the free capacity of the drive in string _c-addr_ _u_
-| `STDO`            | ( -- 1 )                                        | returns _fileid_ 1 for standard input from the keyboard
-| `STDI`            | ( -- 2 )                                        | returns _fileid_ 2 for standard output to the screen
-| `STDL`            | ( -- 3 )                                        | returns _fileid_ 3 for standard output to the line printer
+| `STDO`            | ( -- 1 )                                        | returns _fileid_=1 for standard output to the screen
+| `STDI`            | ( -- 2 )                                        | returns _fileid_=2 for standard input from the keyboard
+| `STDL`            | ( -- 3 )                                        | returns _fileid_=3 for standard output to the line printer
 | `>FILE`           | ( _fileid_ -- _f-addr_ )                        | returns file _f-addr_ data for _fileid_
 | `FILE>STRING`     | ( _f-addr_ -- _c-addr_ _u_ )                    | returns string _c-addr_ _u_ file name converted from file _f-addr_ data
 
 Globs with wildcard `*` and `?` can be used to list files on the E: or F:
 drive, for example:
 
-    FILES E:*.*        \ list all E: files and the current drive to E:
-    FILES              \ list all files on the current drive
-    FILES *.FS         \ list all FS files on the current drive
-    FILES PROGRAM.*    \ list all PROGRAM files with any extension on the current drive
-    FILES PROGRAM.???  \ same as above
+    FILES E:*.*       \ list all E: files and change the current drive to E:
+    FILES             \ list all files on the current drive
+    FILES *.FTH       \ list all FTH files on the current drive
+    FILES PROGRAM.*   \ list all PROGRAM files with any extension on the current drive
+    FILES PROGRAM.??? \ same as above
 
-Only one `*` for the file name can be used and only one `*` for the file
+Up to one `*` for the file name can be used and upt to one `*` for the file
 extension can be used.
 
 Press BREAK to stop the listing.
+
+The PC-E500 drive names associated with devices:
+
+| drive name    | _fam_ | comment
+| ------------- | ----- | -------------------------------------------------------
+| STDO: / SCRN: | `W/O` | LCD display
+| STDI: / KYBD: | `R/O` | keyboard
+| STDL: / PRN:  | `W/O` | printer
+| COM:          | `R/W` | SIO
+| CAS:          | `R/W` | tape
+| E:            | `R/W` | internal RAM disk
+| F:            | `R/W` | external RAM disk
+| G:            | `R/O` | ROM disk
+| X:            | `R/W` | FDD
+
+The first three devices are always accessible with the `STDO`, `STDI` and
+`STDL` words that return the corresponding _fileid_.  `STDL` is usable after
+connecting and checking the status of the printer with `PRINTER`, see also
+[character output](#character-output).
+
+`FILE-INFO` returns current position _ud1_ file size _ud_ file attribute _u1_
+and device attribue _u2_.  See the PC-E500 technical manual for details on
+the attribute values.
+
+If an exception occurs before a file is closed, the file cannot be opened
+again.  Doing so generates error 264.  The _fileid_ of open files start with 4,
+which means that the first file opened but not closed can be manually closed
+with `4 CLOSE-FILE .` displaying zero when successful.
 
 ### File errors
 
@@ -1938,31 +2072,34 @@ File I/O _ior_ error codes returned by file operations, _ior_=0 means no error:
 
 | code | error
 | ---- | -----------------------------------------------------------------------
-| 256  | an error occurred in the device and aborted
-| 257  | the parameter is beyond the range
-| 258  | the specified file does not exist
-| 259  | the specified pass code does not exist
-| 260  | the number of files to be opened exceeds the limit
-| 261  | the file whose processing is not permitted
-| 262  | ineffective file handle was attempted
-| 263  | processing is not specified by open statement
-| 264  | the file is already open
-| 265  | the file name is duplicated
-| 266  | the specified drive does not exist
-| 267  | error in data verification
-| 268  | processing of byte number has not been completed
-| 510  | fatal low battery
+| 256  | an error occurred in the device and aborted ($00)
+| 257  | the parameter is beyond the range ($01)
+| 258  | the specified file does not exist ($02)
+| 259  | the specified pass code does not exist ($03)
+| 260  | the number of files to be opened exceeds the limit ($04)
+| 261  | the file whose processing is not permitted ($05)
+| 262  | ineffective file handle was attempted (invalid _fileid_ argument) ($06)
+| 263  | processing is not specified by open statement ($07)
+| 264  | the file is already open ($08)
+| 265  | the file name is duplicated ($09)
+| 266  | the specified drive does not exist ($0a)
+| 267  | error in data verification ($0b)
+| 268  | processing of byte number has not been completed ($0c)
+| 510  | fatal low battery ($fe)
+| 511  | break key was pressed ($ff)
+
+The _ior_ code is the PC-E500(S) technical manual page 5 FCS error code + 256.
 
 ## Exceptions
 
 | word     | stack effect ( _before_ -- _after_ ) | comment
 | -------- | ------------------------------------ | ----------------------------
-| `ABORT`  | ( ... -- ... )                       | abort execution and throw -1
+| `ABORT`  | ( ... -- ... )                       | unconditionally abort execution and throw -1
 | `ABORT"` | ( "string" -- ; ... _x_ -- ... )     | if _x_ is nonzero, display "string" message and throw -2
 | `QUIT`   | ( ... -- ... )                       | throw -56
 | `THROW`  | ( ... _x_ -- ... ) or ( 0 -- )       | if _x_ is nonzero, throw _x_ else drop the 0
 | `CATCH`  | ( _xt_ -- ... 0 ) or ( _xt_ -- _x_ ) | execute _xt_, if an exception _x_ occurs then restore the stack and return _x_, otherwise return 0
-| `'`      | ( "name" -- _xt_ )                   | (tick) returns the execution token of "name" on the stack
+| `'`      | ( "name" -- _xt_ )                   | tick returns the execution token of "name" on the stack
 | `[']`    | ( "name" -- ; -- _xt_ )              | compiles "name" as an execution token literal _xt_
 
 `ABORT` and `ABORT"` return control to the keyboard to enter commands.
@@ -1976,15 +2113,15 @@ but catches exceptions thrown.  If an exception _x_ is thrown, then the stack
 has the state before `CATCH` with _xt_ removed and the nonzero exception code
 _x_ as the new TOS.  Otherwise,  a zero is left on the stack.  For example:
 
-    : try-to-divide ( dividend divisor -- )
+    : try-divide    ( dividend divisor -- )
       ['] / CATCH IF ↲
         ." cannot divide by zero" 2DROP \ remove dividend and divisor ↲
       ELSE ↲
         ." result=" . ↲
       THEN ; ↲
-    9 3 try-to-divide ↲
+    9 3 try-divide ↲
     result=3 OK[0]
-    9 0 try-to-divide ↲
+    9 0 try-divide ↲
     cannot divide by zero OK[0]
 
 `CATCH` restores the stack pointers when an exception is thrown, but the stack
@@ -1994,27 +2131,19 @@ values before `CATCH`.
 To throw and catch any errors when opening a file read-only, read it in blocks
 of 256 bytes into the `PAD` to display on screen, and close it:
 
-    : fopen ( c-addr u -- fileid )
-      R/O OPEN-FILE THROW ;
-    : fread ( fileid -- fileid c-addr length )
-      DUP PAD 256 ROT \ fileid c-addr 256 fileid
-      READ-FILE THROW \ fileid length
-      PAD SWAP ;      \ fileid c-addr length
-    : fclose ( fileid -- )
-      CLOSE-FILE THROW ;
-    : more ( -- )
-      fopen \ fileid
+    : VARIABLE fh \ file handle, nonzero when file is open
+    : open      ( c-addr u -- ) R/O OPEN-FILE THROW fh ! ;
+    : read      ( -- len ) PAD 256 fh @ READ-FILE THROW ;
+    : close     ( -- ) fh @ CLOSE-FILE fh OFF THROW ;
+    : more      ( c-addr u -- )
+      open
       BEGIN
-        ['] fread CATCH IF
-          fclose ABORT
-        THEN \ fileid c-addr length
-      DUP WHILE
-        TYPE
+        read
+      ?DUP WHILE
+        PAD SWAP TYPE
       REPEAT
-      2DROP
-      fclose CR ;
-    : test-more ( -- )
-      S" somefile.txt" ['] more CATCH ABORT" an error occurred" ;
+      close CR ;
+    : test-more ( -- ) S" somefile.txt" ['] more CATCH ABORT" an error occurred" ;
 
 The following [standard Forth exception
 codes](https://forth-standard.org/standard/exception) may be thrown by built-in
@@ -2130,12 +2259,12 @@ The Forth500 dictionary is organized as follows:
          |         |
          |=========|<--- dictionary limit
          |         |
-         | data    |     stack of 200 cells (400 bytes)
+         | data    |     stack of 256 bytes (128 cells)
          | stack   |     grows toward lower addresses
          |         |<--- SP stack pointer
          |=========|
          |         |
-         | return  |     return stack of 200 cells (400 bytes)
+         | return  |     return stack of 256 bytes
          | stack   |     grows toward lower addresses
          |         |<--- RP return stack pointer
          |---------|<--- $BFC00
@@ -2177,6 +2306,17 @@ dictionary space as a block of code without link and name header.
 
 ## Examples
 
+### GCD
+
+The greatest common denominator of two integers is computed with Euclid's
+algorithm in Forth as follows:
+
+    : gcd   ( n1 n2 -- gcd ) BEGIN ?DUP WHILE TUCK MOD REPEAT ;
+
+The double integer version:
+
+    : dgcd  ( d1 d2 -- dgcd ) BEGIN 2DUP D0<> WHILE 2TUCK DMOD REPEAT 2DROP ;
+
 ### SQRT
 
 The square root of a number is approximated with Newton's method.  Given an
@@ -2191,37 +2331,37 @@ Because we operate with integers, the convergence check should consider the
 previous two estimates of _x_ to avoid oscillation.  The outline of the
 algorithm is:
 
-    y = 1                    \ estimate before the previous estimate
-    x = 1                    \ previous estimate
+    y = 1                   \ estimate before the previous estimate
+    x = 1                   \ previous estimate
     begin
-      x' = (x+a/x)/2         \ improved estimate
-      while x'<>x and x'<>y  \ convergence?
-        y = x                \ update estimates
+      x' = (x+a/x)/2        \ improved estimate
+      while x'<>x and x'<>y \ convergence?
+        y = x               \ update estimates
         x = x'
     again
 
-This algorithm assumes that _a_ is positive.  Negative _a_ are invalid and will
+This algorithm assumes that _a_ is positive.  Negative _a_ are invalid and may
 raise a division by zero exception.  If _a_ is zero then we also raise an
-exception, which should be avoided by setting _x_ to zero when _a_ is zero.
+exception, which we want to avoid by returning zero if _a_ is zero.
 
 To implement the algorithm in Forth, we place _a_ on the return stack, because
 we only need _a_ to compute _x'_.  We place _y_ and _x_ on the stack and
 compute the new estimate _x'_ as the TOS above them.
 
-    : sqrt ( n -- sqrt )
-      DUP IF              \ if a<>0
-        >R                \ move a to the return stack
-        1 1               \ -- y x where y=1 and x=1 initially
+    : sqrt      ( n -- sqrt )
+      DUP IF            \ if a<>0
+        >R              \ move a to the return stack
+        1 1             \ -- y x where y=1 and x=1 initially
         BEGIN
-          R@              \ -- y x a
-          OVER /          \ -- y x (a/x)
-          OVER + 2/       \ -- y x x' where x'=(a/x+x)/2
-          ROT             \ -- x x' y
-          OVER <> WHILE   \ while x'<>y
-          2DUP <> WHILE   \ and while x'<>x
+          R@            \ -- y x a
+          OVER /        \ -- y x (a/x)
+          OVER + 2/     \ -- y x x' where x'=(a/x+x)/2
+          ROT           \ -- x x' y
+          OVER <> WHILE \ while x'<>y
+          2DUP <> WHILE \ and also while x'<>x
         REPEAT THEN
-        DROP              \ -- x
-        R>DROP            \ drop a from the return stack
+        DROP            \ -- x
+        R>DROP          \ drop a from the return stack
       THEN ;
 
 Note that the second `WHILE` requires a `THEN` after `REPEAT`, see
@@ -2234,7 +2374,7 @@ unsigned division by 2 with `1 RSHIFT` to replace `2/`.
 
 The double integer square root implementation:
 
-    : dsqrt ( d -- dsqrt )
+    : dsqrt     ( d -- dsqrt )
       2DUP D0<> IF
         2>R
         1. 1.
@@ -2250,18 +2390,21 @@ The double integer square root implementation:
         R>DROP R>DROP
       THEN ;
 
-### GCD
+### RAND
 
-The greatest common denominator of two integers is computed with Euclid's
-algorithm in Forth as follows:
+A Forth500 version of the C rand function to generate pseudo-random numbers
+between 0 and 32767:
 
-    : gcd ( n1 n2 -- gcd )
-      BEGIN ?DUP WHILE TUCK MOD REPEAT ;
+    2VARIABLE seed
+    : rand  ( -- +n ) seed 2@ 1103515245. D* 12345. D+ TUCK seed 2! 32767 AND ;
+    : srand ( x -- ) S>D seed 2! ;
+    1 srand
 
-The double integer version:
+Note: do not use rand for any serious applications.
 
-    : dgcd ( d1 d2 -- dgcd )
-      BEGIN 2DUP D0<> WHILE 2TUCK DMOD REPEAT 2DROP ;
+To draw a randomized "starry night" on the 240x32 pixel screen:
+
+    : starry-night PAGE 1000 0 DO rand 240 MOD rand 32 MOD GPOINT LOOP ;
 
 ### Strings
 
@@ -2269,31 +2412,26 @@ This example is an implementation with string buffers residing in the
 dictionary, which is pretty standard practice in Forth.  Each buffer includes
 the maximum length of the string as its first byte followed by the actual
 length of the string in the second byte.  The string contents follow these two
-bytes.  This implementation is concise by reusing words as much as possible to
-avoid unnecessary complexity.
+bytes.  This implementation is short and concise by reusing words as much as
+possible to avoid unnecessary complexity.
 
 We first define four auxilliary words to obtain the max length, the current
 length, the unused space and to set a new length limited by the max length:
 
-    : strmax ( string -- max )
-      2- C@ ;
+    : strmax    ( string -- max ) 2- C@ ;
+    : strlen    ( string -- len ) 1- C@ ;
+    : strunused ( string -- unused ) DUP strmax SWAP strlen - ;
+    : strupdate ( string len -- ) OVER strmax UMIN SWAP 1- C! ;
 
-    : strlen ( string -- len )
-      1- C@ ;
+Note that we used `UMIN` to prevent negative string lengths.
 
-    : strunused ( string -- unused )
-      DUP strmax SWAP strlen - ;
+The following `string:` word creates a string buffer given a maximum length:
 
-    : strupdate ( string len -- )
-      OVER strmax UMIN SWAP 1- C! ;
-
-The `string:` word creates a string buffer given a maximum length:
-
-    : string: ( max "name" -- ; string len )
+    : string:   ( max "name" -- ; string len )
       CREATE DUP C, 0 C, ALLOT
       DOES> 2+ DUP strlen ;
 
-For example, let's define a `name` to store up to 30 characters:
+Let's define a `name` to store up to 30 characters:
 
     30 string: name ↲
 
@@ -2309,8 +2447,8 @@ This displays nothing because the string is initially empty.
 To safely copy a (constant) string to a string buffer by limiting the number of
 characters copied to guard against overflowing the buffer:
 
-    : strcpy ( c-addr u string len -- )
-      DROP DUP ROT strupdate  \ set the new length
+    : strcpy    ( c-addr u string len -- )
+      DROP DUP ROT strupdate \ set the new length
       DUP strlen CMOVE ;
 
 For example:
@@ -2322,10 +2460,10 @@ For example:
 To safely concatenate a string to another by limiting the number of characters
 appended to guard against overflowing the buffer:
 
-    : strcat ( c-addr u string len -- )
-      >R                        \ save the old length
-      SWAP OVER strunused UMIN  \ limit the added length
-      2DUP R@ + strupdate       \ set the new length = old length + added
+    : strcat    ( c-addr u string len -- )
+      >R                       \ save the old length
+      SWAP OVER strunused UMIN \ limit the added length
+      2DUP R@ + strupdate      \ set the new length = old length + added
       SWAP R> + SWAP CMOVE ;
 
 For example:
@@ -2337,21 +2475,19 @@ For example:
 Forth words that work with constant strings, such as `TYPE`, `SEARCH` and `S=`,
 also work with our string buffers:
 
-    S" Do" name SEARCH . . 2 SWAP TYPE ↲
-    -1 1 Do OK[0]
+    name S" Do" SEARCH . TYPE ↲
+    -1 Doe OK[0]
 
     S" John" name 4 MIN S= . ↲
     -1 OK[0]
 
 We can also accept user input into a string:
 
-    : straccept ( string len -- )
-      DROP DUP DUP strmax ACCEPT strupdate ;
-
-    : stredit ( string len -- )
-      >R DUP strmax R>  \ -- string max len
-      DUP               \ place cursor at the end (length)
-      0                 \ allow edits to the begin position
+    : straccept ( string len -- ) DROP DUP DUP strmax ACCEPT strupdate ;
+    : stredit   ( string len -- )
+      >R DUP strmax R> \ -- string max len
+      DUP              \ place cursor at the end (length)
+      0                \ allow edits to the begin position
       EDIT strupdate ;
 
 For example:
@@ -2363,14 +2499,27 @@ For example:
     name TYPE ↲
     John Doe OK[0]
 
-Slicing a substring from a (constant) string returns the (constant) substring
-address and its length:
+The `NEXT-CHAR` word slices off the first character of a string by incrementing
+the address and decrementing the length by one:
 
-    : slice ( c-addr1 u1 pos len -- c-addr2 u2 )
-      >R         \ save len
-      OVER UMIN  \ -- c-addr u1 pos where pos is limited to u1
-      TUCK       \ -- c-addr pos u1 pos
-      - R> UMIN  \ -- c-addr pos len where pos+len is limited to u1
+    name NEXT-CHAR EMIT CR TYPE ↲
+    J
+    ohn Doe OK[0]
+
+The `/STRING` ("slash string") word advances the string address and reduces the
+string length by the given amount and :
+
+    name 5 /STRING TYPE ↲
+    Doe OK[0]
+
+We can define a word to slice strings.  Slicing a substring from a (constant)
+string returns the (constant) substring address and substring length:
+
+    : slice     ( c-addr1 u1 pos len -- c-addr2 u2 )
+      >R        \ save len
+      OVER UMIN \ -- c-addr u1 pos where pos is limited to u1
+      TUCK      \ -- c-addr pos u1 pos
+      - R> UMIN \ -- c-addr pos len where pos+len is limited to u1
       >R + R> ;
 
 where _pos_ and _len_ take a slice from string _c-addr1_ _u1_ to return the
@@ -2383,7 +2532,7 @@ For example:
     name 5 3 slice TYPE ↲
     Doe OK[0]
 
-Note that we can safely take slices of slices:
+Note that we can take slices of slices:
 
     name 4 4 slice 1 2 slice TYPE ↲
     Do OK[0]
@@ -2399,9 +2548,10 @@ the string to itself:
     John Doe OK[0]
 
 Inserting and deleting characters can be done with slicing and a temporary
-buffer, such as the `PAD` of 256 bytes:
+buffer, such as the `PAD` of 256 bytes that can hold a string with up to 254
+characters:
 
-    : strtmp 254 PAD C! PAD 2+ PAD 1+ C@ ;
+    : strtmp    254 PAD C! PAD 2+ PAD 1+ C@ ;
 
 For example, to copy "John" from `name`, insert " J." and append " Doe" from
 `name` into the string temporary:
@@ -2415,31 +2565,28 @@ For example, to copy "John" from `name`, insert " J." and append " Doe" from
 Additional words to convert characters and string buffers to upper and lower
 case:
 
-    : >upper ( char -- char )
-      [CHAR] a [CHAR] { WITHIN IF $20 - THEN ;
-
-    : >lower ( char -- char )
-      [CHAR] A [CHAR] [ WITHIN IF $20 + THEN ;
-
-    : strupper ( string u -- )
-      0 ?DO DUP I + DUP C@ >upper C! LOOP DROP ;
-
-    : strlower ( string u -- )
-      0 ?DO DUP I + DUP C@ >lower C! LOOP DROP ;
+    : toupper   ( char -- char ) [CHAR] a [CHAR] { WITHIN IF $20 - THEN ;
+    : tolower   ( char -- char ) [CHAR] A [CHAR] [ WITHIN IF $20 + THEN ;
+    : strupper  ( string u -- ) 0 ?DO DUP I + DUP C@ toupper C! LOOP DROP ;
+    : strlower  ( string u -- ) 0 ?DO DUP I + DUP C@ tolower C! LOOP DROP ;
 
 For example:
 
     name strupper name TYPE ↲
     JOHN DOE OK[0]
 
-The `sfield:` word adds a string member to a structure:
+The following `sfield:` word adds a string member to a structure:
 
-    : sfield: ( u len "name" -- u ; addr -- addr )
+    : sfield:   ( u max "name" -- u ; addr -- string len )
       CREATE
-        >R 2+ DUP , R@ + R>
-      DOES>
-        DUP 2- LITERAL C!  \ make sure string max is set
-        1+ DUP C@ 1+ SWAP ;
+        OVER ,  \ store current struct size u
+        DUP ,   \ store max
+        + 2+    \ update struct size += max+2
+      DOES>     ( struct-addr addr -- member-addr )
+        SWAP OVER @ + \ compute member address
+        DUP ROT       \ -- member-addr member-addr addr
+        CELL+ @ C!    \ make sure string max is set
+        2+ DUP strlen ;
 
 For example an address with a 30 max character street name:
 
@@ -2453,6 +2600,152 @@ For example an address with a 30 max character street name:
     555 home address.number ! ↲
     home address.street TYPE SPACE home address.number ? ↲
     Pleasantville 555
+
+To create arrays of (uninitialized) strings:
+
+    : sarray:   ( size max "name" -- ; index -- string len )
+      CREATE
+        DUP , 2+ * ALLOT \ save max and allocate space
+      DOES>
+        SWAP OVER @  \ -- addr index max
+        DUP>R        \ save max
+        2+ * + CELL+ \ address in the array = (max+2)*index+addr+2
+        R> OVER C!   \ make sure the string max is set
+        2+           \ skip max and len to get to string
+        DUP strlen ;
+
+To initialize an array element, just `strcpy` a value to it.  For example, to
+create an array of 10 strings of 16 characters max, then copy "John" into array
+item 5 (counting from 0):
+
+    10 16 sarray: names ↲
+    S" John" 5 names strcpy ↲
+
+Large arrays of strings aren't very resource efficient, because each string
+element in the array reserves space.  Best is to implement a heap to store
+strings and use compaction to keep the heap space efficiently used.
+
+### Enums
+
+Enumerated values can be created with multiple `CONSTANT`, each for a new
+enumeration value.  Another approach is to use the unique address of a word as
+the enumeration value, assuming the actual value does not matter as long as it
+is unique.  Consider for example an enumeration of colors:
+
+    CREATE red
+    CREATE white
+    CREATE blue
+
+Each color word returns its address of the definitions body, which contains no
+data.  Because in Forth500 the body if a word is 3 bytes below the execution
+token, we can implement a word `enum.` to display the color name:
+
+    : body>     ( addr -- xt ) 3 - ;
+    : enum.     ( addr -- ) body> >NAME NAME>STRING TYPE ;
+
+The `body>` "body from" word converts a body address of a word to its execution
+token, `>NAME` converts the execution token to a name token and `NAME>STRING`
+converts the name token to a string on the stack.  For example:
+
+    red enum. ↲
+    red OK[0]
+
+Another way to implement enumerations is to use the address of a "counted
+string" as a unique enumeration value:
+
+    : red       C" the color red" ;
+    : white     C" the color white" ;
+    : blue      C" the color blue" ;
+
+The string of a color word is displayed with `COUNT TYPE`.
+
+This example shows how Forth encourages creativity to come up with an approach
+that is best suited for an application.
+
+### Slurp
+
+"Slurping" a file into memory to process it is typically performed by storing
+the file's contents in the free dictionary space.  The free dictionary space
+serves as our working area.  We could pre-allocate memory with the file size,
+but in this example we assume that the file size is unknown (e.g. when reading
+standard input with piped input, keyboard input, etc.)  Therefore, slurping a
+file is done incrementally by reading a chunk at a time.
+
+First we need some variables:
+
+    VARIABLE fh \ file handle, nonzero if file is open
+    VARIABLE fp \ file content pointer, points to start of the slurped file
+    VARIABLE fz \ file content length
+
+Next, we define `slurp`:
+
+    : slurp     ( c-addr u -- c-addr u ) open read close ;
+
+The `slurp` word takes the file name as a string and returns the file contents
+as string.  The file open and close words check for errors to throw them:
+
+    : open      ( c-addr u -- ) R/O OPEN-FILE THROW fh ! ;
+    : close     fh @ ?DUP IF CLOSE-FILE fh OFF THROW THEN ;
+
+Now we cane `read` a file incrementally, "sipping" one block at a time until
+he last sip is empty:
+
+    : read      start BEGIN sip 0= UNTIL done ;
+
+To `start`, we just initialize `fp` to `HERE`:
+
+    : start     HERE fp ! ;
+
+A "sip" allocates and reads up to 100 bytes at a time from the file:
+
+    : sip       ( -- n ) HERE 100 DUP ALLOT fh @ READ-FILE THROW DUP 100 - ALLOT ;
+
+Note that the second `ALLOT` with a negative size (= number of bytes read -
+100) releases unused space back to the dictionary, then returns the number of
+bytes read.
+
+After repeately "sipping", we can compute and return the length by subtracting
+`HERE` (the final address) from `fp @` (the starting address) and return `fp`
+and `fz`:
+
+    : done      ( -- c-addr u ) HERE fp @ - fz ! fp @ fz @ ;
+
+For good measure, when we are all good and done with the file in memory, we
+should release memory back to the dictionary:
+
+    : release   fp @ HERE - ALLOT ;
+
+If we decide not to `release`, then the file remains in memory for later use.
+Before slurping another file, make sure to save `fp` and `fz` to retain access
+to the file's content stored in memory.
+
+Let's recap and put things in order:
+   
+    VARIABLE fh \ file handle, nonzero if file is open
+    VARIABLE fp \ file content pointer, points to start of the slurped file
+    VARIABLE fz \ file content length
+    : sip       ( -- n ) HERE 100 DUP ALLOT fh @ READ-FILE THROW DUP 100 - ALLOT ;
+    : start     HERE fp ! ;
+    : done      ( -- c-addr u ) here fp @ - fz ! fp @ fz @ ;
+    : read      start BEGIN sip 0= UNTIL done ;
+    : open      ( c-addr u -- ) R/O OPEN-FILE THROW fh ! ;
+    : close     fh @ ?DUP IF CLOSE-FILE fh OFF THROW THEN ;
+    : slurp     ( c-addr u -- c-addr u ) open read close ;
+    : release   fp @ HERE - ALLOT ;
+
+Note that definitions without a `(` stack effect `)` have no stack effect.
+
+For example, we can search a text file for string matches, say "TODO":
+
+    ." some.txt" slurp ." TODO" SEARCH release . ↲
+    0 OK[2]
+
+This will display -1 (true) when found and leaves the address of the match with
+remaining length of the file on the stack, or 0 (false) when not found.
+
+If the free space in the dictionary is insufficient, then exception -8 will be
+thrown.  If that happens, call `close` and `release` to close the file and
+release memory.
 
 
 _This document is Copyright Robert A. van Engelen (c) 2021_

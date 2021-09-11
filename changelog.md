@@ -4,7 +4,7 @@ The following bug fixes and improvements were made to the original pceForth code
 
 - removed useless `rc` before `jp interp__`
 - replaced `jp interp__` by `jp cont__` to skip BREAK key test in code when control flow is not jumping backward and no IO (with a few exceptions)
-- `jp cont__` with fetch-exec loop cycle takes 17 CPU cycles (4+5+4+4), 7 cycles saved (i.e. BREAK key test adds 40% overhead), BREAK key interruption is fully working by testing BREAK key in `docol__xt`, when performing backward jumps and when performing IO
+- `jp cont__` with fetch-exec loop cycle takes 15 CPU cycles, 7 cycles saved (i.e. BREAK key test adds 40% overhead), BREAK key interruption is fully working by testing BREAK key in `docol__xt`, when performing backward jumps and when performing IO
 - removed floating point words (float operations are not implemented in this version)
 - optimized code that returns `TRUE` (-1 or $ffff) or `FALSE` (0) by using `mv ba,$0000`, `jpnz cont__`, `dec ba`, `jp cont__` or by using `mv ba,$ffff`, `jpnz cont__`, `inc ba`, `jp cont__`
 - optimized `mv i,$00xx` to `mv il,$xx`
@@ -15,7 +15,7 @@ The following bug fixes and improvements were made to the original pceForth code
 - replaced `BEHAVIOR` with standards-compliant `ACTION-OF` using `DEFER@`
 - removed non-standard `MATCH?`
 - removed non-standard `RECURSIVE` (same as `REVEAL`)
-- replaced `M+` and `M-` with Forth code instead of assembly
+- replaced `M+` and `M-` with Forth code instead of assembly to reduce code size
 - added standards-compliant `PARSE-NAME`
 - fixed `2CONSTANT` lo/hi cell order swapped
 - removed BLOCK (`BLK`, `BLOCK`, `BUFFER`, `LOAD`, `LIST`, `THRU`) because blocks are not implemented and `EVALUATE` does not even use `BLK`
@@ -51,7 +51,7 @@ The following bug fixes and improvements were made to the original pceForth code
 - removed `VERIFY-FILE`, which is not usable
 - renamed internal `FORGET-LIMIT` to the more conventional `FENCE`
 - renamed internal `CHECK-STACK` to the more conventional `?STACK`
-- optimized `(;CODE)`
+- optimized `(;CODE)` assembly
 - added standards-compliant `BEGIN-STRUCT`, `END-STRUCT`, `+FIELD`, `CFIELD:`, `FIELD:`, `2FIELD:`
 - optimized `CASE OF` with new `(OF)` conditional jump that is faster and saves 6 bytes per `OF-ENDOF` pair
 - changed `DOUBLE-NUMBER` to `>DOUBLE` with optimized code to reduce code size
@@ -59,9 +59,15 @@ The following bug fixes and improvements were made to the original pceForth code
 - changed to case-insensitve Forth, words can be typed in upper/lower/mixed case
 - updated the filename-related words to automatically change the current drive letter (stored in `DRIVE`) when specified
 - fixed `2/` and `D2/` that removed the sign, should perform an arithmetic shift right, not a logical shift right
-- replace `mv ba,0` with `sub ba,ba` when possible (the latter sets flags), saving >40 bytes
+- replace `mv ba,0` with `sub ba,ba` when possible (but the latter sets flags), saving >40 bytes
 - added dictionary underflow and overflow checks to `ALLOT` and to all of the comma words
 - added `CELL` (same as `1 CELLS`)
 - replaced `(UNINIT)` non-standard -59 exception "execution of an uninitialized deferred word" with a system-defined -256 exception
 - fixed `(DO2LIT)` lo/hi cell order swapped
 - fixed `FORGET` memory leak (did not forget old link cell and old name)
+- added `INCLUDE`
+- added `VALUE TTY` to support redirecting `EMIT` and `TYPE` output (default is `STDO` for screen output, `STDL` to print)
+- added `PRINTER` to connect to printer and check printer status
+- optimized `?STACK` stack check in assembly
+- added stack overflow/underflow checks to all loop words
+- changed return addresses size from 3 bytes to 2 bytes (1 cell) for standard Forth compliance, support "caller cancelling" with `R>DROP` and "continuation passing"

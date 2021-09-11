@@ -1,9 +1,6 @@
 # Binary Forth500.bin for expanded PC-E500 with 256KB
 
-Use a cassette interface, such as CE-126p or CE-124, and
-[PocketTools](https://www.peil-partner.de/ifhe.de/sharp/) to load:
-
-    $ bin2wav --pc=E500 --type=bin --addr=0xB0000 Forth500.bin
+Use a cassette interface, such as CE-126p or CE-124.
 
 On the PC-E500 execute:
 
@@ -25,9 +22,29 @@ Play the wav file, load and run Forth:
     > CLOADM
     > CALL &B0000
 
+For best results, type `CLOADM` first, wait 2 seconds, then play the wav file.
+If I/O errors are persistent, then try loading Forth500 in three parts:
+
+1. play Forth500-1.wav and `CLOADM` on the PC-E500
+2. play Forth500-2.wav and `CLOADM` on the PC-E500
+3. play Forth500-3.wav and `CLOADM` on the PC-E500
+
+The three parts can be loaded in any order, as long as each is loaded without
+I/O errors.  After loading `CALL &B0000`.
+
+I get an acceptable success rate to load with MacOS `afplay` via the CE-126P
+and CE-124 interfaces.  Headphone output volume should be close to max or max.
+Quit all apps that may produce sound (messaging etc).  Make sure that the audio
+cable does not pick up electrical interference.
+
 To remove Forth from memory and release its allocated RAM space:
 
     > POKE &BFE03,&1A,&FD,&0B,0,0,0: CALL &FFFD8
 
+[PocketTools](https://www.peil-partner.de/ifhe.de/sharp/) was used to produce
+the wav file as follows:
+
+    $ bin2wav --pc=E500 --type=bin --addr=0xB0000 Forth500.bin
+
 Instead of the wav file, a RS-232 interface can be used.  This requires a
-uuencoded bin file to transfer and install the binary.
+uuencoded object file to transfer and install the binary.

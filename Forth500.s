@@ -15,11 +15,11 @@
 ; 3. for unexpanded 32KB machines or MEM$="S1" and no E: drive:
 ;         org	$b9000
 ; 
-; Assemble to produce binary file Forth500.obj:
+; Assemble to produce binary file Forth500.OBJ:
 ;   $ XASM Forth500.s -O -L -S -TB
 ; 
-; Then remove the leading 6 header bytes from the Forth500.obj file:
-;   $ tail -c +7 Forth500.obj > Forth500.bin
+; Then remove the leading 6 header bytes from the Forth500.OBJ file:
+;   $ tail -c +7 Forth500.OBJ > Forth500.bin
 ; 
 ; With a cassette interface such as CE-126p use PocketTools to load (use org
 ; address &Bxx00 for option --addr):
@@ -56,36 +56,38 @@ bp0:		equ	$70
 ;		Implementation logic registers (BP-relative addresses)
 ;
 ;-------------------------------------------------------------------------------
+; floating point arguments for (FOP)
+fp:		equ	$00
 ; 16 bit (8+8) registers
-el:		equ	$00
-eh:		equ	$01
-ex:		equ	$00
-fl:		equ	$02
-fh:		equ	$03
-fx:		equ	$02
-gl:		equ	$04
-gh:		equ	$05
-gx:		equ	$04
-hl:		equ	$06
-hh:		equ	$07
-hx:		equ	$06
-il:		equ	$08
-ih:		equ	$09
-ix:		equ	$08
-jl:		equ	$0a
-jh:		equ	$0b
-jx:		equ	$0a
-kl:		equ	$0c
-kh:		equ	$0d
-kx:		equ	$0c
-ll:		equ	$0e			; Floating point stack's depth
-lh:		equ	$0f			; Free heap pointers stack's remaining places
-lx:		equ	$0e
+el:		equ	$20
+eh:		equ	$21
+ex:		equ	$20
+fl:		equ	$22
+fh:		equ	$23
+fx:		equ	$22
+gl:		equ	$24
+gh:		equ	$25
+gx:		equ	$24
+hl:		equ	$26
+hh:		equ	$27
+hx:		equ	$26
+il:		equ	$28
+ih:		equ	$29
+ix:		equ	$28
+jl:		equ	$2a
+jh:		equ	$2b
+jx:		equ	$2a
+kl:		equ	$2c
+kh:		equ	$2d
+kx:		equ	$2c
+ll:		equ	$2e			; Floating point stack's depth
+lh:		equ	$2f			; Free heap pointers stack's remaining places
+lx:		equ	$2e
 ; 20 bit registers
-wi:		equ	$10			; Here pointer
-xi:		equ	$13			; FP (Floating point stack pointer)
-yi:		equ	$16			; Free heap pointers stack pointer value
-zi:		equ	$19			; Heap address
+wi:		equ	$30			; Here pointer
+xi:		equ	$33			; FP (Floating point stack pointer)
+yi:		equ	$36			; Free heap pointers stack pointer value
+zi:		equ	$39			; Temporary
 ;-------------------------------------------------------------------------------
 ;
 ;		 Standard logic registers
@@ -119,12 +121,12 @@ ib_size:	equ	256			; TIB and FIB size
 hold_size:	equ	40			; ENVIRONMENT? /HOLD size
 blk_buff_size:	equ	1024
 ;heap_size:	equ	32
-r_size:		equ	400			; The return stack size in bytes
-s_size:		equ	400			; The stack size in bytes
+r_size:		equ	256			; The return stack size in bytes (must be 256, see ?STACK)
+s_size:		equ	256			; The stack size in bytes (must be 256, see ?STACK)
 r_beginning:	equ	$bfc00			; The return stack's beginning
-r_limit:	equ	r_beginning-r_size	; The return stack's low limit
+r_limit:	equ	r_beginning-r_size	; The return stack's low limit ($bfa00 see ?STACK)
 s_beginning:	equ	r_limit			; The stack's beginning
-s_limit:	equ	s_beginning-s_size	; The stack's low limit
+s_limit:	equ	s_beginning-s_size	; The stack's low limit ($bfa00 see ?STACK)
 ;f_beginning:	equ	s_limit			; The floating-point stack's beginning
 ;f_limit:	equ	f_beginning-3*heap_size	; The floating-point stack's low limit (100 pointers)
 ;a_beginning:	equ	f_limit			; The free heap pointers stack's beginning
@@ -199,18 +201,20 @@ lastxt_value:	dw	startup_xt		; 16 bit LAST-XT address
 docol_:		dw	$0000			; To mark the last definition
 		db	$07
 		db	'(DOCOL)'
-docol__xt:	pushs	x			; Save old IP
-		mv	x,!base_address+3	; Set new IP (I contains
-		add	x,i			; the current execution token)
+docol__xt:	ex	i,x		; 4	; I is the short old IP
+		pushs	i		; 6	; Save old IP
+		mv	i,x		; 2	; I is the current execution token
+		mv	x,!base_address+3 ; 4	; Set new IP (I contains
+		add	x,i		; 7	; the current execution token, skip 3 bytes jp docol__xt)
 ;---------------
 interp__:	pre_on
-		test	($ff),$08		; Is break pushed?
+		test	($ff),$08	; 5	; Is break pushed?
 		pre_off
-		jrnz	break__
+		jrnz	break__		; 2/3
 ;---------------
-cont__:		mv	i,[x++]			; Set I to new execution token
-		pushs	i			; Execute
-		ret				; new token
+cont__:		mv	i,[x++]		; 5	; Set I to new execution token
+		pushs	i		; 6	; Execute
+		ret			; 4	; new token
 ;-------------------------------------------------------------------------------
 break__:	local
 		pre_on
@@ -233,10 +237,12 @@ doexit_:	dw	docol_
 		db	$06
 		db	'(EXIT)'
 doexit__xt:	local
-		pops	x			; Restore old IP
-		mv	i,[x++]			; Set I to new execution token
-		pushs	i			; Execute
-		ret				; new token
+		mv	i,[s]		; 5	; I is the short return address
+		mv	x,!base_address ; 4	;
+		add	x,i		; 7	; X is the return address
+		mv	i,[x++]		; 5	; Set I to new execution token
+		mv	[s],i		; 5	; Execute
+		ret			; 4	; new token
 		endl
 ;-------------------------------------------------------------------------------
 dolit0:		dw	doexit_
@@ -494,14 +500,15 @@ dodefer__xt:	local
 ;-------------------------------------------------------------------------------
 does_:		dw	dodefer_
 		db	$07
-		db	'(DOES>)'		; ( -- addr ; R: x -- ret )
+		db	'(DOES>)'		; ( -- addr ; R: xt -- ret )
 does__xt:	local
 		pushu	ba			; Save TOS
-		mv	a,3			; Compute the
-		add	i,a			; address of the data
-		mv	ba,i			; Set new TOS
-		pops	i			; Compute the address of the execution token
-		pushs	x			; Save the return address
+		mv	ba,$0003		; Compute the
+		add	ba,i			; address of the data on TOS
+		mv	i,[s]			; The CALL does__xt return short address is the execution token
+		ex	i,x			; I is the short old IP
+		mv	[s],i			; Save old IP
+		mv	i,x			; I is the current execution token
 		mv	x,!base_address		; X holds
 		add	x,i			; the address of the parameter field
 		jp	!cont__
@@ -516,7 +523,7 @@ sc_code__xt:	local
 		add	y,i			; of the LAST-XT (IP is lost)
 		mv	i,x			; I holds the address of the token after (;CODE)
 		mv	[y],i			; Compile a 'jp' to the token after (;CODE)
-		jp	!doexit__xt		; Perform an EXIT
+		jp	!doexit__xt		; Perform an (EXIT)
 		endl
 ;-------------------------------------------------------------------------------
 ahead_:		dw	sc_code_
@@ -534,7 +541,8 @@ again_:		dw	ahead_
 again__xt:	local
 		mv	i,[x++]			; Read the number of bytes to jump
 		sub	x,i			; Skip backward the specified number of bytes
-		jp	!interp__
+		;jp	!interp__		; Removed to add stack check
+		jp	!quest_stack_xt		; Check stack overflow/underflow
 		endl
 ;-------------------------------------------------------------------------------
 if_:		dw	again_
@@ -575,7 +583,8 @@ until__xt:	local
 		popu	ba			; Set new TOS
 		jpnz	!cont__
 		sub	x,i			; Skip backward the specified number of bytes
-		jp	!interp__
+		;jp	!interp__		; Removed to add stack check
+		jp	!quest_stack_xt		; Check stack overflow/underflow
 		endl
 ;-------------------------------------------------------------------------------
 do_:		dw	until_
@@ -636,7 +645,8 @@ loop__xt:	local
 		sub	x,ba			; Jump backward to the beginning of the DO statement
 		pushs	i			; Save the new loop counter's value
 		popu	ba			; Restore the TOS
-		jp	!interp__
+		;jp	!interp__		; Removed to add stack check
+		jp	!quest_stack_xt		; Check stack overflow/underflow
 lbl1:		pops	i			; Discard the loop parameters
 		pops	i			; (only the loop limit and LEAVE address are on the stack)
 		popu	ba			; Restore the TOS
@@ -661,7 +671,8 @@ plus_loop__xt:	local
 lbl1:		mv	ba,[x++]		; Read the number of bytes to jump
 		sub	x,ba			; Jump backward to the beginning of the DO statement
 		popu	ba			; Set new TOS
-		jp	!interp__
+		;jp	!interp__		; Removed to add stack check
+		jp	!quest_stack_xt		; Check stack overflow/underflow
 lbl2:		add	ba,i			; Increment the loop counter
 		pushs	ba			; Save its value on the stack
 		add	ba,ba			; Test the sign of the result
@@ -1211,8 +1222,8 @@ pick:		dw	two_over
 		db	'PICK'
 pick_xt:	local
 		mv	y,u			; Store SP value
-		add	ba,ba			; Compute the offset
-		add	y,ba			; Y holds the address of the value to fetch
+		add	a,a			; Compute the offset (mod 128 to limit 127 cell rolls max)
+		add	y,a			; Y holds the address of the value to fetch
 		mv	ba,[y]			; Set new TOS
 		jp	!cont__
 		endl
@@ -1221,20 +1232,19 @@ roll:		dw	pick
 		db	$04
 		db	'ROLL'
 roll_xt:	local
-		inc	ba			; Test if TOS
-		dec	ba			; is zero
+		and	a,$7f			; Take TOS (mod 128 to limit 127 cell rolls max), test if zero
 		jrnz	lbl1
 		popu	ba			; Set new TOS
 		jp	!cont__
 lbl1:		mv	y,u			; Store SP value
-		mv	i,ba			; Store the TOS into I
-		add	ba,ba			; Compute the offset
-		add	y,ba			; Y holds the address of the value to fetch
+		mv	il,a			; Store the TOS into I
+		add	a,a			; Compute the offset
+		add	y,a			; Y holds the address of the value to fetch
 		mv	ba,[y]			; BA holds the new TOS
 		pushu	ba			; Save new TOS into the stack
 lbl2:		mv	ba,[--y]		; BA holds the next stack's element
 		mv	[y+2],ba		; Replace previous element by BA contents
-		dec	i			; Count the number of elements to roll
+		dec	il			; Count the number of elements to roll
 		jrnz	lbl2
 		popu	ba			; Restore new TOS
 		popu	i			; Discard the stack's old first element
@@ -1337,33 +1347,35 @@ n_to_r:		dw	two_tuck
 		db	'N>R'			; ( n*x +n -- ; R: -- n*x +n )
 n_to_r_xt:	local
 		mv	(!fx),ba		; Save TOS
-		inc	ba			; BA holds TOS+1
-		jr	lbl2
+		and	a,$7f			; A holds TOS (mod 128 to limit to 128 cell moves max)
+		jrz	lbl2
 lbl1:		popu	i			; Pop value from the stack
 		pushs	i			; and push on the return stack
-lbl2:		dec	ba			; Decrement BA and repeat until zero
+		dec	a			; Decrement A and repeat until zero
 		jrnz	lbl1
-		mv	ba,(!fx)		; Push old TOS on
+lbl2:		mv	ba,(!fx)		; Push old TOS on
 		pushs	ba			; the return stack
 		popu	ba			; Set new TOS
-		jp	!cont__
+		;jp	!cont__
+		jp	!quest_stack_xt		; Check stack overflow/underflow
 		endl
 ;-------------------------------------------------------------------------------
 n_r_from:	dw	n_to_r
 		db	$03
-		db	'NR>'			; ( -- n*x +n ; R: n*x +n -- )
+		db	'NR>'			; ( R: n*x +n -- ;-- n*x +n )
 n_r_from_xt:	local
 		pushu	ba			; Save the TOS
 		pops	ba			; BA holds n
 		mv	(!fx),ba		; Save new TOS
-		inc	ba			; BA holds n+1
-		jr	lbl2
+		and	a,$7f			; A holds TOS (mod 128 to limit to 128 cell moves max)
+		jrz	lbl2
 lbl1:		pops	i			; Pop value from the return stack
 		pushu	i			; and push on the stack
-lbl2:		dec	ba			; Decrement BA and repeat until zero
+		dec	a			; Decrement BA and repeat until zero
 		jrnz	lbl1
-		mv	ba,(!fx)		; Set new TOS
-		jp	!cont__
+lbl2:		mv	ba,(!fx)		; Set new TOS
+		;jp	!cont__
+		jp	!quest_stack_xt		; Check stack overflow/underflow
 		endl
 ;-------------------------------------------------------------------------------
 to_r:		dw	n_r_from
@@ -3109,6 +3121,40 @@ lbl21:		jp	!throw__
 ;		db	$11
 ;		endl		
 ;-------------------------------------------------------------------------------
+;
+;		FLOAT
+;
+;-------------------------------------------------------------------------------
+;fop_:		dw	m_star_sl
+;		db	$05
+;		db	'(FOP)'			; ( addr fop -- flag )
+;fop__xt:	local
+;		pre_on
+;		pushs	x			; Save IP
+;		popu	i			; FP data short address
+;		mv	y,!base_address
+;		add	y,i			; Y holds the FP data address
+;		pushs	y			; Save Y
+;		mv	il,30
+;		mvl	(bp+0),[y++]		; Copy 30 bytes FP data to internal RAM
+;		mvw	(!cx),$0009		; Function driver
+;		mv	il,a			; Function $41 to $7f
+;		callf	!iocs			; FIXME !!! always crashes !!!
+;		pops	y			; Restore Y
+;		mv	ba,$ffff		; Set new TOS to TRUE
+;		jrc	lbl1			; Error
+;		mv	il,30
+;		mvl	[y++],(bp+0)		; Copy 30 bytes internal RAM to FP data
+;lbl1:		inc	ba			; Set new TOS to FALSE
+;		pops	x			; Restore IP
+;		jp	!cont__
+;		pre_off
+;		endl
+;-------------------------------------------------------------------------------
+;
+;		STRING
+;
+;-------------------------------------------------------------------------------
 s_equals:	dw	m_star_sl
 		db	$02
 		db	'S='			; ( c-addr u c-addr u -- flag )
@@ -3346,6 +3392,10 @@ lbl6:		sub	ba,ba			; Set new TOS to FALSE (no match found)
 ;		dw	!doexit__xt		; ;
 ;		endl
 ;-------------------------------------------------------------------------------
+;
+;		MISC
+;
+;-------------------------------------------------------------------------------
 on:		dw	search
 		db	$02
 		db	'ON'
@@ -3393,7 +3443,7 @@ beg_struct_xt:	local
 		dw	!here_xt		;     HERE
 		dw	!dolit0_xt		;     0
 		dw	!dolit0_xt		;     0
-		dw	!comma_xt		;     ,   \ mark stack, lay dummy
+		dw	!comma_xt		;     ,   \ mark stack, lay dummy 0
 		dw	!sc_code__xt		;   DOES> \ (;CODE) compiled by DOES>
 		call	!does__xt		;         \ Compiled by DOES>
 		dw	!fetch_xt		;     @   \ -- size
@@ -3572,7 +3622,7 @@ pad:		dw	two_field
 		db	'PAD'
 pad_xt:		local
 		jp	!docon__xt
-		dw	$ff00
+		dw	$ff00			; The PAD is located at $bff00
 		endl
 ;-------------------------------------------------------------------------------
 which_pockt:	dw	pad
@@ -4068,12 +4118,12 @@ to_file:	dw	file_to_str
 to_file_xt:	local
 		pre_on
 		pushs	x			; Save IP
+		dec	ba			; Decrement it (because fileIDs start at index 1)
 		mv	(!cl),a			; File handle
-		dec	(!cl)			; Decrement it (because fileIDs start at index 1)
-		ex	a,b
-		cmp	a,$00
-		mv	a,$06			; 'Ineffective file handle was attempted'
-		jrnz	lbl3
+		;ex	a,b
+		;cmp	a,$00
+		;mv	a,$06			; 'Ineffective file handle was attempted'
+		;jrnz	lbl3
 		call	!which_file__
 		mv	x,!base_address
 		add	x,ba			; X holds current filename area address
@@ -4397,13 +4447,13 @@ close_file:	dw	open_file
 close_file_xt:	local
 		pre_on
 		pushs	x			; Save IP
-		mv	il,$02			; 'Closing a file'
+		dec	ba			; Decrement it (because fileIDs start at index 1)
 		mv	(!cl),a			; File handle
-		dec	(!cl)			; Decrement it (because fileIDs start at index 1)
-		ex	a,b
-		cmp	a,$00
-		mv	a,$06			; 'Ineffective file handle was attempted'
-		jrnz	lbl1
+		;ex	a,b
+		;cmp	a,$00
+		;mv	a,$06			; 'Ineffective file handle was attempted'
+		;jrnz	lbl1
+		mv	il,$02			; 'Closing a file'
 		callf	!fcs
 		jrnc	lbl3
 lbl1:		ex	a,b			; Set new TOS
@@ -4422,12 +4472,12 @@ file_info:	dw	close_file
 file_info_xt:	local
 		pre_on
 		pushs	x			; Save IP
+		dec	ba			; Decrement it (because fileIDs start at index 1)
 		mv	(!cl),a			; File handle
-		dec	(!cl)			; Decrement it (because fileIDs start at index 1)
-		ex	a,b
-		cmp	a,$00
-		mv	a,$06			; 'Ineffective file handle was attempted'
-		jrnz	lbl1
+		;ex	a,b
+		;cmp	a,$00
+		;mv	a,$06			; 'Ineffective file handle was attempted'
+		;jrnz	lbl1
 		mv	il,$0a			; 'Reading various information of a file'
 		mv	a,$00			; 'Reading of file size, pointer value'
 		callf	!fcs
@@ -4499,16 +4549,16 @@ read_file_xt:	local
 		pre_on
 		pushs	x			; Save IP
 		mv	x,!base_address
+		dec	ba			; Decrement it (because fileIDs start at index 1)
 		mv	(!cl),a			; File handle
-		dec	(!cl)			; Decrement it (because fileIDs start at index 1)
 		popu	i			; I holds the number of bytes to read
 		mv	y,i			; Save them into Y
 		popu	i			; I holds the short address where to store the data
 		add	x,i			; X holds the address where to store the data
-		ex	a,b
-		cmp	a,$00
-		mv	a,$06			; 'Ineffective file handle was attempted'
-		jrnz	lbl1
+		;ex	a,b
+		;cmp	a,$00
+		;mv	a,$06			; 'Ineffective file handle was attempted'
+		;jrnz	lbl1
 		mv	il,$03			; 'Reading a block of the file'
 		mv	a,$01			; 'File end is physical end of file'
 		callf	!fcs
@@ -4533,20 +4583,21 @@ read_char:	dw	read_file
 read_char_xt:	local
 		pre_on
 		pushs	x			; Save IP
+		dec	ba			; Decrement it (because fileIDs start at index 1)
 		mv	(!cl),a			; File handle
-		dec	(!cl)			; Decrement it (because fileIDs start at index 1)
-		mv	(bp+!el),(!cl)		; Make a copy of the file handle
-		ex	a,b
-		cmp	a,$00
-		mv	a,$06			; 'Ineffective file handle was attempted'
-		jrnz	lbl2
+		mv	(bp+!el),a		; Make a copy of the file handle
+		;ex	a,b
+		;cmp	a,$00
+		;mv	a,$06			; 'Ineffective file handle was attempted'
+		;jrnz	lbl2
 		mv	il,$0a			; 'Reading various information of a file'
 		mv	a,$00			; 'Reading of file size, pointer value'
 		callf	!fcs
 		jrc	lbl2
-		cmpw	(!si),(!di)		; Compare file position
-		jrnz	lbl1			; with
-		cmp	(!si+2),(!di+2)		; file size
+		cmpp	(!si),(!di)		; Compare file position
+		;cmpw	(!si),(!di)		; Compare file position
+		;jrnz	lbl1			; with
+		;cmp	(!si+2),(!di+2)		; file size
 		jrz	lbl2
 lbl1:		mv	il,$05			; 'Reading a byte of the file'
 		mv	(!cl),(bp+!el)		; Restore the file handle
@@ -4578,12 +4629,12 @@ peek_char:	dw	read_char
 peek_char_xt:	local
 		pre_on
 		pushs	x			; Save IP
+		dec	ba			; Decrement it (because fileIDs start at index 1)
 		mv	(!cl),a			; File handle
-		dec	(!cl)			; Decrement it (because fileIDs start at index 1)
-		ex	a,b
-		cmp	a,$00
-		mv	a,$06			; 'Ineffective file handle was attempted'
-		jrnz	lbl1
+		;ex	a,b
+		;cmp	a,$00
+		;mv	a,$06			; 'Ineffective file handle was attempted'
+		;jrnz	lbl1
 		mv	il,$08			; 'Non destructive reading a file'
 		mv	a,$81			; 'File end is physical end of file, with data'
 		callf	!fcs
@@ -4613,12 +4664,12 @@ chr_rdy_qst:	dw	peek_char
 chr_rdy_qst_xt:	local
 		pre_on
 		pushs	x			; Save IP
+		dec	ba			; Decrement it (because fileIDs start at index 1)
 		mv	(!cl),a			; File handle
-		dec	(!cl)			; Decrement it (because fileIDs start at index 1)
-		ex	a,b
-		cmp	a,$00
-		mv	a,$06			; 'Ineffective file handle was attempted'
-		jrnz	lbl1
+		;ex	a,b
+		;cmp	a,$00
+		;mv	a,$06			; 'Ineffective file handle was attempted'
+		;jrnz	lbl1
 		mv	il,$08			; 'Non destructive reading a file'
 		mv	a,$01			; 'File end is physical end of file, without data'
 		callf	!fcs
@@ -4704,16 +4755,16 @@ write_file_xt:	local
 		pre_on
 		pushs	x			; Save IP
 		mv	x,!base_address
+		dec	ba			; Decrement it (because fileIDs start at index 1)
 		mv	(!cl),a			; File handle
-		dec	(!cl)			; Decrement it (because fileIDs start at index 1)
 		popu	i			; I holds the number of bytes to write
 		mv	y,i			; Save them into Y
 		popu	i			; I holds the short address where to fetch the data
 		add	x,i			; X holds the address where to fetch the data
-		ex	a,b
-		cmp	a,$00
-		mv	a,$06			; 'Ineffective file handle was attempted'
-		jrnz	lbl1
+		;ex	a,b
+		;cmp	a,$00
+		;mv	a,$06			; 'Ineffective file handle was attempted'
+		;jrnz	lbl1
 		mv	il,$04			; 'Writing a block of the file'
 		callf	!fcs
 		jrnc	lbl3
@@ -4731,17 +4782,17 @@ lbl3:		mv	ba,$0000		; Set new TOS (no error)
 ;-------------------------------------------------------------------------------
 write_char:	dw	write_file
 		db	$0a
-		db	'WRITE-CHAR'		; ( fileid char -- ior )
+		db	'WRITE-CHAR'		; ( char fileid -- ior )
 write_char_xt:	local
 		pre_on
-		pushs	x			; Save IP
+		;pushs	x			; Save IP
+		dec	ba			; Decrement it (because fileIDs start at index 1)
 		mv	(!cl),a			; File handle
-		dec	(!cl)			; Decrement it (because fileIDs start at index 1)
 		popu	i			; I holds the value of the character to write
-		ex	a,b
-		cmp	a,$00
-		mv	a,$06			; 'Ineffective file handle was attempted'
-		jrnz	lbl1
+		;ex	a,b
+		;cmp	a,$00
+		;mv	a,$06			; 'Ineffective file handle was attempted'
+		;jrnz	lbl1
 		mv	a,il			; A holds the 8 low-order bits of the character value
 		mv	il,$06			; 'Writing a byte of the file'
 		callf	!fcs
@@ -4749,7 +4800,7 @@ write_char_xt:	local
 lbl1:		ex	a,b			; Set new TOS
 		mv	a,$01			; (an error
 		ex	a,b			; occurred)
-lbl2:		pops	x			; Restore IP
+lbl2:		;pops	x			; Restore IP
 		jp	!interp__
 lbl3:		ex	a,b			; Test
 		cmp	a,$00			; whether
@@ -4809,12 +4860,12 @@ seek_file_xt:	local
 		pushs	x			; Save IP
 		mv	(bp+!el),a		; Save position attribute (relative from top, etc.)
 		popu	ba
+		dec	ba			; Decrement it (because fileIDs start at index 1)
 		mv	(!cl),a			; File handle
-		dec	(!cl)			; Decrement it (because fileIDs start at index 1)
-		ex	a,b
-		cmp	a,$00
-		mv	a,$06			; 'Ineffective file handle was attempted'
-		jrnz	lbl3
+		;ex	a,b
+		;cmp	a,$00
+		;mv	a,$06			; 'Ineffective file handle was attempted'
+		;jrnz	lbl3
 		popu	ba			; Read the 16 high-order bits
 		mv	i,ba			; I holds the 16 high-order bits
 		shl	a			; Test the high-order bits for signed overflow
@@ -4868,8 +4919,8 @@ repos_file_xt:	local
 ;		pre_on
 ;		pushs	x			; Save IP
 ;		mv	x,!base_address
+;		dec	ba			; Decrement it (because fileIDs start at index 1)
 ;		mv	(!cl),a			; File handle
-;		dec	(!cl)			; Decrement it (because fileIDs start at index 1)
 ;		popu	y			; Y holds the number of bytes to verify (20 bits)
 ;		popu	il			; Discard the 8 high-order bits of the double
 ;		popu	i			; I holds the short address where to find the data to be verified
@@ -5049,6 +5100,10 @@ lbl5:			dw	!over_xt		;     OVER
 			dw	!dolit3_xt		;     3
 			dw	!and_xt			;     AND
 			dw	!zero_equals_xt		;     0=
+			dw	!tty_xt			;     TTY           \ output to screen?
+			dw	!stdo_xt		;     STDO
+			dw	!equals_xt		;     =
+			dw	!and_xt			;     AND
 			dw	!if__xt			;     IF
 			dw	lbl7-lbl6		;
 lbl6:				dw	!dolit__xt	;       9
@@ -5068,13 +5123,13 @@ lbl8:		dw	!loop__xt			;   LOOP
 		dw	lbl9-lbl3			;
 lbl9:		dw	!drop_xt			;   DROP
 		dw	!two_drop_xt			;   2DROP
-		dw	!doslit__xt			;   S" (end)"
-		dw	5				;
-		db	'(end)'				;
-		dw	!rev_type_xt			;   REVERSE-TYPE
-		dw	!key_xt				;   KEY
-		dw	!drop_xt			;   DROP
-		dw	!cr_xt				;   CR
+		;dw	!doslit__xt			;   S" (end)"
+		;dw	5				;
+		;db	'(end)'				;
+		;dw	!rev_type_xt			;   REVERSE-TYPE
+		;dw	!key_xt				;   KEY
+		;dw	!drop_xt			;   DROP
+		;dw	!cr_xt				;   CR
 		dw	!doexit__xt			; ;
 		endl
 ;-------------------------------------------------------------------------------
@@ -5344,16 +5399,51 @@ set_cursor_xt:	local
 		endl
 ;-------------------------------------------------------------------------------
 ;
+;		PRINTER
+;
+;-------------------------------------------------------------------------------
+printer:	dw	set_cursor
+		db	$07
+		db	'PRINTER'		; ( -- n )
+printer_xt:	local
+		pushu	ba			; Save TOS
+		pre_on
+		mvw	(!cx),$0003		; Printer
+		mv	il,$40			; 'Initialization of each parameter'
+		mv	a,$03			; On
+		callf	!iocs
+		mvw	(!cx),$0003		; Printer
+		mv	il,$43			; 'Printer check'
+		callf	!iocs
+		mv	ba,i
+		jrnc	lbl1
+		sub	ba,ba			; Set TOS to zero (printer not connected)
+lbl1:		jp	!interp__
+		pre_off
+		endl
+;-------------------------------------------------------------------------------
+;
 ;		OUTPUT
 ;
 ;-------------------------------------------------------------------------------
-emit:		dw	set_cursor
+tty:		dw	printer
+		db	$03
+		db	'TTY'
+tty_xt:		local
+		jp	!doval__xt		; 1 VALUE TTY
+		dw	$0001			; The fileid of the output device
+		endl
+;-------------------------------------------------------------------------------
+emit:		dw	tty
 		db	$04
 		db	'EMIT'			; : EMIT ( char -- )
 emit_xt:	local
 		pre_on
+		;mv	(!cl),$00		; LCD display's file handle
+		mv	i,[!tty_xt+3]		; The current output device file handle
+		dec	i			; Decrement it (because fileIDs start at index 1)
+		mv	(!cl),il
 		mv	il,$06			; 'Writing a byte of the file'
-		mv	(!cl),$00		; LCD display's file handle
 		callf	!fcs
 		jrc	lbl1
 		popu	ba			; Set new TOS
@@ -5534,19 +5624,22 @@ type__xt:	local
 		mv	(!el),[$bfca1]		; Save display mode
 		or	a,(!el)			; Set display
 		mv	[$bfca1],a		; mode (normal/reverse...)
+		mv	i,[!tty_xt+3]		; The current output device file handle
+		dec	i			; Decrement it (because fileIDs start at index 1)
+		pre_on
+		mv	(!cl),il
 		popu	ba			; BA holds the length of the string to display
 		popu	i			; I holds the short address of the string to display
-		pushu	x			; Save IP
-		pre_on
+		pushs	x			; Save IP
 		mv	x,!base_address		; X contains the address
 		add	x,i			; of the character string
 		mv	y,ba			; Y holds the number of characters into the string
 		mv	il,$04			; 'Writing a block of the file'
-		mv	(!cl),$00		; LCD display's file handle
+		;mv	(!cl),$00		; LCD display's file handle
 		callf	!fcs
 		pre_off
 		mv	[$bfca1],(!el)		; Restore display mode
-		popu	x			; Restore IP
+		pops	x			; Restore IP
 		jrc	lbl1
 		popu	ba			; Set new TOS
 		jp	!interp__
@@ -6335,7 +6428,7 @@ hide_xt:	local
 		dw	!two_plus_xt		;   2+ / same as L>NAME
 		dw	!dup_xt			;   DUP
 		dw	!c_fetch_xt		;   C@
-		dw	!dolit__xt		;   64
+		dw	!dolit__xt		;   $40
 		dw	$40			;   / smudge bit
 		dw	!or_xt			;   OR
 		dw	!swap_xt		;   SWAP
@@ -6353,7 +6446,7 @@ reveal_xt:	local
 		dw	!two_plus_xt		;   2+ / same as L>NAME
 		dw	!dup_xt			;   DUP
 		dw	!c_fetch_xt		;   C@
-		dw	!dolit__xt		;   191
+		dw	!dolit__xt		;   $bf
 		dw	$00bf			;   / inverted smudge bit
 		dw	!and_xt			;   AND
 		dw	!swap_xt		;   SWAP
@@ -6422,7 +6515,7 @@ source_id:	dw	to_in
 		db	'SOURCE-ID'
 source_id_xt:	local
 		jp	!doval__xt		; 0 VALUE SOURCE-ID
-		dw	$0000			; The fileid of the input source
+		dw	$0000
 		endl
 ;-------------------------------------------------------------------------------
 source_:	dw	source_id
@@ -6518,61 +6611,61 @@ lbl4:		dec	i			; Discard the separator
 lbl5:		dec	i			; Count the number of remaining characters
 		jrz	lbl2
 		mv	a,[y++]			; Parse next character
-		cmp	a,$61			; \a
+		cmp	a,'a'			; \a
 		jrnz	lbl6
 		mv	a,7
 		;jr	lbl1a
-lbl6:		cmp	a,$62			; \b
+lbl6:		cmp	a,'b'			; \b
 		jrnz	lbl7
 		mv	a,8
 		;jr	lbl1a
-lbl7:		cmp	a,$65			; \e
+lbl7:		cmp	a,'e'			; \e
 		jrnz	lbl8
 		mv	a,27
 		;jr	lbl1a
-lbl8:		cmp	a,$66			; \f
+lbl8:		cmp	a,'f'			; \f
 		jrnz	lbl9
 		mv	a,12
 		;jr	lbl1a
-lbl9:		cmp	a,$6c			; \l
+lbl9:		cmp	a,'l'			; \l
 		jrnz	lbl10
 		mv	a,10
 		;jr	lbl1a
-lbl10:		cmp	a,$6d			; \m
+lbl10:		cmp	a,'m'			; \m
 		jrz	lbl11
-		cmp	a,$6e			; \n
+		cmp	a,'n'			; \n
 		jrnz	lbl12
 lbl11:		mv	a,13
 		mv	[x++],a
 		mv	a,10
 		;jr	lbl1a
-lbl12:		cmp	a,$71			; \q
+lbl12:		cmp	a,'q'			; \q
 		jrnz	lbl13
 		mv	a,34
 		;jr	lbl1a
-lbl13:		cmp	a,$72			; \r
+lbl13:		cmp	a,'r'			; \r
 		jrnz	lbl14
 		mv	a,13
 		;jr	lbl1a
-lbl14:		cmp	a,$74			; \t
+lbl14:		cmp	a,'t'			; \t
 		jrnz	lbl15
 		mv	a,9
 		;jr	lbl1a
-lbl15:		cmp	a,$76			; \v
+lbl15:		cmp	a,'v'			; \v
 		jrnz	lbl16
 		mv	a,11
 		;jr	lbl1a
-lbl16:		cmp	a,$7a			; \z
+lbl16:		cmp	a,'z'			; \z
 		jrnz	lbl17
 		mv	a,0
-lbl17:		cmp	a,$78			; \x
+lbl17:		cmp	a,'x'			; \x
 		jrnz	lbl1a
 		dec	i
 		jrz	lbl2
 		dec	i
 		jrz	lbl2
 		mv	a,[y++]			; \xH
-		sub	a,$30
+		sub	a,'0'
 		cmp	a,10
 		jrc	lbl18
 		sub	a,7
@@ -6580,7 +6673,7 @@ lbl17:		cmp	a,$78			; \x
 lbl18:		swap	a
 		mv	(!el),a
 		mv	a,[y++]			; \xHL
-		sub	a,$30
+		sub	a,'0'
 		cmp	a,10
 		jrc	lbl19
 		sub	a,7
@@ -6877,28 +6970,29 @@ find_word_xt:	local
 		pushs	x			; Save IP
 		mv	y,!base_address
 		mv	i,ba			; I holds the length of the searched string
+		mv	(!fl),il		; Save the length of the searched string
 		popu	ba
 		add	y,ba			; Y holds the address of the counted string
 		mv	ba,[!last_xt+3]
 lbl1:		mv	x,!base_address
 		add	x,ba
 		mv	a,[x+2]			; Store length and control bits
-		test	a,$40			; Test if smudge bit is on
-		jrnz	lbl2
-		and	a,$3f			; Discard control bits
-		sub	a,il			; Are lengths the same?
+		;test	a,$40			; Test if smudge bit is on
+		;jrnz	lbl2
+		;and	a,$3f			; Discard control bits
+		and	a,$7f			; Discard immediate bit
+		sub	a,il			; Are lengths the same and smudge bit is not set?
 		jrz	lbl3
 lbl2:		mv	ba,[x]			; Jump to the next word
 		inc	ba			; Test if the beginning
 		dec	ba			; of the dictionary was reached
 		jrnz	lbl1
 		sub	ba,ba			; Set new TOS to 0 (word not found)
-		pushu	ba			; Push an invalid execution token on the stack
+		pushu	ba			; Push an invalid execution token 0 on the stack
 		jr	lbl7
 lbl3:		mv	(!zi),x			; Save the address of the next word to search
 		mv	a,3
 		add	x,a			; X holds the address of the current string
-		pushu	il			; Save the length of the searched string
 		pushu	y			; Save the address of the searched string
 		mv	(!el),il		; Set the counter
 lbl4:		mv	il,[x++]		; Read next character of the current word string
@@ -6910,38 +7004,35 @@ lbl4:		mv	il,[x++]		; Read next character of the current word string
 		jrnz	lbl4a
 		add	a,il			; Restore character
 		or	a,$20			; Make it lower case
-		cmp	a,$61			; If less than 'a', no match
+		cmp	a,'a'			; If less than 'a', no match
 		jrc	lbl4a
-		cmp	a,$7b			; If greater than 'z', no match
+		cmp	a,'z'+1			; If greater than 'z', no match
 		jrnc	lbl4a
 		sub	a,il			; Compare the characters again,
-		test	a,$c0			; but with a case-insensitive match
+		test	a,$c0			; but this time with a case-insensitive match
 		jrz	lbl5
 ; END CASE-INSENSITIVE FIND-WORD
 lbl4a:		popu	y			; Restore the address of the searched string
-		popu	il			; Restore the length of the searched string
+		mv	il,(!fl)		; Restore the length of the searched string
 		mv	x,(!zi)			; Restore the address of the next word to search
 		jr	lbl2
 lbl5:		dec	(!el)			; Decrement counter
 		jrnz	lbl4			; loop until counter is zero
 		popu	y			; Clean up the stack and
-		popu	a			; restore the length of the searched string into A 
 		mv	x,(!zi)			; Restore the address of the next word to search
 		mv	i,x
-		add	i,a
-		mv	a,3			; Add the offset from the beginning of the definition
-		add	i,a			; to the beginning of the code
-		pushu	i
+		mv	a,(!fl)			; Restore the length of the searched string into A
+		add	a,3			; Add the offset from the beginning of the definition (cannot overflow)
+		add	i,a			; Add the length of the searched string + 3
+		pushu	i			; Set 2OS to the execution token
 		mv	a,[x+2]
 		shl	a			; Test immediacy
 		jrnc	lbl6
-		;test	a,$80			; Test immediacy
-		;jrz	lbl6
 		mv	ba,1			; Set new TOS to 1 (word is immediate)
 		jr	lbl7
 lbl6:		mv	ba,-1			; Set new TOS to -1 (word is not immediate)
 lbl7:		pops	x			; Restore IP
-		jp	!interp__
+		jp	!cont__
 		endl
 ;-------------------------------------------------------------------------------
 find:		dw	find_word
@@ -7003,9 +7094,6 @@ create_hdr:	dw	name_
 create_hdr_xt:	local
 		jp	!docol__xt		; : CREATE-HEADER ( "<spaces>name" -- )
 		dw	!parse_name_xt		;   PARSE-NAME
-		;dw	!blnk_xt
-		;dw	!parse_word_xt
-		;dw	!check_name_xt
 		dw	!link__xt		;   (LINK)
 		dw	!name__xt		;   (NAME)
 		dw	!here_xt		;   HERE
@@ -7485,7 +7573,7 @@ does_quest_xt:	local
 		mv	y,!base_address		; Compute the address of the
 		add	y,ba			; address of the code field routine
 		mv	a,[y++]			; Test the nature of the word
-		cmp	a,$02			; (is it a call to a does ?)
+		cmp	a,$02			; (is it a jump to a call to does__xt?)
 		jrnz	lbl2
 		mv	ba,[y]			; Read the address of the code field routine
 		mv	y,!base_address		; Compute the address of the
@@ -9928,26 +10016,39 @@ brkt_then_xt:	local
 ;-------------------------------------------------------------------------------
 quest_stack:	dw	brkt_then
 		db	$06
-		db	'?STACK'
+		db	'?STACK'		; ( -- )
 quest_stack_xt:	local
-		jp	!docol__xt		; : ?STACK ( -- )
-		dw	!depth_xt		;   DEPTH
-		dw	!dup_xt			;   DUP
-		dw	!zer_lss_thn_xt		;   0<
-		dw	!if__xt			;   IF
-		dw	lbl2-lbl1		;
-lbl1:			dw	!dolit__xt	;     -4
-			dw	-4		;     \ Stack underflow
-			dw	!throw_xt	;     THROW THEN
-lbl2:		dw	!dolit__xt		;   #s_size/2
-		dw	!s_size/2		;   \ One cell = 16 bits
-		dw	!greatr_than_xt		;   > \ Signed integer comparison
-		dw	!if__xt			;   IF
-		dw	lbl4-lbl3		;
-lbl3:			dw	!dolit__xt	;     -3
-			dw	-3		;     \ Stack overflow
-			dw	!throw_xt	;     THROW
-lbl4:		dw	!doexit__xt		; ;
+		mv	i,ba			; Save the TOS to I
+		mv	ba,u			; BA is the low order 16 bit SP
+		dec	ba			; Adjust down
+		dec	ba			; to account for TOS cell
+		dec	ba			; Adjust down to allow empty stack check to pass
+		ex	a,b			; A is the mid order byte of SP
+		cmp	a,!s_limit/256		; Compare SP mid byte to s_limit mid byte ($fa)
+		mv	ba,i			; Restore the TOS from I
+		jpz	!interp__		; No stack overflow
+		mv	il,-3			; Stack overflow
+		jpc	!throw__
+		mv	il,-4			; Stack underflow
+		jp	!throw__
+;		jp	!docol__xt		; : ?STACK ( -- )
+;		dw	!depth_xt		;   DEPTH
+;		dw	!dup_xt			;   DUP
+;		dw	!zer_lss_thn_xt		;   0<
+;		dw	!if__xt			;   IF
+;		dw	lbl2-lbl1		;
+;lbl1:			dw	!dolit__xt	;     -4
+;			dw	-4		;     \ Stack underflow
+;			dw	!throw_xt	;     THROW THEN
+;lbl2:		dw	!dolit__xt		;   #s_size/2
+;		dw	!s_size/2		;   \ One cell = 16 bits
+;		dw	!greatr_than_xt		;   > \ Signed integer comparison
+;		dw	!if__xt			;   IF
+;		dw	lbl4-lbl3		;
+;lbl3:			dw	!dolit__xt	;     -3
+;			dw	-3		;     \ Stack overflow
+;			dw	!throw_xt	;     THROW
+;lbl4:		dw	!doexit__xt		; ;
 		endl
 ;-------------------------------------------------------------------------------
 currnt_base:	dw	quest_stack
@@ -10478,7 +10579,17 @@ included_xt:	local
 		dw	!doexit__xt		; ;
 		endl
 ;-------------------------------------------------------------------------------
-envnmt_qry:	dw	included
+include:	dw	included
+		db	$07
+		db	'INCLUDE'
+include_xt:	local
+		jp	!docol__xt		; : INCLUDE ( i*x "name" -- j*x )
+		dw	!parse_name_xt		;   PARSE-NAME
+		dw	!included_xt		;   INCLUDED
+		dw	!doexit__xt		; ;
+		endl
+;-------------------------------------------------------------------------------
+envnmt_qry:	dw	include
 		db	$0c
 		db	'ENVIRONMENT?'
 envnmt_qry_xt:	local
@@ -10832,6 +10943,9 @@ quit__xt:	local
 		dw	!dolit0_xt			;   0
 		dw	!doto__xt			;   TO SOURCE-ID
 		dw	!source_id_xt+3			;
+		dw	!dolit1_xt			;   1
+		dw	!doto__xt			;   TO TTY
+		dw	!tty_xt+3			;
 		dw	!key_clear_xt			;   KEY-CLEAR
 		;dw	!dolit__xt			;
 		;dw	$0028				;
