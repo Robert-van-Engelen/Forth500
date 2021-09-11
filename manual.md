@@ -1809,14 +1809,16 @@ them.  For example:
 This example displays `here=<CR><address>` when `my-word` is compiled and displays
 `executing my-word` when `my-word` is executed.
 
+Note that the immediate `.(` word is used to display messages at compile time
+or at run time, so we can also write this as follows:
+
+    : my-word       .( here=) [ HERE . ] ." executing my-word" CR ;
+
 It is a good habit to define words to break up longer definitions, so we can
-rewrite this as follows:
+refactor this by introducing a new word `"here"`:
 
     : "here"    ." here=" CR HERE . ;
     : my-word   [ "here" ] ." executing my-word" CR ;
-
-Note that the immediate `.(` word is used to display compile-time messages, see
-also [immediate execution](#immediate-execution).
 
 ### Immediate execution
 
