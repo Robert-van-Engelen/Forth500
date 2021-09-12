@@ -1314,7 +1314,7 @@ is the same as executing `my-word`.
 
 Executing an uninitialized deferred word throws exception -256 "execution of an
 uninitialized deferred word".  To make a deferred word do nothing, assign
-`NOOP` ("no-operation") to the deferred word.
+`NOOP` "no-operation" to the deferred word.
 
 To assign one deferred word to another we use `ACTION-OF`, for example:
 
@@ -1661,7 +1661,7 @@ condition:
       executed if test is nonzero
     THEN
 
-    condition IF
+    test IF
       executed if test is nonzero
     ELSE
       executed if test is zero
@@ -1960,7 +1960,7 @@ controlled by the following words:
 | ----------- | ------------------- | ------------------------------------------
 | `TIB`       | ( -- _c-addr_ )     | a 256 character terminal input buffer
 | `FIB`       | ( -- _c-addr_ )     | a 256 character file input buffer
-| `SOURCE-ID` | ( -- 0|-1 )         | identifies the source input from a string (-1) with `EVALUATE` or normal (0)
+| `SOURCE-ID` | ( -- 0\|-1 )        | identifies the source input from a string (-1) with `EVALUATE` or normal (0)
 | `SOURCE`    | ( -- _c-addr_ _u_ ) | returns the current buffer (`TIB` or `FIB`) and the number of characters stored in it
 | `>IN`       | ( -- _addr_ )       | a variable holding the current input position in the `SOURCE` buffer to parse from
 | `REFILL`    | ( -- _flag_ )       | refills the current input buffer from the current source, returns true if successful
@@ -2071,9 +2071,9 @@ and device attribue _u2_.  See the PC-E500 technical manual for details on
 the attribute values.
 
 If an exception occurs before a file is closed, the file cannot be opened
-again.  Doing so generates error 264.  The _fileid_ of open files start with 4,
-which means that the first file opened but not closed can be manually closed
-with `4 CLOSE-FILE .` displaying zero when successful.
+again.  Doing so returns error _ior_=264.  The _fileid_ of open files start
+with 4, which means that the first file opened but not closed can be manually
+closed with `4 CLOSE-FILE .` displaying zero when successful.
 
 ### File errors
 
@@ -2233,7 +2233,7 @@ The Forth500 dictionary is organized as follows:
          low address in the 11th segment $Bxxxx
           _________
     +--->| $0000   |     last entry link is zero (2 bytes)
-    |    |---------|
+    ^    |---------|
     |    | 7       |     length of "(DOCOL)" (1 byte)
     |    |---------|
     |    | (DOCOL) |     "(DOCOL)" word characters (7 bytes)
@@ -2241,13 +2241,13 @@ The Forth500 dictionary is organized as follows:
     |    | code    |     machine code
     |    |=========|
     +<==>+ link    |     link to previous entry (2 bytes)
-    |    |---------|
+    ^    |---------|
     :    :         :
     :    :         :
     :    :         :
     |    |=========|
     +<==>| link    |     link to previous entry (2 bytes)
-    |    |---------|
+    ^    |---------|
     |    | $80+5   |     length of "aword" (1 byte) with IMMEDIATE bit set
     |    |---------|
     |    | aword   |     "aword" word characters (5 bytes)
@@ -2486,7 +2486,6 @@ also work with our string buffers:
 
     name S" Do" SEARCH . TYPE ↲
     -1 Doe OK[0]
-
     S" John" name 4 MIN S= . ↲
     -1 OK[0]
 
@@ -2495,8 +2494,8 @@ We can also accept user input into a string:
     : straccept ( string len -- ) DROP DUP DUP strmax ACCEPT strupdate ;
     : stredit   ( string len -- )
       >R DUP strmax R> \ -- string max len
-      DUP              \ place cursor at the end (length)
-      0                \ allow edits to the begin position
+      DUP              \ place cursor at the end (=len)
+      0                \ allow edits to the begin at position 0
       EDIT strupdate ;
 
 For example:
@@ -2696,8 +2695,12 @@ as string.  The file open and close words check for errors to throw them:
     : open      ( c-addr u -- ) R/O OPEN-FILE THROW fh ! ;
     : close     fh @ ?DUP IF CLOSE-FILE fh OFF THROW THEN ;
 
-Now we cane `read` a file incrementally, "sipping" one block at a time until
-he last sip is empty:
+where `close` has a guard to close only open files (omitting the guard
+`?DUP IF ... THEN` is fine too, it just throws an exception by `CLOSE-FILE`,
+because of _fileid_=0).
+
+Now we cane `read` a file incrementally, "sipping" one block at a time until he
+last sip is empty:
 
     : read      start BEGIN sip 0= UNTIL done ;
 
