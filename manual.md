@@ -563,7 +563,9 @@ There are also two words to reach deeper into the stack:
 
 Note that `0 PICK` is the same as `DUP`, `1 PICK` is the same as `OVER`, `1
 ROLL` is the same as `SWAP`, `2 ROLL` is the same as `ROT` and `0 ROLL` does
-nothing.  Note: `PICK` and `ROLL` take _k_ _mod_ 128 cells max as a precaution.
+nothing.
+
+Note: `PICK` and `ROLL` take _k_ _mod_ 128 cells max as a precaution.
 
 The following words operate on two cells on the stack at once (a pair of single
 integers or one double integer):
@@ -664,6 +666,10 @@ Words involving division and modulo may throw exception -10 "Division by zero":
 | `LSHIFT` | ( _u_ _+n_ -- (_u_<<_+n_) )
 | `RSHIFT` | ( _u_ _+n_ -- (_u_>>_+n_) )
 
+The _after_ stack effects in the table indicate the result computed with
+operations % (mod), & (bitwise and), | (bitwise or), ^ (bitwise xor), ~
+(bitwise not/invert), << (bitshift left) and >> (bitshift right).
+
 Integer overflow and underflow does not throw exceptions.  In case of integer
 addition and subtraction, values wrap around.  For all other integer
 operations, overflow and underflow produce undefined values.
@@ -679,13 +685,6 @@ avoid intermediate overflow.  Therefore, `*/` is not a shorthand for the two
 words `* /`, which would truncate an overflowing product to a single integer.
 For example, `radius 355 * 113 /` with 355/133 to approximate pi overflows
 when `radius` exceeds 92, but `radius 355 113 */` gives the correct result.
-
-The _after_ stack effects include the operations % (mod), & (bitwise and), |
-(bitwise or), ^ (bitwise xor), ~ (bitwise not/invert), << (bitshift left)
-and >> (bitshift right).
-
-The `<` and `>` comparisons are signed while the `U<` and `U>` comparisons are
-unsigned, see [numeric comparisons](#numeric-comparisons).
 
 ### Double arithmetic
 
@@ -790,9 +789,8 @@ by scaling the divisor down by 10 and the dividend up by 10 before dividing:
 
 ### Floating point arithmetic
 
-Not implemented yet.  I am looking for information on the location of the
-floating point routines in PC-E500(S), which was once available online and
-documented, but I cannot find it.
+Not implemented yet, but will be available in the future.  The plan is to offer
+PC-E500(S) BCD single and double precision floating point.
 
 ### Numeric comparisons
 
@@ -888,12 +886,12 @@ For example:
     $1.23  OK[0]
 
 Note the reverse order in which the numeric output is composed.  In the example
-the value `1.23` appears to have a fraction as syntactic sugar, but the
-placement of the `.` in a double integer has no significance.
+the value `1.23` appears to have a fraction, but the placement of the `.` in a
+double integer has no significance, i.e. it is merely "syntactic sugar".
 
 To display signed double integers, it is necessary to tuck the high order cell
 with the sign under the double number, then make the number positive and
-convert using `SIGN` at the end to get the sign a front:
+convert using `SIGN` at the end to place the sign at the front of the number:
 
     : dollars   TUCK DABS <# # # [CHAR] . HOLD #S [CHAR] $ HOLD DROP OVER SIGN #> TYPE SPACE ; ↲
     -1.23 dollars ↲
@@ -964,9 +962,9 @@ The following words allocate and accept user input into a string buffer:
 | `ACCEPT`  | ( _c-addr_ _+n1_ -- _+n2_ )                         | accepts user input into the buffer _c-addr_ of max size _+n1_ and returns string size _+n2_
 | `EDIT`    | ( _c-addr_ _+n1_ _n2_ _n3_ _n4_ -- _c-addr_ _+n5_ ) | edit string buffer _c-addr_ of max size _+n1_ containing a string of length _n2_, placing the cursor at _n3_ and limiting cursor movement to _n4_ and after, returns string _c-addr_ with updated size _+n5_
 
-Note that `BUFFER:` only reserves space for the string but does not store the
-max size and the length of the actual string contained.  To do so, use a
-`CONSTANT` and a `VARIABLE`:
+Note that `BUFFER:` only reserves space for the string, or any type of data
+that you want to store, but does not store the max size and the length of the
+actual string contained.  To do so, use a `CONSTANT` and a `VARIABLE`:
 
     40 CONSTANT name-max ↲
     name-max BUFFER: name ↲
@@ -1056,7 +1054,7 @@ The following words return key presses and control the key buffer:
 | `EKEY>CHAR`   | ( _x_ -- _char_ _flag_ ) | convert keyboard event _x_ to a valid character and return `TRUE`, otherwise return `FALSE`
 | `KEY?`        | ( -- _flag_ )            | if a character is available, return `TRUE`, otherwise return `FALSE`
 | `KEY`         | ( -- _char_ )            | display the cursor, wait for a character and return it
-| `INKEY`       | ( -- _char_ )            | check for a key press returning the key as _char_, clears the key buffer
+| `INKEY`       | ( -- _char_ )            | check for a key press returning the key as _char_ or 0 otherwise, clears the key buffer
 | `KEY-CLEAR`   | ( -- )                   | empty the key buffer
 | `>KEY-BUFFER` | ( _c-addr_ _u_ -- )      | fill the key buffer with the string of characters at address _c-addr_ size _u_
 | `MS`          | ( _u_ -- )               | stops execution for _u_ milliseconds
@@ -1122,8 +1120,8 @@ The following words control the screen and cursor position:
 | `SET-CURSOR` | ( _u_ -- )                    | set cursor shape bit 5=on, bit 3=blink, bis 0 to 2=underline, 
 
 The `SET-CURSOR` argument is an 8-bit pattern formed by `OR`-ing `$20` to turn
-the cursor on with `$8` to blink the cursor and one of the following five
-possible cursor shapes:
+the cursor on, `OR`-ing with `$8` to blink the cursor, and `OR`-ing with one of
+the following five possible cursor shapes:
 
 | value | cursor shape
 | ----- | ------------
@@ -1224,14 +1222,12 @@ The following words move cells between both stacks:
 The `N>R` and `NR>` words move _+n_+1 cells, including the cell _+n_.  For
 example `2 N>R ... NR> DROP` moves 2+1 cells to the return stack and back,
 then dropping the restored 2.  Effectively the same as executing `2>R ... 2R>`.
+
 Note: `N>R` and `NR>` move _+n_ _mod_ 128 cells max as a precaution.
 
 Care must be taken to prevent return stack imbalences when a colon definition
 exits.  The return stack pointer must be restored to the original state when
 the colon definition started before the colon definition exits.
-
-The maximum depth of the return stack in Forth500 is 256 bytes to hold up to
-128 cells or 128 calls to secondaries.
 
 "Caller cancelling" is possible with `R>DROP` to remove a return address:
 
@@ -1242,6 +1238,9 @@ where `R>DROP` removes the return address to `foo`.  Therefore:
 
     foo ↲
     foobar OK[0]
+
+The maximum depth of the return stack in Forth500 is 256 bytes to hold up to
+128 cells or 128 calls to secondaries.
 
 ## Defining new words
 
@@ -1310,8 +1309,12 @@ A deferred word is defined with `DEFER` and assigned with `IS`:
 The tick `'` word parses the name of a word in the dictionary and returns its
 execution token on the stack.  An execution token points to executable code in
 the dictionary located directly after the name of a word.  The `EXECUTE` word
-executes code pointed to by an execution token.  Therefore, `' some-word
-EXECUTE` is the same as executing `some-word`.
+executes code pointed to by an execution token.  Therefore, `' my-word EXECUTE`
+is the same as executing `my-word`.
+
+Executing an uninitialized deferred word throws exception -256 "execution of an
+uninitialized deferred word".  To make a deferred word do nothing, assign
+`NOOP` ("no-operation") to the deferred word.
 
 To assign one deferred word to another we use `ACTION-OF`, for example:
 
@@ -1325,7 +1328,7 @@ bar` assigns `foo` to `bar` so that `bar` executes `foo` and `foo` executes
 `TRUE`.  This means that changing `foo` would also change `bar`.
 
 The current action of a deferred word can be compiled into a definition to
-produce a static binding as follows:
+produce a static binding:
 
     : bar ... [ ACTION-OF foo COMPILE, ] ... ;
 
@@ -1367,10 +1370,13 @@ DOES>](#create-and-does).
 
 ### Recursion
 
-A recursive colon definition cannot use its name, which is hidden until the
-final `;` is parsed.  This is done to avoid the possible use of incomplete
-colon definitions that can crash the system when executed.  A recursive colon
-definition should use `RECURSE` to call itself:
+A recursive colon definition cannot refer to its own name, which is hidden
+until the final `;` is parsed.  There are two reasons for this: to avoid the
+possible use of an incomplete colon definition that can crash the system when
+executed and to allow redefining a word to call the old definition while
+executing additional code in the redefinition.
+
+A recursive colon definition should use `RECURSE` to call itself:
 
     : factorial ( u -- ud ) \ u<=12
       ?DUP IF DUP 1- RECURSE ROT UMD* ELSE 1. THEN ;
@@ -1430,8 +1436,8 @@ words can be used:
 
 Allocation is limited by the remaining free space in the dictionary returned by
 the `UNUSED` word.  Note that the `ALLOT` value may be negative to release
-space.  Release space only with `ALLOT` after allocating space with `ALLOT`
-when no new words were defined.
+space.  Make sure to release space only with `ALLOT` after allocating space
+with `ALLOT` and when no new words were defined and added to the dictionary.
 
 The `CREATE` word adds an entry to the dictionary, typically followed by words
 to allocate and store data assocated with the new word.  For example, we can
@@ -1592,8 +1598,8 @@ it deletes itself and all definitions after it.  For example:
     ...
     _program_ ↲
 
-This marks `my-program` as the start of our code indicated by the `...`.  This
-code is deleted by `my-program`.
+This marks `_program_` as the start of our code indicated by the `...`.  This
+code is deleted by `_program_`.
 
 A source code file might start with the following code to delete its
 definitions when the file is parsed again:
