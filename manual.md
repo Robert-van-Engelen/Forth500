@@ -88,7 +88,7 @@ is assumed.  Experience with C makes it easier to follow the use of addresses
 (pointers) to integer values, strings and other data in Forth.
 
 A Forth system is a dictionary of words.  A word can be any sequence of
-characters but excluding space, tab, newline, and other control characters.
+characters but excludes space, tab, newline, and other control characters.
 Words can be entered simply by typing them in as long as they are separated by
 spacing.  Words are defined for subroutines, for named constants and for global
 variables and data.  Some words may execute at compile time to compile the body
@@ -97,7 +97,8 @@ branches and loops.  As such, the syntax blends compile-time and runtime
 behaviors that are distinguishable by naming and naming conventions of words.
 
 You can enter Forth words at the Forth500 interactive prompt.  The following
-special keys can be used:
+special keys can be used to enter a line of Forth code of up to 255 characters
+long:
 
 | key         | comment
 | ----------- | ----------------------------------------------------------------
@@ -183,11 +184,9 @@ at the end:
 
 The use of `.` for double integers is unfortunate, because the number is not a
 floating point number.  The `.` is traditional in Forth and still part of the
-Forth standard.
-
-The `D+` word adds two double integers and the `D.` word prints a signed double
-integer and pops it from the stack.  Words that operate on two integers or
-doubles are typically identified by `Dxxx` and `2xxx`.
+Forth standard.  The `D+` word adds two double integers and the `D.` word
+prints a signed double integer and pops it from the stack.  Words that operate
+on two integers or doubles are typically identified by `Dxxx` and `2xxx`.
 
 Words that execute subroutines are defined with a `:` ("colon") and end with
 a `;` ("semicolon"):
@@ -223,7 +222,7 @@ number as an argument, then displays that many `hello` lines:
 
 Something interesting has happened here, that is typical Forth: `hellos` is the
 same as `greetings` but without the `10` loop limit.  We just specify the loop
-limit on the stack as an argument to `hellos`.  Therefore we can refactor
+limit on the stack as an argument to `hellos`.  Therefore, we can refactor
 `greetings` to use `hellos`:
 
     : greetings 10 hellos ; ↲
@@ -245,10 +244,10 @@ previously defined words that are used by other previously defined words:
 
 Only new words that we add after this will use our new `hello` definition.
 Basically, the Forth dictionary is searched from the most recently defined
-word to the oldest defined word.  An older definition of a word is no longer
-searchable.
+word to the oldest defined word.  A definition of a word is no longer
+searchable when a word with the same name is defined.
 
-Old definitions can be deleted with everything defined after by forgetting:
+Definitions can be deleted with everything defined after it by forgetting:
 
     forget hello ↲
 
@@ -466,10 +465,12 @@ To list files on the current drive:
 
 You can also specify a drive and glob pattern with `FILES`:
 
-    FILES F:*.fth ↲
+    FILES F:*.FTH ↲
 
-This lists all Forth .fth source code files on the F: drive and makes the F:
-drive the current drive.  Forth source files commonly use extension fth or fs.
+This lists all Forth .FTH source code files on the F: drive and makes the F:
+drive the current drive.  Forth source files commonly use extension FTH or FS.
+File names and extensions are case sensitive on the PC-E500(S), but drive names
+are not.
 
 This ends our introduction to the essential basics of Forth.
 

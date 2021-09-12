@@ -14,7 +14,7 @@ I also wrote a new [Forth500 User Guide](manual.md) to introduce standard Forth 
 
 To use Forth500, first load the binary, then `CALL &B0000` (see [expanded E500](E500-expanded)) or `CALL &B9000` (see [unexpanded E500](E500-unexpanded)).  Forth500 starts immediately and can be exited with `BYE`.  Call again to continue using Forth500 where you left off.  Forth500 resides in protected memory and does not interfere with BASIC.
 
-This updated Forth compiler is [standard Forth](https://forth-standard.org) compliant and satisifies:
+Forth500 is [standard Forth](https://forth-standard.org) compliant and implements Forth CORE, CORE-EXT and most of the optional word sets:
 - CORE
 - CORE-EXT
 - (BLOCK is incomplete and removed to save space for now)
