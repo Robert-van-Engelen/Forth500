@@ -209,7 +209,7 @@ Some words like `."` and `;` are compile-time only, which means that they can
 only be used in colon definitions.  Two other compile-time words are `DO` and
 `LOOP` for loops:
 
-    : greetings 10 0 DO hello LOOP ; ↲
+    : greetings     10 0 DO hello LOOP ; ↲
     greetings ↲
 
 This displays 10 lines with "Hello, World!"  Let's add a word that takes a
@@ -225,7 +225,7 @@ same as `greetings` but without the `10` loop limit.  We just specify the loop
 limit on the stack as an argument to `hellos`.  Therefore, we can refactor
 `greetings` to use `hellos`:
 
-    : greetings 10 hellos ; ↲
+    : greetings     10 hellos ; ↲
 
 It is good practice to define words with short definitions.  It makes programs
 much easier to understand, maintain and reuse.  Because words operate on the
@@ -332,8 +332,9 @@ languages as follows:
     Hello, World!
 
 Note that the default case is not really necessary, but can be inserted between
-the last `ENDOF` and `ENDCASE`.  In the default branch the `CASE` value is the
-TOS, which can be inspected, but should not be dropped before `ENDCASE`.
+the last `ENDOF` and `ENDCASE`.  In the default arm of a `CASE`, the `CASE`
+value is the TOS, which can be inspected, but should not be dropped before
+`ENDCASE`.
 
 Unlike a `VARIABLE`, a `CONSTANT` word is initialized with the specified value
 on the stack.  When the word is executed it pushes its value on the stack.  By
@@ -384,7 +385,7 @@ Earlier we saw the `DO`-`LOOP`.  The loop iterates until its internal loop
 counter when incremented *equals* the final value.  For example, this loop
 executes `hello` 10 times:
 
-    : greetings 10 0 DO hello LOOP ; ↲
+    : greetings     10 0 DO hello LOOP ; ↲
 
 Actually, `DO` cannot be recommended because the loop body is always executed
 *at least once*.  When the initial value is the same as the final value we end
@@ -397,8 +398,37 @@ instead of `DO` to avoid this problem:
 
 This example has zero loop iterations and never executes the loop body `hello`.
 
-To change the step size or direction of the loop, we use `+LOOP`.  The word `I`
-returns the loop counter value:
+When we add more languages to `hello`, the `hello` definition code grows
+substantially by the addition of lots of `OF`-`ENDOF` arms.  We should keep
+Forth definitions short and concise.  To so so, we may want to reconsider
+`hello` and change it to a "deferred word".  A deferred word can be assigned
+another word, in this case to display a message in the selected language:
+
+    DEFER hello ↲
+    : hellos    0 ?DO hello LOOP ; ↲
+
+The deferred `hello` word is assigned `hello-es` with `IS`:
+
+    : hello-en  ." Hello, World!" CR ; ↲
+    : hello-es  ." Hola, Mundo!" CR ; ↲
+    : hello-es  ." Salut Mondial!" CR ; ↲
+    ' hello-es IS hello ↲
+    2 hellos ↲
+    Hola, Mundo!
+    Hola, Mundo! OK[0]
+
+The `'` "tick" parses the next word and returns its "execution token" on the
+stack, which is assigned by `IS` to `hello`.  An execution token is the address
+of the start of the code associated with a word.  Basically, a deferred word is
+a variable that holds the execution token of another word.  When the deferred
+`hello` executes, it takes this execution token and executes it with `EXECUTE`.
+
+Think of execution tokens as function pointers in C and as call addresses in
+assembly.  You can pass them around and store them in variables and tables to
+be invoked later.
+
+We saw the use of a `?DO`-`LOOP` earlier.  To change the step size or direction
+of the loop, we use `+LOOP`.  The word `I` returns the loop counter value:
 
     : evens     10 0 ?DO I . 2 +LOOP ; ↲
     evens ↲
