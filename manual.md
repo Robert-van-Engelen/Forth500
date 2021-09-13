@@ -249,7 +249,7 @@ searchable when a word with the same name is defined.
 
 Definitions can be deleted with everything defined after it by forgetting:
 
-    forget hello ↲
+    FORGET hello ↲
 
 Because we defined two `hello` words, we should forget `hello` twice to delete
 the new and the old `hello`.  Forgetting means that everything after the
@@ -260,6 +260,12 @@ To create a configurable `hello` word that displays alternative messages, we
 can use branching based on the value of a variable:
 
     VARIABLE spanish ↲
+
+A `VARIABLE` parses the next word in the input and adds the word to the
+dictionary as a variable, in this case `spanish`.
+
+We rewrite our `hello` as follows:
+
     : hello ↲
       spanish @ IF ↲
         ." Hola, Mundo!" ↲
@@ -329,9 +335,11 @@ Note that the default case is not really necessary, but can be inserted between
 the last `ENDOF` and `ENDCASE`.  In the default branch the `CASE` value is the
 TOS, which can be inspected, but should not be dropped before `ENDCASE`.
 
-Constant words push their value on the stack, wheras variable words push the
-address of their value on the stack to fetch with `@` and to store a new value
-with `!`.
+Unlike a `VARIABLE`, a `CONSTANT` word is initialized with the specified value
+on the stack.  When the word is executed it pushes its value on the stack.  By
+contrast, a word defined as a variable pushes the address of its value on the
+stack, after which the value can be fetched with `@`.  A new value can be
+stored with `!`.
 
 So-called Forth value words offer the advantage of implicit fetches like
 constants.  To illustrate value words, let's replace the `VARIABLE language`
@@ -493,9 +501,11 @@ stack:
 | _+d_     | a non-negative double integer 0 to 2147483647
 | _ud_     | an unsigned double integer 0 to 4294967295
 | _xd_     | an unspecified double integer (two unspecified single integers)
+| _r_      | a single or double floating point value on the floating point stack
 | _addr_   | a 16-bit address
 | _c-addr_ | a 16-bit address pointing to 8-bit character(s), usually a constant string
-| _f-addr_ | a 16-bit address pointing to a file status structure (Forth500)
+| _f-addr_ | a 16-bit address pointing to a floating point value
+| _s-addr_ | a 16-bit address pointing to a file status structure (Forth500)
 | _fileid_ | a nonzero single integer file identifier
 | _ior_    | a single integer nonzero system-specific error code
 | _fam_    | a file access mode
@@ -2000,7 +2010,7 @@ The following words return _ior_ to indicate success (zero) or failure (nonzero
 | `INCLUDE-FILE`    | ( _fileid_ -- )                                 | load Forth source code from _fileid_
 | `DELETE-FILE`     | ( _c-addr_ _u_ -- _ior_ )                       | delete file with name _c-addr1_ _u1_
 | `RENAME-FILE`     | ( _c-addr1_ _u1_ _c-addr2_ _u2_ -- _ior_ )      | rename file with name _c-addr1_ _u1_ to _c-addr2_ _u2_
-| `FILE-STATUS`     | ( _c-addr_ _u_ -- _f-addr_ _ior_ )              | if file with name _c-addr_ _u_ exists, return _ior_=0
+| `FILE-STATUS`     | ( _c-addr_ _u_ -- _s-addr_ _ior_ )              | if file with name _c-addr_ _u_ exists, return _ior_=0
 | `R/O`             | ( -- _fam_ )                                    | open file for read only
 | `W/O`             | ( -- _fam_ )                                    | open file for write only
 | `R/W`             | ( -- _fam_ )                                    | open file for reading and writing
@@ -2030,8 +2040,8 @@ The following words return _ior_ to indicate success (zero) or failure (nonzero
 | `STDO`            | ( -- 1 )                                        | returns _fileid_=1 for standard output to the screen
 | `STDI`            | ( -- 2 )                                        | returns _fileid_=2 for standard input from the keyboard
 | `STDL`            | ( -- 3 )                                        | returns _fileid_=3 for standard output to the line printer
-| `>FILE`           | ( _fileid_ -- _f-addr_ )                        | returns file _f-addr_ data for _fileid_
-| `FILE>STRING`     | ( _f-addr_ -- _c-addr_ _u_ )                    | returns string _c-addr_ _u_ file name converted from file _f-addr_ data
+| `>FILE`           | ( _fileid_ -- _s-addr_ )                        | returns file _s-addr_ data for _fileid_
+| `FILE>STRING`     | ( _s-addr_ -- _c-addr_ _u_ )                    | returns string _c-addr_ _u_ file name converted from file _s-addr_ data
 
 Globs with wildcard `*` and `?` can be used to list files on the E: or F:
 drive, for example:
