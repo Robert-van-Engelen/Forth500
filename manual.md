@@ -2700,21 +2700,23 @@ Next, we define `slurp`:
     : slurp     ( c-addr u -- c-addr u ) open read close ;
 
 The `slurp` word takes the file name as a string and returns the file contents
-as string.  The file open and close words check for errors to throw them:
+as a string.  The file `open` and `close` words use `OPEN-FILE` and
+`CLOSE-FILE`, respectively, which return a I/O error code _ior_.  We want to
+throw this error:
 
     : open      ( c-addr u -- ) R/O OPEN-FILE THROW fh ! ;
     : close     fh @ ?DUP IF CLOSE-FILE fh OFF THROW THEN ;
 
-where `close` has a guard to close only open files (omitting the guard
-`?DUP IF ... THEN` is fine too, it just throws an exception by `CLOSE-FILE`,
-because of _fileid_=0).
+Note that `close` has a guard to close only open files (omitting the guard
+`?DUP IF ... THEN` is fine too, it just throws an exception, because _fileid_=0
+is invalid and cannot be closed).
 
-Now we cane `read` a file incrementally, "sipping" one block at a time until he
+Now we can `read` a file incrementally, "sipping" one block at a time until he
 last sip is empty:
 
     : read      start BEGIN sip 0= UNTIL done ;
 
-To `start`, we just initialize `fp` to `HERE`:
+To `start`, we just initialize `fp` to `HERE` to point to the free space:
 
     : start     HERE fp ! ;
 
