@@ -261,7 +261,7 @@ can use branching based on the value of a variable:
 
     VARIABLE spanish ↲
 
-A `VARIABLE` parses the next word in the input and adds the word to the
+`VARIABLE` parses the next word in the input and adds the word to the
 dictionary as a variable, in this case `spanish`.
 
 We rewrite our `hello` as follows:
