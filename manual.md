@@ -411,7 +411,7 @@ The deferred `hello` word is assigned `hello-es` with `IS`:
 
     : hello-en  ." Hello, World!" CR ; ↲
     : hello-es  ." Hola, Mundo!" CR ; ↲
-    : hello-es  ." Salut Mondial!" CR ; ↲
+    : hello-fr  ." Salut Mondial!" CR ; ↲
     ' hello-es IS hello ↲
     2 hellos ↲
     Hola, Mundo!
