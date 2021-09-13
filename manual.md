@@ -377,9 +377,9 @@ words in the dictionary are unique, we can use this mechanism to create
     CREATE french ↲
     english TO language ↲
 
-Working with `CREATE` to create data types and data structures is a more
-advanced topic.  See [CREATE and DOES>](#create-and-does) for details.  See
-also example [enums](#enums) for a more elaborate example.
+Working with `CREATE` and `DOES>` to create data types and data structures is a
+more advanced topic.  See [CREATE and DOES>](#create-and-does) for details.
+See also example [enums](#enums) for a more elaborate example.
 
 Earlier we saw the `DO`-`LOOP`.  The loop iterates until its internal loop
 counter when incremented *equals* the final value.  For example, this loop
@@ -425,7 +425,7 @@ a variable that holds the execution token of another word.  When the deferred
 
 Think of execution tokens as function pointers in C and as call addresses in
 assembly.  You can pass them around and store them in variables and tables to
-be invoked later.
+be invoked later with `EXECUTE`.
 
 We saw the use of a `?DO`-`LOOP` earlier.  To change the step size or direction
 of the loop, we use `+LOOP`.  The word `I` returns the loop counter value:
@@ -490,10 +490,10 @@ in practice.
 
 Forth source code is loaded from a file with `INCLUDE` or with `INCLUDED`:
 
-    INCLUDE program1.fth ↲
-    S" program2.fth" INCLUDED ↲
+    INCLUDE PROGRAM1.FTH ↲
+    S" PROGRAM2.FTH" INCLUDED ↲
 
-where `S" program2.fth"` specifies a string constant with the file name.  A
+where `S" PROGRAM2.FTH"` specifies a string constant with the file name.  A
 drive letter such as F: can be specified to load from a specific drive, which
 becomes the current drive (the default drive is E:).
 
