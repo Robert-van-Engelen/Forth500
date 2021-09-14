@@ -2801,5 +2801,17 @@ If the free space in the dictionary is insufficient, then exception -8 will be
 thrown.  If that happens, call `close` and `release` to close the file and
 release memory.
 
+Slurping a file from the E: or F: drive is even simpler, since the file size is
+known.  We can pre-allocate memory space and gulp the whole file at once into
+this space.  Accordingly, we can make the following changes:
+
+    : data      ( -- c-addr u ) fp @ fz @ ;
+    : gulp      fz @ ALLOT data fh @ READ-FILE THROW ;
+    : size      fh @ FILE-SIZE THROW fz ! ;
+    : read      start gulp data ;
+    : slurp     ( c-addr u -- c-addr u ) open size read close ;
+
+where `data` returns the address and size of the file data.
+
 
 _This document is Copyright Robert A. van Engelen (c) 2021_
