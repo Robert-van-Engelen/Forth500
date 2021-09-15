@@ -33,7 +33,7 @@ Forth500 is [standard Forth](https://forth-standard.org) compliant and implement
 - TOOLS-EXT: `AHEAD`, `BYE`, `CS-PICK`, `CS-ROLL`, `FORGET`, `STATE`, `N>R`, `NR>`, `[DEFINED]`, `[ELSE]`, `[IF]`, `[THEN]`, `[UNDEFINED]`
 
 Additional built-in words:
-- introspection: `COLON?`, `DOES>?`, `MARKER?`, `VARIABLE?`, `2VARIABLE?`, `VALUE?`, `2VALUE?`
+- introspection: `COLON?`, `DOES>?`, `MARKER?`, `DEFER?`, `VALUE?`, `2VALUE?`
 - values: `+TO`
 - variables: `D+!`, `ON`, `OFF`
 - arithmetic: `UMAX`, `UMIN`, `2+`, `2-`, `M-`, `D/MOD`, `DMOD`, `UMD*`

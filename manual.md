@@ -58,6 +58,7 @@ Author: Dr. Robert A. van Engelen, 2021
   - [Strings](#strings)
   - [Enums](#enums)
   - [Slurp](#slurp)
+- [Further reading](#further-reading)
 
 ## Forth500
 
@@ -510,7 +511,7 @@ drive the current drive.  Forth source files commonly use extension FTH or FS.
 File names and extensions are case sensitive on the PC-E500(S), but drive names
 are not.
 
-This ends our introduction to the essential basics of Forth.
+This ends our introduction of the basics of Forth.
 
 ## Stack effects
 
@@ -959,7 +960,7 @@ Strings contain 8-bit characters, including special characters.
 
 The string constants created with `S"` and `S\"` are compiled to code when used
 in colon definitions.  Otherwise, the string is stored in a temporary internal
-256-byte string buffer returned by `WHICH-POCKET` (two buffers are recycled).
+256-byte string buffer returned by `WHICH-POCKET`.  Two buffers are recycled.
 
 Note that most words require strings with a _c-addr_ _u_ pair of cells on the
 stack, such as `TYPE` to display a string.
@@ -1659,10 +1660,6 @@ The following words can be used to inspect words and dictionary contents:
 | ------------- | ------------------------ | -----------------------------------
 | `COLON?`      | ( _xt_ -- _flag_ )       | return `TRUE` if _xt_ is a `:` definition
 | `DEFER?`      | ( _xt_ -- _flag_ )       | return `TRUE` if _xt_ is a `DEFER`
-| `CONSTANT?`   | ( _xt_ -- _flag_ )       | return `TRUE` if _xt_ is a `CONSTANT`
-| `2CONSTANT?`  | ( _xt_ -- _flag_ )       | return `TRUE` if _xt_ is a `2CONSTANT`
-| `VARIABLE?`   | ( _xt_ -- _flag_ )       | return `TRUE` if _xt_ is a `VARIABLE` or is created by a word that uses `CREATE` without `DOES>`
-| `2VARIABLE?`  | ( _xt_ -- _flag_ )       | return `TRUE` if _xt_ is a `2VARIABLE`
 | `VALUE?`      | ( _xt_ -- _flag_ )       | return `TRUE` if _xt_ is a `VALUE`
 | `2VALUE?`     | ( _xt_ -- _flag_ )       | return `TRUE` if _xt_ is a `2VALUE`
 | `DOES>?`      | ( _xt_ -- _flag_ )       | return `TRUE` if _xt_ is created by a word that uses `CREATE` with `DOES>`
@@ -2459,10 +2456,12 @@ To draw a randomized "starry night" on the 240x32 pixel screen:
 
 This example is an implementation with string buffers residing in the
 dictionary, which is pretty standard practice in Forth.  Each buffer includes
-the maximum length of the string as its first byte followed by the actual
+the maximum length of the string as the first byte followed by the actual
 length of the string in the second byte.  The string contents follow these two
-bytes.  This implementation is short and concise by reusing words as much as
-possible to avoid unnecessary complexity.
+bytes.  This implementation is safer than simpler implementations that do not
+store the maximum string buffer size and thus have no protections.
+Furthermore, we keep our definitions short and concise by reusing words as much
+as possible to avoid unnecessary complexity.
 
 We first define four auxilliary words to obtain the max length, the current
 length, the unused space and to set a new length limited by the max length:
@@ -2474,6 +2473,9 @@ length, the unused space and to set a new length limited by the max length:
 
 Note that we used `UMIN` to prevent negative string lengths.
 
+A `string` value on the stack is an address that points right after the max and
+length bytes to the string contents stored in a string buffer.
+
 The following `string:` word creates a string buffer given a maximum length:
 
     : string:   ( max "name" -- ; string len )
@@ -2484,9 +2486,9 @@ Let's define a `name` to store up to 30 characters:
 
     30 string: name ↲
 
-A string returns the string address of its first character and the length of
-the string.  This makes it simpler to use our strings as the usual constant
-string arguments to standard Forth words, such as `TYPE`:
+The string `name` returns the string address of its first character and the
+length of the string.  This makes it simpler to use our strings as the usual
+constant string arguments passed to standard Forth words, such as `TYPE`:
 
     name TYPE ↲
     OK[0]
@@ -2801,9 +2803,9 @@ If the free space in the dictionary is insufficient, then exception -8 will be
 thrown.  If that happens, call `close` and `release` to close the file and
 release memory.
 
-Slurping a file from the E: or F: drive is even simpler, since the file size is
-known.  We can pre-allocate memory space and gulp the whole file at once into
-this space.  Accordingly, we can make the following changes:
+Slurping a file from the E: or F: drive is much simpler.  Since the file size is
+known, we can pre-allocate memory space and gulp the whole file at once into
+this space.  We can make the following changes accordingly:
 
     : data      ( -- c-addr u ) fp @ fz @ ;
     : gulp      fz @ ALLOT data fh @ READ-FILE THROW ;
@@ -2811,7 +2813,20 @@ this space.  Accordingly, we can make the following changes:
     : read      start gulp data ;
     : slurp     ( c-addr u -- c-addr u ) open size read close ;
 
-where `data` returns the address and size of the file data.
+where `size` assigns variable `fz` the file size, `gulp` reads the whole file
+at once and `data` returns the address and size of the file data (i.e. as
+_c-addr_ _u_) for convenience.
+
+## Further reading
+
+[And so Forth...](https://thebeez.home.xs4all.nl/ForthPrimer/Forth_primer.html)
+by Hans Bezemer.
+
+[A Beginner's Guide to Forth](http://galileo.phys.virginia.edu/classes/551.jvn.fall01/primer.htm)
+by J.V. Noble.
+
+[Thinking Forth](http://thinking-forth.sourceforge.net)
+by Leo Brodie.
 
 
 _This document is Copyright Robert A. van Engelen (c) 2021_
