@@ -1753,10 +1753,6 @@ not iterate when `start` equals `limit`.  The `+LOOP` word increments the
 internal loop counter by `step`.  The `step` size may be negative.  The `+LOOP`
 terminates if the updated counter equals or crosses the limit.
 
-Do-loops iterate as long as the internal counter is not equal to `limit`.
-Beware that this means that do-loops run forever when the internal counter
-never equals `limit`, even when the counter exceeds `limit`.
-
 The internal loop counter value can be used in the loop as `I`.  Likewise, the
 second outer loop counter is `J` and the third outer loop counter is `K`.
 These return undefined values when not used within do-loops.
