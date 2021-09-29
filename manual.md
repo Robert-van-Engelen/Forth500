@@ -1276,7 +1276,7 @@ the colon definition started before the colon definition exits.
 where `R>DROP` removes the return address to `foo`.  Therefore:
 
     foo ↲
-    foobar OK[0]
+    foo bar OK[0]
 
 The maximum depth of the return stack in Forth500 is 256 bytes to hold up to
 128 cells or 128 calls to secondaries.
