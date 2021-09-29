@@ -1750,7 +1750,8 @@ These words can only be used in colon definitions.  Do-loops run from the `start
 to the `limit` values, excluding the last iteration for `limit`.  The `DO` loop
 iterates at least once, even when `start` equals `limit`.  The `?DO` loop does
 not iterate when `start` equals `limit`.  The `+LOOP` word increments the
-internal loop counter by `step`.  The `step` size may be negative.
+internal loop counter by `step`.  The `step` size may be negative.  The `+LOOP`
+terminates if the updated counter equals or crosses the limit.
 
 Do-loops iterate as long as the internal counter is not equal to `limit`.
 Beware that this means that do-loops run forever when the internal counter
