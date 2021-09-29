@@ -1,6 +1,6 @@
 # A Complete Forth System for the SHARP PC-E500(S)
 
-A Forth 2012 system based on the excellent ANS Forth compiler for the PC-E500(S) by Sébastien Furic.
+A complete Forth system based on the excellent ANS Forth compiler for the PC-E500(S) by Sébastien Furic.
 
 ![PC-E500S](PC-E500S.jpeg)
 
@@ -39,7 +39,7 @@ Additional built-in words:
 - arithmetic: `UMAX`, `UMIN`, `2+`, `2-`, `M-`, `D/MOD`, `DMOD`, `UMD*`
 - stack: `-ROT`, `2NIP`, `2TUCK`, `DUP>R`, `R>DROP`, `CLEAR`
 - loops: `K`, `?LEAVE`
-- strings: `S=`, `EDIT`
+- strings: `S=`, `-CHARS`, `EDIT`
 - display: `REVERSE-TYPE`, `BASE.`, `BIN.`, `DEC.`, `HEX.`, `N.S`, `TTY`
 - printing: `STDL`, `PRINTER`
 - LCD: `SET-SYMBOLS`, `BUSY-ON`, `BUSY-OFF`, `CURSOR`, `SET-CURSOR`, `X@`, `X!`, `Y@`, `Y!`, `XMAX@`, `XMAX!`, `YMAX@`, `YMAX!`

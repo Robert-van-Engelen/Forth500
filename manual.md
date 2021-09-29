@@ -435,11 +435,8 @@ of the loop, we use `+LOOP`.  The word `I` returns the loop counter value:
     evens ↲
     0 2 4 6 8 OK[0]
 
-Again, be warned that the loop terminates when the counter *equals* the final
-value, not exceeds it!  Therefore, using the wrong loop parameters, such as
-`9 0 ?DO I . 2 +LOOP` never terminates the loop, because the counter is an even
-integer that wraps around when the maximum positive integer value is reached
-and the limit is the odd integer 9.
+The `+LOOP` terminates if the updated counter equals or crosses the limit.  The
+increment may be negative to count down.
 
 A `BEGIN`-`WHILE`-`REPEAT` is a logically-controlled loop with which we can do
 the same as follows by pushing a `0` to use as a counter on top of the stack:
@@ -1057,6 +1054,7 @@ stack:
 | `NEXT-CHAR` | ( _c-addr1_ _u1_ -- _c-addr2_ _u2_ _char_ ) | if _u1_>0 returns _c-addr2_=_c-addr1_+1, _u2_=_u1_-1 and _char_ is the char at _c-addr2_, otherwise throw -24
 | `/STRING`   | ( _c-addr1_ _u1_ _n_ -- _c-addr2_ _u2_ )    | skip _n_ characters _c-addr2_=_c-addr1_+_n_, _u2_=_u1_-_n_, _n_ may be negative to revert
 | `-TRAILING` | ( _c-addr_ _u1_ -- _c-addr_ _u2_ )          | returns string _c-addr_ with adjusted size _u2_<=_u1_ to ignore trailing spaces
+| `-CHARS`    | ( _c-addr_ _u1_ _char_ -- _c-addr_ _u2_ )   | returns string _c-addr_ with adjusted size _u2_<=_u1_ to ignore trailing _char_
 
 For example, to remove trailing spaces from `name` to update `name-len`, then
 display the name without the `name=` prefix:
