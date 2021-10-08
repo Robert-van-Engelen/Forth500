@@ -941,10 +941,10 @@ stack (the F: stack effects):
 | `FMAX`    | ( F: _r1_ _r2_ -- _r1_ ) if _r1_>_r2_ otherwise ( F: _r1_ _r2_ -- _r2_ )
 | `FMIN`    | ( F: _r1_ _r2_ -- _r1_ ) if _r1_<_r2_ otherwise ( F: _r1_ _r2_ -- _r2_ )
 | `FABS`    | ( F: _r_ -- +_r_ )
-| `FSIGN`   | ( F: _r_ -- 0e ) if _r_=0 or ( F: _r_ -- 1e ) if _r_>0 otherwise ( F: _r_ -- -1e )
+| `FSIGN`   | ( F: _r_ -- 0e0 ) if _r_=0 or ( F: _r_ -- 1e0 ) if _r_>0 otherwise ( F: _r_ -- -1e0 )
 | `FNEGATE` | ( F: _r_ -- -_r_ )
 | `FLOOR`   | ( F: _r_ -- ⌊_r_⌋ )
-| `FROUND`  | ( F: _r_ -- ⌊_r_+.5e⌋ )
+| `FROUND`  | ( F: _r_ -- ⌊_r_+.5e0⌋ )
 | `FSIN`    | ( F: _r_ -- sin(_r_) )
 | `FCOS`    | ( F: _r_ -- cos(_r_) )
 | `FTAN`    | ( F: _r_ -- tan(_r_) )
@@ -954,7 +954,7 @@ stack (the F: stack effects):
 | `FLOG`    | ( F: _r_ -- log10(_r_) )
 | `FLN`     | ( F: _r_ -- log(_r_) )
 | `FEXP`    | ( F: _r_ -- e\*\*_r_ )
-| `FSQRT`   | ( F: _r_ -- √_r_ )
+| `FSQRT`   | ( F: _r_ -- √ _r_ )
 | `FDEG`    | ( F: _r1_ -- _r2_ ) where _r1_ is in dd.mmss format and _r2_ is degrees
 | `FDMS`    | ( F: _r1_ -- _r2_ ) where _r1_ is degrees and _r2_ is in dd.mmss format
 | `FRAND`   | ( F: _r1_ -- _r2_ ) where _r2_ is a pseudo-random number, see below
@@ -974,10 +974,10 @@ Trigonometric functions are performed in radians.
 
 `FLOOR` returns _r_ truncated towards negative values.
 
-`DMS` returns the degrees (or hours) dd, minutes mm and seconds ss as a
-fraction.  `FDEG` performs the opposite.  For example, `36.09055e FDMS` returns
-36.052598 or 36° 5' 25.98".  The `FDEG` and `FDMS` words ares also useful for
-time conversions.
+`FDMS` returns the degrees (or hours) dd, minutes mm and seconds ss as a
+fraction.  `FDEG` performs the opposite.  For example, `36.09055e0 FDMS`
+returns 36.052598 or 36° 5' 25.98".  The `FDEG` and `FDMS` words are also
+useful for time conversions.
 
 `FRAND` returns a pseudo-random number in the open range _r2_ ∈ (0,1) if
 _r1_<1e and in the closed range _r2_ ∈ [1,_r1_] otherwise.  A double precision
@@ -987,23 +987,23 @@ value.
 The following additional floating point extended word set definitions not
 defined in Forth500 can be defined as follows:
 
-    : FALOG 10e FSWAP F** ;
+    : FALOG     10e FSWAP F** ;
 
-    : FCOSH FEXP FDUP 1e FSWAP F/ F+ 2e F/ ;
+    : FCOSH     FEXP FDUP 1e FSWAP F/ F+ 2e F/ ;
 
-    : FSINH FEXP FDUP 1e FSWAP F/ F- 2e F/ ;
+    : FSINH     FEXP FDUP 1e FSWAP F/ F- 2e F/ ;
 
-    : FTANH FDUP F+ FEXP FDUP 1e F- FSWAP 1e F+ F/ ;
+    : FTANH     FDUP F+ FEXP FDUP 1e F- FSWAP 1e F+ F/ ;
 
-    : FACOSH FDUP FDUP F* 1e F- FSQRT F+ FLN ;
+    : FACOSH    FDUP FDUP F* 1e F- FSQRT F+ FLN ;
 
-    : FASINH FDUP FDUP F* 1e F+ FSQRT F+ FLN ;
+    : FASINH    FDUP FDUP F* 1e F+ FSQRT F+ FLN ;
 
-    : FATANH FDUP 1e F+ FSWAP 1e FSWAP F- F/ FLN 2e F/ ;
+    : FATANH    FDUP 1e F+ FSWAP 1e FSWAP F- F/ FLN 2e F/ ;
 
-    : FTRUNC FDUP F0< IF FNEGATE FLOOR FNEGATE ELSE FLOOR THEN ;
+    : FTRUNC    FDUP F0< IF FNEGATE FLOOR FNEGATE ELSE FLOOR THEN ;
 
-    : F~ ( F: r1 r2 r3 -- ; -- flag )
+    : F~        ( F: r1 r2 r3 -- ; -- flag )
       FDUP F0= IF FDROP F= EXIT THEN
       FDUP F0< IF FROT FROT FOVER FOVER F- FROT FABS FROT FABS F+ FROT FABS F* F< EXIT THEN
       FROT FROT F- FABS F< ;
@@ -2754,7 +2754,7 @@ In this example we use Simpson's rule for numerical integration.  Simpson's
 rule approximates the definite integral of a function _f_ over a range [a,b]
 with 2n summation steps:
 
-_I_ = _h_/3 × [ _f_(_a_) + ∑ᵢ₌₁ ⁿ ( 4 _f_(_a_+_h_×(2i-1)) + 2 _f_(_a_+_h_×2i) ) - _f_(_a_+_h_×2 _n_) ]
+_I_ = _h_/3 × [ _f_(_a_) + ∑ᵢ₌₁ ⁿ ( 4 _f_(_a_ + _h_ × (2 i - 1)) + 2 _f_(_a_ + 2 _h_ i) ) - _f_(_a_ + 2 _h_ _n_) ]
 
 where _h_ = (_b_-_a_)/(2 _n_)
 
@@ -2817,7 +2817,7 @@ result.  The double precision integration result is not affected by the use of
 the single precision weight values, such as `1e`, `2e`, `3e` and `4e`, in the
 `integrate` definition.
 
-Let's integrate _f_(_x_)=1/(_x_²+1) over [0,1] with 2 _n_ = 10 steps:
+Let's integrate _f_(_x_)=1/(_x_ ²+1) over [0,1] with 2 _n_ = 10 steps:
 
     6 SET-PRECISION ↲
     :NONAME FDUP F* 1e F+ 1e FSWAP F/ ; IS integrand ↲
