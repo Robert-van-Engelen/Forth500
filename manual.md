@@ -2764,7 +2764,7 @@ to integrate:
 
     DEFER integrand     ( F: x -- y )
 
-Next, we define three variables to hold _x_ = _a_+_h_×(2 i-1),
+Next, we define three variables to hold _x_ = _a_+_h_ × (2 i - 1),
 _h_=(_b_-_a_)/(2 _n_) and the partial _sum_:
 
     FVARIABLE x
@@ -2817,7 +2817,7 @@ result.  The double precision integration result is not affected by the use of
 the single precision weight values, such as `1e`, `2e`, `3e` and `4e`, in the
 `integrate` definition.
 
-Let's integrate _f_(_x_)=1/(_x_ ²+1) over [0,1] with 2 _n_ = 10 steps:
+Let's integrate _f_(_x_)=1/(_x_ ² + 1) over [0,1] with 2 _n_ = 10 steps:
 
     6 SET-PRECISION ↲
     :NONAME FDUP F* 1e F+ 1e FSWAP F/ ; IS integrand ↲
