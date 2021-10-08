@@ -8,7 +8,9 @@ Author: Dr. Robert A. van Engelen, 2021
 - [Quick Forth tutorial](#quick-forth-tutorial)
 - [Stack effects](#stack-effects)
 - [Stack manipulation](#stack-manipulation)
+  - [Floating point stack manipulation](#floating-point-stack-manipulation)
 - [Integer constants](#integer-constants)
+  - [Floating point constants](#floating-point-constants)
 - [Arithmetic](#arithmetic)
   - [Single arithmetic](#single-arithmetic)
   - [Double arithmetic](#double-arithmetic)
@@ -35,6 +37,7 @@ Author: Dr. Robert A. van Engelen, 2021
   - [Structures](#structures)
   - [Arrays](#arrays)
   - [Markers](#markers)
+  - [Deleting words](#removing-words)
   - [Introspection](#introspection)
 - [Control flow](#control-flow)
   - [Conditionals](#conditionals)
@@ -53,8 +56,8 @@ Author: Dr. Robert A. van Engelen, 2021
 - [Dictionary structure](#dictionary-structure)
 - [Examples](#examples)
   - [GCD](#gcd)
-  - [SQRT](#sqrt)
   - [RAND](#rand)
+  - [SQRT](#sqrt)
   - [Strings](#strings)
   - [Enums](#enums)
   - [Slurp](#slurp)
@@ -131,7 +134,7 @@ To list words that fully and partially match a given name, type:
     WORDS NAME ↲
 
 For example, `WORDS DUP` lists all words with names that contain the part `DUP`
-(the search is case sensitive).
+(the `WORDS` search is case sensitive).
 
 Words like `DUP` operate on the stack.  `DUP` duplicates the top value,
 generally called TOS "Top Of Stack".  All computations in Forth occur on the
@@ -168,6 +171,7 @@ unsigned.  Decimal, hexadecimal and binary number systems are supported:
 | `$FF`   | 255 | hexadecimal number
 | `#-12`  | -12 | decimal number (regardless of the current base)
 | `%1000` |   8 | binary number
+| `'A`    |  65 | ASCII code of letter A
 
 Words for arithmetic like `+` pop the TOS and 2OS "Second on Stack" to return
 the sum.  The `.` ("dot") word can then be used to print the TOS:
@@ -183,11 +187,30 @@ at the end:
     123. 456. D+ D. ↲
     579 OK[0] 
 
-The use of `.` for double integers is unfortunate, because the number is not a
-floating point number.  The `.` is traditional in Forth and still part of the
-Forth standard.  The `D+` word adds two double integers and the `D.` word
-prints a signed double integer and pops it from the stack.  Words that operate
-on two integers or doubles are typically identified by `Dxxx` and `2xxx`.
+The `D+` word adds two double integers and the `D.` word prints a signed double
+integer and pops it from the stack.  Words that operate on two integers or
+doubles are typically identified by `Dxxx` and `2xxx`.  See also [double
+arithmetic](#double-arithmetic) and [numeric output](#numeric-output).
+
+The use of `.` to mark double integers is unfortunate, because the number is
+not a floating point number!  The `.` is traditional in Forth and still part of
+the Forth standard.
+
+Note: floating point support is work in progress and not available yet.
+
+Floating point numbers require an exponent `E` or `D` for double precision,
+even when the exponent is zero, as for example in `1.23e0` (the `E` and `D`
+are case insensitive).  Floating point values are stored on a separate floating
+point stack and have their own words for floating point arithmetic:
+
+    12.3e0 45.6e0 F+ FDUP F. FS. ↲
+    57.9 5.7900000000000000000E1 OK[0]
+
+where `F.` displays the value in fixed-point notation without exponent and
+`FS.` displays the value in scientific notation with 20 digits precision.  See
+also [floating point stack manipulation](#floating-point-stack-manipulation),
+[floating point arithmetic](#floating-point-arithmetic) and [numeric
+output](#numeric-output).
 
 Words that execute subroutines are defined with a `:` ("colon") and end with
 a `;` ("semicolon"):
@@ -196,10 +219,12 @@ a `;` ("semicolon"):
 
 This defines the word `hello` that displays the obligatory "Hello, World!"
 message.  Separating the word with its definition using tab spacing visually
-assists to identify word definitions more easily.  The `."` word parses a
-sequence of character until `"`.  These characters are displayed on screen.
-Note that `."` is a normal word and must therefore be followed by a space.  The
-`CR` word starts a new line by printing a carriage return and newline.
+assists to identify word definitions more easily.
+
+The `."` word parses a sequence of character until `"`.  These characters are
+displayed on screen.  Note that `."` is a normal word and must therefore be
+followed by a space.  The `CR` word starts a new line by printing a carriage
+return and newline.
 
 Let's try it out:
 
@@ -224,7 +249,7 @@ number as an argument, then displays that many `hello` lines:
 Something interesting has happened here, that is typical Forth: `hellos` is the
 same as `greetings` but without the `10` loop limit.  We just specify the loop
 limit on the stack as an argument to `hellos`.  Therefore, we can refactor
-`greetings` to use `hellos`:
+`greetings` to use `hellos` by simply replacing `0 DO hello LOOP` by `hellos`:
 
     : greetings     10 hellos ; ↲
 
@@ -529,7 +554,7 @@ stack:
 | _+d_     | a non-negative double integer 0 to 2147483647
 | _ud_     | an unsigned double integer 0 to 4294967295
 | _xd_     | an unspecified double integer (two unspecified single integers)
-| _r_      | a single or double floating point value on the floating point stack
+| _r_      | a single or double precision floating point value on the floating point stack
 | _addr_   | a 16-bit address
 | _c-addr_ | a 16-bit address pointing to 8-bit character(s), usually a constant string
 | _f-addr_ | a 16-bit address pointing to a floating point value
@@ -620,15 +645,36 @@ integers or one double integer):
 
 Other stack-related words:
 
-| word    | stack effect | comment
-| ------- | ------------ | -----------------------------------------------------
-| `CLEAR` | ( ... -- )   | clears the stack
-| `DEPTH` | ( -- _n_ )   | returns the current depth of the stack
-| `.S`    | ( -- )       | displays the stack contents
-| `N.S`   | ( _n_ -- )   | displays the top _n_ values on the stack
+| word    | stack effect           | comment
+| ------- | ---------------------- | -------------------------------------------
+| `CLEAR` | ( ... -- ; F: ,,, -- ) | clears the stack and the floating point stack
+| `DEPTH` | ( -- _n_ )             | returns the current depth of the stack
+| `.S`    | ( -- )                 | displays the stack contents
+| `N.S`   | ( _n_ -- )             | displays the top _n_ values on the stack
 
-`DEPTH` returns the depth of the stack, not counting the depth value returned.
-The maximum stack depth in Forth500 is 128 cells or 64 double cells.
+`DEPTH` returns the current depth of the stack, which is the number of cells on
+the stack not counting the depth value returned on the stack.  The maximum
+stack depth in Forth500 is 128 cells or 64 double cells.
+
+### Floating point stack manipulation
+
+Note: floating point support is work in progress and not available yet.
+
+The following words manipulate values on the floating point stack:
+
+| word     | stack effect ( _before_ -- _after_ )    | comment
+| -------- | --------------------------------------- | -------------------------
+| `FDUP`   | ( F: _r_ -- _r_ _r_ )                   | duplicate FP TOS
+| `FDROP`  | ( F: _r_ -- )                           | drop the FP TOS
+| `FSWAP`  | ( F: _r1_ _r2_ -- _r2_ _r1_ )           | swap FP TOS with FP 2OS
+| `FOVER`  | ( F: _r1_ _r2_ -- _r1_ _r2_ _r1_ )      | duplicate FP 2OS to the top
+| `FROT`   | ( F: _r1_ _r2_ _r3_ -- _r2_ _r3_ _r1_ ) | rotate stack, FP 3OS goes to FP TOS
+| `CLEAR`  | ( ... -- ; F: ,,, -- )                  | clears the stack and the floating point stack
+| `FDEPTH` | ( -- _n_ )                              | returns the current depth of the floating point stack
+
+`FDEPTH` returns the current depth of the floating point stack, which is the
+number of floats on the stack.  The maximum floating point stack depth in
+Forth500 is 96 bytes or 8 floating point values.
 
 ## Integer constants
 
@@ -658,7 +704,16 @@ complement).
 Double integer values have a `.` (dot) anywhere placed among the digits.  For
 example, `-1.` is double integer pushed on the stack, occupying the top pair of
 consecutive cells on the stack, i.e. the TOS and 2OS with TOS holding the
-high-order bits.  The `.` (dot) is typically placed at the end of the digits.
+16 high-order bits and 2OS holding the 16 low-order bits.  The `.` (dot) is
+typically placed at the end of the digits.
+
+The ASCII value of a single character is pushed on the stack with `'char'`.
+The closing quote may be omitted for convenience:
+
+| word | comment
+| ---- | -----------------------------------------------------------------------
+| `'A'`| ASCII code 65 of letter A
+| `'B` | ASCII code 66 of letter B
 
 The following words define common constants regardless of the current `BASE`:
 
@@ -667,6 +722,49 @@ The following words define common constants regardless of the current `BASE`:
 | `BL`    | the space character, ASCII 32
 | `FALSE` | Boolean false, same as 0
 | `TRUE`  | Boolean true, same as -1
+
+### Floating point constants
+
+Note: floating point support is work in progress and not available yet.
+
+Floating point values when parsed from the input are directly pushed on the
+floating point stack.  Floating point values must include a `E` or `D`
+exponent.  An `E` or `e` exponent marks a single precision floating point
+value with up to 10 significant digits.  A `D` or `d` exponent marks a double
+precision floating point value with up to 20 significant digits.  The exponent
+ranges from -99 to +99.
+
+| word                       | comment
+| -------------------------- | ------------------------------------------------
+| `3.141592654e0`            | single precision pi
+| `3.1415926535897932385d0`  | double precision pi
+| `9.9999999999999999999d99` | maximum double precision value
+| `-1.234e-10`               | single precision -0.0000000001234
+| `1e0`                      | single precision 1
+| `0e`                       | single precision 0 (`e` is the same as `e0`)
+| `0d0`                      | double precision 0
+
+Note that the `e0` exponent may be abbreviated to `e`.  However, `d0` cannot be
+abbreviated to `d`.  This will result in a single precision value.
+
+Floating point values are always parsed in base 10.  Therefore, the current
+`BASE` value has no effect.
+
+A floating point value requires 12 bytes of storage for the sign, exponent and
+the binary-coded decimal mantissa:
+
+(sign-byte)(exp)(BCD0)(BCD1)(BCD2)(BCD3)(BCD4)(BCD5)(BCD6)(BCD7)(BCD8)(BCD9) 
+
+- a single precision floating point value uses (BCD0) to (BCD4).  A double
+  precision floating point value uses (BCD0) to (BCD9)
+- the (sign-byte) bit 0 is set to mark negative values
+- the (sign-byte) bit 3 is set to mark double precision values
+
+All Forth500 floating point operations are performed on single and double
+precision floating point values.
+
+The maximum depth of the floating point stack in Forth500 is 96 bytes to hold
+up to 8 floating point values.
 
 ## Arithmetic
 
@@ -753,7 +851,7 @@ To convert an unsigned single integer to an unsigned double integer, just push
 a `0` on the stack.
 
 Integer overflow and underflow does not throw exceptions.  In case of integer
-addition and subtraction, values wrap around.  For all other integer
+addition and subtraction, values simply wrap around.  For all other integer
 operations, overflow and underflow produce undefined values.
 
 ### Mixed arithmetic
@@ -827,13 +925,100 @@ by scaling the divisor down by 10 and the dividend up by 10 before dividing:
 
 ### Floating point arithmetic
 
-Not implemented yet, but will be available in the future.  The plan is to offer
-PC-E500(S) BCD single and double precision floating point.
+Note: floating point support is work in progress and not available yet.
+
+The following words cover floating point arithmetic operations.  The words
+accept single and double precision floating point numbers on the floating point
+stack (the F: stack effects):
+
+| word      | stack effect ( _before_ -- _after_ )
+| --------- | ------------------------------------------------------------------
+| `F+`      | ( F: _r1_ _r2_ -- _r1_+_r2_ )
+| `F-`      | ( F: _r1_ _r2_ -- _r1_-_r2_ )
+| `F*`      | ( F: _r1_ _r2_ -- _r1_\*_r2_ )
+| `F/`      | ( F: _r1_ _r2_ -- _r1_/_r2_ )
+| `F**`     | ( F: _r1_ _r2_ -- _r1_\*\*_r2_ )
+| `FMAX`    | ( F: _r1_ _r2_ -- _r1_ ) if _r1_>_r2_ otherwise ( F: _r1_ _r2_ -- _r2_ )
+| `FMIN`    | ( F: _r1_ _r2_ -- _r1_ ) if _r1_<_r2_ otherwise ( F: _r1_ _r2_ -- _r2_ )
+| `FABS`    | ( F: _r_ -- +_r_ )
+| `FSIGN`   | ( F: _r_ -- 0e ) if _r_=0 or ( F: _r_ -- 1e ) if _r_>0 otherwise ( F: _r_ -- -1e )
+| `FNEGATE` | ( F: _r_ -- -_r_ )
+| `FLOOR`   | ( F: _r_ -- ⌊_r_⌋ )
+| `FROUND`  | ( F: _r_ -- ⌊_r_+.5e⌋ )
+| `FSIN`    | ( F: _r_ -- sin(_r_) )
+| `FCOS`    | ( F: _r_ -- cos(_r_) )
+| `FTAN`    | ( F: _r_ -- tan(_r_) )
+| `FASIN`   | ( F: _r_ -- arcsin(_r_) )
+| `FACOS`   | ( F: _r_ -- arccos(_r_) )
+| `FATAN`   | ( F: _r_ -- arctan(_r_) )
+| `FLOG`    | ( F: _r_ -- log10(_r_) )
+| `FLN`     | ( F: _r_ -- log(_r_) )
+| `FEXP`    | ( F: _r_ -- e\*\*_r_ )
+| `FSQRT`   | ( F: _r_ -- √_r_ )
+| `FDEG`    | ( F: _r1_ -- _r2_ ) where _r1_ is in dd.mmss format and _r2_ is degrees
+| `FDMS`    | ( F: _r1_ -- _r2_ ) where _r1_ is degrees and _r2_ is in dd.mmss format
+| `FRAND`   | ( F: _r1_ -- _r2_ ) where _r2_ is a pseudo-random number, see below
+| `F>D`     | ( F: _r_ -- ; -- _d_ ) with _r_ converted to _d_
+| `D>F`     | ( _d_ -- ; F: -- _r_ ) with _d_ converted to _r_
+| `F>S`     | ( F: _r_ -- ; -- _n_ ) with _r_ converted to _n_
+| `S>F`     | ( _n_ -- ; F: -- _r_ ) with _n_ converted to _r_
+
+If any of the operands of an arithmetic operation are double precision, then
+the result of the operation is a double precision floating point value.  For
+example, `0d0 F+` promotes a single precision value to a double precision
+value by adding a double precision zero.
+
+Trigonometric functions are performed in radians.
+
+`F**` returns _r1_ to the power _r2_.
+
+`FLOOR` returns _r_ truncated towards negative values.
+
+`DMS` returns the degrees (or hours) dd, minutes mm and seconds ss as a
+fraction.  `FDEG` performs the opposite.  For example, `36.09055e FDMS` returns
+36.052598 or 36° 5' 25.98".  The `FDEG` and `FDMS` words ares also useful for
+time conversions.
+
+`FRAND` returns a pseudo-random number in the open range _r2_ ∈ (0,1) if
+_r1_<1e and in the closed range _r2_ ∈ [1,_r1_] otherwise.  A double precision
+pseudo-random number is returned when _r1_ is a double precision floating point
+value.
+
+The following additional floating point extended word set definitions not
+defined in Forth500 can be defined as follows:
+
+    : FALOG 10e FSWAP F** ;
+
+    : FCOSH FEXP FDUP 1e FSWAP F/ F+ 2e F/ ;
+
+    : FSINH FEXP FDUP 1e FSWAP F/ F- 2e F/ ;
+
+    : FTANH FDUP F+ FEXP FDUP 1e F- FSWAP 1e F+ F/ ;
+
+    : FACOSH FDUP FDUP F* 1e F- FSQRT F+ FLN ;
+
+    : FASINH FDUP FDUP F* 1e F+ FSQRT F+ FLN ;
+
+    : FATANH FDUP 1e F+ FSWAP 1e FSWAP F- F/ FLN 2e F/ ;
+
+    : FTRUNC FDUP F0< IF FNEGATE FLOOR FNEGATE ELSE FLOOR THEN ;
+
+    : F~ ( F: r1 r2 r3 -- ; -- flag )
+      FDUP F0= IF FDROP F= EXIT THEN
+      FDUP F0< IF FROT FROT FOVER FOVER F- FROT FABS FROT FABS F+ FROT FABS F* F< EXIT THEN
+      FROT FROT F- FABS F< ;
+
+The `F~` word compares two floating point values with the specified precision.
+If _r3_ is zero, then _flag_ is _true_ if _r1_ and _r2_ are equal.  If _r3_ is
+negative, then _flag_ is _true_ if the absolute value of (_r1_ minus _r2_) is
+less than the absolute value of _r3_ times the sum of the absolute values of
+_r1_ and _r2_.  If _r3_ is positive, then _flag_ is _true_ if the absolute
+value of (_r1_ minus _r2_) is less than _r3_.  
 
 ### Numeric comparisons
 
 The following words return true (-1) or false (0) on the stack by comparing
-integer values.
+integer values:
 
 | word     | stack effect ( _before_ -- _after_ )
 | -------- | -------------------------------------------------------------------
@@ -870,11 +1055,23 @@ _n2_|_u2_ inclusive to _n3_|_u3_ exclusive.  For exanple:
     5 -1 5 WITHIN . ↲
     0 OK[0]
 
-More precisely, `WITHIN` performs a comparison of a test value _n1_|_u1_ with an
-inclusive lower limit _n2_|_u2_ and an exclusive upper limit _n3_|_u3_,
+More specifically, `WITHIN` performs a comparison of a test value _n1_|_u1_
+with an inclusive lower limit _n2_|_u2_ and an exclusive upper limit _n3_|_u3_,
 returning true if either (_n2_|_u2_ < _n3_|_u3_ and (_n2_|_u2_ <= _n1_|_u1_ and
 _n1_|_u1_ < _n3_|_u3_)) or (_n2_|_u2_ > _n3_|_u3_ and (_n2_|_u2_ <= _n1_|_u1_
 or _n1_|_u1_ < _n3_|_u3_)) is true, returning false otherwise.
+
+The following words return true (-1) or false (0) on the stack by comparing
+floating point values on the floating point stack:
+
+| word  | stack effect ( _before_ -- _after_ )
+| ----- | ----------------------------------------------------------------------
+| `F<`  | ( F: _r1_ _r2_ -- ; -- _true_ ) if _r1_<_r2_ otherwise ( F: _r1_ _r2_ -- ; -- _false_ )
+| `F>`  | ( F: _r1_ _r2_ -- ; -- _true_ ) if _r1_>_r2_ otherwise ( F: _r1_ _r2_ -- ; -- _false_ )
+| `F=`  | ( F: _r1_ _r2_ -- ; -- _true_ ) if _r1_=_r2_ otherwise ( F: _r1_ _r2_ -- ; -- _false_ )
+| `F<>` | ( F: _r1_ _r2_ -- ; -- _true_ ) if _r1_<>_r2_ otherwise ( F: _r1_ _r2_ -- ; -- _false_ )
+| `F0<` | ( F: _r_ -- ; -- _true_ ) if _r_<0e otherwise ( F: _r_ -- ; -- _false_ )
+| `F0=` | ( F: _r_ -- ; -- _true_ ) if _r_=0e otherwise ( F: _r_ -- ; -- _false_ )
 
 ## Numeric output
 
@@ -900,6 +1097,14 @@ printer or to a file.  See [character output](#character-output).
 
 See also [pictured numeric output](#pictured-numeric-output).
 
+The following words display floating point values:
+
+| word            | stack effect     | comment
+| --------------- | ---------------- | -----------------------------------------
+| `F.`            | ( F: _r_ -- )    | display _r_ in fixed-point notation followed by a space
+| `FS.`           | ( F: _r_ -- )    | display _r_ in scientific notation followed by a space
+| `SET-PRECISION` | ( _n_ -- )       | set the `VARIABLE` `PRECISION` to _n_ significant digits to display
+
 ### Pictured numeric output
 
 Formatted numeric output is produced with a sequence of "pictured numeric
@@ -919,23 +1124,25 @@ first):
 
 For example:
 
-    : dollars   <# # # S" ." HOLDS #S S" $" HOLDS #> TYPE SPACE ; ↲
+    : dollars   <# # # '. HOLD #S '$ HOLD #> TYPE SPACE ; ↲
     1.23 dollars ↲
     $1.23  OK[0]
 
-Note the reverse order in which the numeric output is composed.  In the example
-the value `1.23` appears to have a fraction, but the placement of the `.` in a
-double integer has no significance, i.e. it is merely "syntactic sugar".
+Note the reverse order in which the numeric output is composed.  Also note that
+`HOLD` is used to add one character to the hold area.  To hold a string we
+should use `S" string" HOLDS`.
+
+In this example the value `1.23` appears to have a fraction, but the placement
+of the `.` in a double integer has no significance, i.e. it is merely
+"syntactic sugar".
 
 To display signed double integers, it is necessary to tuck the high order cell
 with the sign under the double number, then make the number positive and
 convert using `SIGN` at the end to place the sign at the front of the number:
 
-    : dollars   TUCK DABS <# # # [CHAR] . HOLD #S [CHAR] $ HOLD DROP OVER SIGN #> TYPE SPACE ; ↲
+    : dollars   TUCK DABS <# # # '. HOLD #S '$ HOLD DROP OVER SIGN #> TYPE SPACE ; ↲
     -1.23 dollars ↲
     -$1.23  OK[0]
-
-Note that `HOLD` is used to add one character to the hold area.
 
 Pictured numeric words should not be used directly from the Forth prompt,
 because the hold area may be overwritten by other numeric outputs and by new
@@ -1002,14 +1209,14 @@ The following words allocate and accept user input into a string buffer:
 
 Note that `BUFFER:` only reserves space for the string, or any type of data
 that you want to store, but does not store the max size and the length of the
-actual string contained.  To do so, use a `CONSTANT` and a `VARIABLE`:
+actual string contained.  To do so, we can use a `CONSTANT` and a `VARIABLE`:
 
     40 CONSTANT name-max ↲
     name-max BUFFER: name ↲
     VARIABLE name-len ↲
     name name-max ACCEPT name-len ! ↲
 
-To let the user edit the name:
+For example, to let the user edit the name:
 
     name name-max name-len @ DUP 0 EDIT DROP name-len ! ↲
 
@@ -1027,10 +1234,10 @@ The following words move and copy characters in and between string buffers:
 | `C@`     | ( _c-addr_ -- _char_ )         | fetch _char_ from _c-addr_
 
 A problem may arise when the source and target address ranges overlap, for
-example when moving string contents in place.  In this case, `CMOVE` correctly
-copies characters when _c-addr1_>_c-addr2_ and `CMOVE>` correctly copies
-characters when _c-addr1_<_c-addr2_.  The `MOVE` word always correctly copies
-characters.
+example when moving string contents in place.  In this case, `CMOVE` ("c move")
+correctly copies characters when _c-addr1_>_c-addr2_ and `CMOVE>` ("c move up")
+correctly copies characters when _c-addr1_<_c-addr2_.  The `MOVE` word always
+correctly copies characters.
 
 For example, to insert `name=` before the string in the `name` buffer by
 shifting the string to make room and copying the prefix into the buffer:
@@ -1075,12 +1282,59 @@ The following words compare and search two strings:
 
 To convert a string to a number:
 
-| word      | stack effect ( _before_ -- _after_ )             | comment
-| --------- | ------------------------------------------------ | ---------------
-| `>NUMBER` | ( _ud1_ _c-addr1_ _u1_ -- _ud2_ _c-addr2_ _u2_ ) | convert the number in string _c-addr1_ _u1_ to _ud2_ using the current `BASE`, returns the remaining non-convertable string _c-addr2_ _u2_
+| word      | stack effect ( _before_ -- _after_ )                                  | comment
+| --------- | --------------------------------------------------------------------- | -------
+| `>NUMBER` | ( _ud1_ _c-addr1_ _u1_ -- _ud2_ _c-addr2_ _u2_ )                      | convert the integer in string _c-addr1_ _u1_ to _ud2_ using the current `BASE`, returns the remaining non-convertable string _c-addr2_ _u2_
+| `>DOUBLE` | ( _c-addr_ _u_ -- _d_ _true_ ) or ( _c-addr_ _u_ -- _false_ )         | convert the integer in string _c-addr_ _u_ to _d_ using the current `BASE`, returns _true_ if successful, otherwise returns _false_ without _d_
+| `>FLOAT`  | ( _c-addr_ _u_ -- _true_ ; F: -- _r_ ) or ( _c-addr_ _u_ -- _false_ ) | convert the floating point value in string _c-addr_ _u_ to _r_, returns _true_ if successful, otherwise returns _false_ without _r_
 
-The initial _ud1_ value is the "seed" that is normally zero.  This value can
-also be a previously converted high-order component of the number.
+For `>NUMBER`, the initial _ud1_ value is the "seed" that is normally zero.
+This value can also be a previously converted high-order component of the
+number.
+
+`>DOUBLE` returns a double integer.  It also sets the variable `SINGLE` to true
+if the integer was specified without a dot (`.`) in the numeric string.  To
+convert a string to a single signed integer, use `D>S` afterwards to convert.
+This may throw a -11 exception when the integer value is out of range for a
+single integer.
+
+To convert a floating point value to a string saved to a string buffer, the
+`REPRESENT` word can be used:
+
+| word        | stack effect ( _before_ -- _after_ )              | comment
+| ----------- | ------------------------------------------------- | ----------
+| `REPRESENT` | ( _c-addr_ _u_ -- _n_ _flag_ _true_ ; F: _r_ -- ) | save the string representation of the significant of _r_ to _c-addr_ of size _u_, returns exponent _n_ and sign _flag_
+
+`REPRESENT` is used by the `F.` and `FS.` words, which save the string to the
+hold area at `HERE` to display.  The character string contains the _u_ most
+significant digits of the significand of _r_ represented as a decimal fraction
+with the implied decimal point to the left of the first digit, and the first
+digit zero only if all digits are zero.  The significand is rounded to _u_
+digits following the "round to nearest" rule; _n_ is adjusted, if necessary, to
+correspond to the rounded magnitude of the significand.  If _flag_ is _true_
+then _r_ is negative.
+
+The `F.` and `FS.` words are defined as follows in Forth500:
+
+    : F. ( F: r -- )
+      HERE PRECISION REPRESENT DROP IF '- EMIT THEN
+      HERE PRECISION '0 -CHARS 1 UMAX NIP
+      OVER 0> INVERT IF
+        ." 0." SWAP NEGATE ZEROS HERE SWAP TYPE
+      ELSE 2DUP < INVERT IF
+        HERE OVER TYPE - ZEROS '. EMIT
+      ELSE
+        SWAP HERE OVER TYPE '. EMIT HERE OVER + -ROT - TYPE
+      THEN THEN SPACE ;
+
+    : FS. ( F: r -- )
+      HERE PRECISION REPRESENT DROP IF '- EMIT THEN
+      HERE C@ EMIT '. HERE C! HERE PRECISION TYPE 'E EMIT 1- . ;
+
+    : ZEROS ( n -- )
+      0 ?DO '0 EMIT LOOP ;
+
+See also [numeric output](#numeric-output).
 
 ## Keyboard input
 
@@ -1118,7 +1372,7 @@ The following words can be used to control character output:
 | --------- | --------------- | -------------------------------------------------
 | `STDO`    | ( -- 1 )        | returns _fileid_=1 for standard output to the screen
 | `STDL`    | ( -- 3 )        | returns _fileid_=3 for standard output to the line printer
-| `TTY`     | ( -- _fileid_ ) | a `VALUE` with _fileid_ of a device or file to send character data to
+| `TTY`     | ( -- _fileid_ ) | a `VALUE` containing the _fileid_ of a device or file to send character data to
 | `PRINTER` | ( -- _n_ )      | connects printer, returns the number of characters per line or zero if printer is off
 
 Normally `TTY` is `STDO` for screen output.  The output can be redirected by
@@ -1177,7 +1431,7 @@ mode to set, reset or reverse pixels:
 
 | word      | stack effect                   | comment
 | --------- | ------------------------------ | ---------------------------------
-| `GMODE!`  | ( 0\|1\|2 -- )                 | pixels are set (0), reset (1) or reversed (2), stores in variable `GMODE`
+| `GMODE!`  | ( 0\|1\|2 -- )                 | pixels are set (0), reset (1) or reversed (2), stores in `VARIABLE` `GMODE`
 | `GPOINT`  | ( _n1_ _n2_ -- )               | draw a pixel at x=_n1_ and y=_n2_
 | `GPOINT?` | ( _n1_ _n2_ -- _flag_ )        | returns `TRUE` if a pixel is set at x=_n1_ and y=_n2_
 | `GLINE`   | ( _n1_ _n2_ _n3_ _n4_ _u_ -- ) | draw a line from x=_n1_ and y=_n2_ to x=_n3_ and y=_n4_ with pattern _u_
@@ -1249,7 +1503,7 @@ The following words move cells between both stacks:
 | `DUP>R`  | ( _x_ -- _x_ ; R: -- _x_ )                        | copy the TOS to the return stack
 | `2>R`    | ( _xd_ -- ; R: -- _xd_ )                          | move the double TOS to the return stack
 | `R@`     | ( R: _x_ -- _x_ ; -- _x_ )                        | copy the return stack TOS to the stack
-| `2R@`    | ( R: _xd_ -- _xd_ ; -- _xd_ )                     | copy the return stack double TOS to the stack
+| `2R@`    | ( R: _xd_ -- _xd_ ; -- _xd_ )                     | copy the return stack double cell (TOS and 2OS) to the stack
 | `R'@`    | ( R: _x1_ _x2_ -- _x1_ _x2_ ; -- _x1_ )           | copy the return stack 2OS to the stack
 | `R"@`    | ( R: _x1_ _x2_ _x3_ -- _x1_ _x2_ _x3_ ; -- _x1_ ) | copy the return stack 3OS to the stack
 | `R>`     | ( R: _x_ -- ; -- _x_ )                            | move the TOS from the return stack to the stack
@@ -1268,7 +1522,8 @@ Care must be taken to prevent return stack imbalences when a colon definition
 exits.  The return stack pointer must be restored to the original state when
 the colon definition started before the colon definition exits.
 
-"Caller cancelling" is possible with `R>DROP` to remove a return address:
+"Caller cancelling" is possible with `R>DROP` to remove a return address before
+exiting:
 
     : bar  ." bar " R>DROP ;
     : foo  ." foo " bar ." rest of foo" ;
@@ -1279,7 +1534,8 @@ where `R>DROP` removes the return address to `foo`.  Therefore:
     foo bar OK[0]
 
 The maximum depth of the return stack in Forth500 is 256 bytes to hold up to
-128 cells or 128 calls to secondaries.
+128 cells or 128 calls to secondaries (colon definitions of words constructed
+from existing Forth words).
 
 ## Defining new words
 
@@ -1287,27 +1543,31 @@ The maximum depth of the return stack in Forth500 is 256 bytes to hold up to
 
 The following words define constants, variables and values:
 
-| word        | stack effect                   | comment
-| ----------- | ------------------------------ | -------------------------------
-| `CONSTANT`  | ( _x_ "name" -- ; -- _x_ )     | define "name" to return _x_ on the stack
-| `2CONSTANT` | ( _dx_ "name" -- ; -- _dx_ )   | define "name" to return _dx_ on the stack
-| `VARIABLE`  | ( "name" -- ; -- _addr_ )      | define "name" to return _addr_ of the variable's cell on the stack
-| `!`         | ( _x_ _addr_ -- )              | store _x_ at _addr_ of a `VARIABLE`
-| `+!`        | ( _n_ _addr_ -- )              | add _n_ to the value at _addr_ of a `VARIABLE`
-| `@`         | ( _addr_ -- _x_ )              | fetch the value _x_ from _addr_ of a `VARIABLE`
-| `?`         | ( _addr_ -- )                  | fetch the value _x_ from _addr_ of a `VARIABLE` and display it with `.`
-| `ON`        | ( _addr_ -- )                  | store `TRUE` (-1) at _addr_ of a `VARIABLE`
-| `OFF`       | ( _addr_ -- )                  | store `FALSE` (0) at _addr_ of a `VARIABLE`
-| `2VARIABLE` | ( "name" -- ; -- _addr_ )      | define "name" to return _addr_ of the variable's double cell on the stack
-| `2!`        | ( _dx_ _addr_ -- )             | store _dx_ at _addr_ of a `2VARIABLE`
-| `D+!`       | ( _d_ _addr_ -- )              | add _d_ to the value at _addr_ of a `2VARIABLE`
-| `2@`        | ( _addr_ -- _dx_ )             | fetch the value _dx_ from  _addr_ of a `2VARIABLE`
-| `VALUE`     | ( _x1_ "name" -- ; -- _x2_ )   | define "name" with initial value _x1_ to return its current value _x2_ on the stack
-| `TO`        | ( _x_ "name" -- )              | assign "name" the value _x_, if "name" is a `VALUE`
-| `+TO`       | ( _n_ "name" -- )              | add _n_ to the value of "name", if "name" is a `VALUE`
-| `2VALUE`    | ( _dx1_ "name" -- ; -- _dx2_ ) | define "name" with initial value _dx1_ to return its current value _dx2_ on the stack
-| `TO`        | ( _dx_ "name" -- )             | assign "name" the value _x_, if "name" is a `2VALUE`
-| `+TO`       | ( _d_ "name" -- )              | add _d_ to the value of "name", if "name" is a `2VALUE`
+| word        | stack effect                       | comment
+| ----------- | ---------------------------------- | ---------------------------
+| `CONSTANT`  | ( _x_ "name" -- ; -- _x_ )         | define "name" to return _x_ on the stack
+| `2CONSTANT` | ( _dx_ "name" -- ; -- _dx_ )       | define "name" to return _dx_ on the stack
+| `FCONSTANT` | ( F: _r_ -- ; "name" -- ; -- _r_ ) | define "name" to return _r_ on the floating point stack
+| `VARIABLE`  | ( "name" -- ; -- _addr_ )          | define "name" to return _addr_ of the variable's cell on the stack
+| `!`         | ( _x_ _addr_ -- )                  | store _x_ at _addr_ of a `VARIABLE`
+| `+!`        | ( _n_ _addr_ -- )                  | add _n_ to the value at _addr_ of a `VARIABLE`
+| `@`         | ( _addr_ -- _x_ )                  | fetch the value _x_ from _addr_ of a `VARIABLE`
+| `?`         | ( _addr_ -- )                      | fetch the value _x_ from _addr_ of a `VARIABLE` and display it with `.`
+| `ON`        | ( _addr_ -- )                      | store `TRUE` (-1) at _addr_ of a `VARIABLE`
+| `OFF`       | ( _addr_ -- )                      | store `FALSE` (0) at _addr_ of a `VARIABLE`
+| `2VARIABLE` | ( "name" -- ; -- _addr_ )          | define "name" to return _addr_ of the variable's double cell on the stack
+| `2!`        | ( _dx_ _addr_ -- )                 | store _dx_ at _addr_ of a `2VARIABLE`
+| `D+!`       | ( _d_ _addr_ -- )                  | add _d_ to the value at _addr_ of a `2VARIABLE`
+| `2@`        | ( _addr_ -- _dx_ )                 | fetch the value _dx_ from  _addr_ of a `2VARIABLE`
+| `FVARIABLE` | ( "name" -- ; -- _addr_ )          | define "name" to return _addr_ of the variable's floating point value on the stack
+| `F!`        | ( F: _r_ -- ; _addr_ -- )          | store floating point value _r_ at _addr_ of a `VARIABLE`
+| `F@`        | ( _addr_ -- ; F: _r_ )             | fetch the floating point value _r_ from  _addr_ of a `2VARIABLE`
+| `VALUE`     | ( _x1_ "name" -- ; -- _x2_ )       | define "name" with initial value _x1_ to return its current value _x2_ on the stack
+| `TO`        | ( _x_ "name" -- )                  | assign "name" the value _x_, if "name" is a `VALUE`
+| `+TO`       | ( _n_ "name" -- )                  | add _n_ to the value of "name", if "name" is a `VALUE`
+| `2VALUE`    | ( _dx1_ "name" -- ; -- _dx2_ )     | define "name" with initial value _dx1_ to return its current value _dx2_ on the stack
+| `TO`        | ( _dx_ "name" -- )                 | assign "name" the value _dx_, if "name" is a `2VALUE`
+| `+TO`       | ( _d_ "name" -- )                  | add _d_ to the value of "name", if "name" is a `2VALUE`
 
 Values are initialized with the specified initial values and do not require
 fetch operations, exactly like constants.  By contrast to constants, values can
@@ -1436,15 +1696,17 @@ secondaries, not counting other data stored on the return stack.
 
 An immediate word is always interpreted and executed, even within colon
 definitions.  A colon definition word can be declared `IMMEDIATE` after
-ther terminating `;`.  For example, this is the colon definition of `RECURSE`
-to compile the execution token of the most recent colon definition (i.e.
-the word we are defining) into the compiled code:
+the terminating `;`.  For example, the following colon definition of `RECURSE`
+compiles the execution token of the most recent colon definition (i.e.  the
+word we are defining) into the compiled code:
 
     : RECURSE
       ?COMP     \ error if we are not compiling
-      LAST-XT @ \ the execution token of the word being defined
+      LAST-XT   \ the execution token of the word being defined
       COMPILE,  \ compile it into code
     ; IMMEDIATE
+
+See also [compile-time immedate words](#compile-time-immediate-words).
 
 ### CREATE and DOES>
 
@@ -1460,18 +1722,22 @@ words can be used:
 | `HERE`   | ( -- _addr_ )             | the next free address in the dictionary
 | `CELL`   | ( -- 2 )                  | the size of a cell (single integer) in bytes
 | `CELLS`  | ( _u_ -- 2\*_u_ )         | convert _u_ from cells to bytes
-| `CELL+`  | ( _addr_ -- _addr_+2 )    | increments _addr_ by a cell width (by two)
+| `CELL+`  | ( _addr_ -- _addr_+2 )    | increments _addr_ by a cell width (2)
 | `CHARS`  | ( _u_ -- _u_ )            | convert _u_ from characters to bytes (does nothing)
-| `CHAR+`  | ( _addr_ -- _addr_+1 )    | increments _addr_ by a character width (by one)
+| `CHAR+`  | ( _addr_ -- _addr_+1 )    | increments _addr_ by a character width (1)
+| `FLOATS` | ( _u_ -- 12\*_u_ )        | convert _u_ from floats to bytes
+| `FLOAT+` | ( _addr_ -- _addr_+12 )   | increments _addr_ by a floating point value width (12)
 | `ALLOT`  | ( _n_ -- )                | reserves _n_ bytes in the dictionary starting `HERE`, adds _n_ to `HERE`
 | `UNUSED` | ( -- _u_ )                | returns the number of unused bytes remaining in the dictionary
-| `,`      | ( _x_ -- )                | stores _x_ at `HERE` then increments `HERE` by `CELL` (by two)
-| `2,`     | ( _dx_ -- )               | stores _dx_ at `HERE` then increments `HERE` by `2 CELLS` (by four)
-| `C,`     | ( _char_ -- )             | stores _char_ at `HERE` then increments `HERE` by `1 CHARS` (by one)
+| `,`      | ( _x_ -- )                | stores _x_ at `HERE` then increments `HERE` by `CELL` (by 2)
+| `2,`     | ( _dx_ -- )               | stores _dx_ at `HERE` then increments `HERE` by `2 CELLS` (by 4)
+| `C,`     | ( _char_ -- )             | stores _char_ at `HERE` then increments `HERE` by `1 CHARS` (by 1)
+| `F,`     | ( F: _r_ -- )             | stores floating point value _r_ at `HERE` then increments `HERE` by `1 FLOATS` (by 12)
 | `DOES>`  | ( -- ; -- _addr_ )        | the following code will be compiled and executed by the word we `CREATE`
 | `@`      | ( _addr_ -- _x_)          | fetches _x_ stored at _addr_
 | `2@`     | ( _addr_ -- _dx_ )        | fetches _dx_ stored at _addr_
 | `C@`     | ( _addr_ -- _char_ )      | fetches _char_ stored at _addr_
+| `F@`     | ( _addr_ -- ; F: _r_ )    | fetches _r_ stored at _addr_
 
 Allocation is limited by the remaining free space in the dictionary returned by
 the `UNUSED` word.  Note that the `ALLOT` value may be negative to release
@@ -1487,7 +1753,7 @@ create a word `foo` with a cell to hold a value that is initially zero:
     foo ? ↲
     3 OK[0]
 
-In fact, this is exactly how a `VARIABLE` is defined in Forth:
+In fact, this is exactly how the `VARIABLE` word is defined in Forth:
 
     : VARIABLE CREATE 0 , ; ↲
 
@@ -1501,7 +1767,8 @@ The entire `primes` table is displayed using address arithmetic as follows:
     : primes?   ( -- ) 10 0 DO primes I CELLS + ? LOOP ; ↲
 
 where `primes` returns the starting address of the table and `primes I CELLS +`
-computes the address of the cell that holds the `I`'th prime value.
+computes the address of the cell that holds the `I`'th prime value.  The
+`CELLS` word multiplies the TOS by two, since Forth500 cells are 2 bytes.
 
 Uninitialized space is allocated with `ALLOT`.  For example, a buffer:
 
@@ -1559,6 +1826,7 @@ The following words define a structure and its fields:
 | `FIELD:`          | ( _u_ "name" -- n ; addr -- addr )           | define a single cell field
 | `CFIELD:`         | ( _u_ "name" -- n ; addr -- addr )           | define a character field
 | `2FIELD:`         | ( _u_ "name" -- n ; addr -- addr )           | define a double cell field
+| `FFIELD:`         | ( _u_ "name" -- n ; addr -- addr )           | define a floating point field
 | `END-STRUCTURE`   | ( _addr_ _u_ -- )                            | end of structure type
 
 The `FIELD:` word is the same as `CELL +FIELD`, `CFIELD:` is the same as `1
@@ -1650,6 +1918,14 @@ definitions when the file is parsed again:
 
     ANEW _program_ ↲
 
+### Deleting words
+
+Besides [markers](#markers), `FORGET name` can be used to remove `name` and all
+words defined thereafter.  To protect the dictionary, forgetting is not
+permitted past the address returned by `FENCE`.  `FENCE` is a variable that can
+be assigned a new boundary in the dictionary to protect from `FORGET`.  For
+example, `HERE FENCE !` protects all previously defined words.
+
 ### Introspection
 
 The following words can be used to inspect words and dictionary contents:
@@ -1723,7 +1999,14 @@ execute by comparing the TOS to the `OF` values:
 
 These words can only be used in colon definitions.  The default branch has
 `value` as TOS, which may be inspected in the default branch, but should not be
-dropped.
+dropped.  It is common to use the `>R` and `R>` words to temporarily save the
+TOS in the default branch:
+
+      ENDOF
+        >R ... R>
+    ENDCASE
+
+The stack effects of `...` are transparent to the code that follows `ENDCASE`.
 
 ### Loops
 
@@ -1754,8 +2037,8 @@ internal loop counter by `step`.  The `step` size may be negative.  The `+LOOP`
 terminates if the updated counter equals or crosses the limit.
 
 The internal loop counter value can be used in the loop as `I`.  Likewise, the
-second outer loop counter is `J` and the third outer loop counter is `K`.
-These return undefined values when not used within do-loops.
+second outer loop counter of a loop nest is `J` and the third outer loop
+counter is `K`.  These return undefined values when not used within do-loops.
 
 A do-loop body is exited prematurely with `LEAVE` and `?LEAVE`.  The `?LEAVE`
 word pops the TOS and when nonzero leaves the do-loop, which is a shorthand for
@@ -1763,12 +2046,12 @@ word pops the TOS and when nonzero leaves the do-loop, which is a shorthand for
 
 When exiting from the current colon definition with `EXIT` inside a do-loop,
 first the `UNLOOP` word must be used to remove the loop control values from the
-return stack before `EXIT`.
+return stack: `UNLOOP EXIT`.
 
-Return stack operations `>R`, `R@` and `R>` cannot be used from outside a
-do-loop to the inside, because the do-loop stores the loop counter and limit
-value on the return stack.  For example, `>R DO ... R@ ... LOOP R>` produces
-undefined values.
+Return stack operations `>R`, `R@` and `R>` cannot be used to pass values on
+the returns stack from outside a do-loop to the inside, because the do-loop
+stores the loop counter and limit value on the return stack.  For example, `>R
+DO ... R@ ... LOOP R>` produces undefined values.
 
 The words `BEGIN` and `AGAIN` form a loop that never ends:
 
@@ -1907,6 +2190,7 @@ compiles strings:
 | ---------- | ------------------------------------ | --------------------------
 | `LITERAL`  | ( _x_ -- ; -- _x_ )                  | compiles _x_ as a literal
 | `2LITERAL` | ( _dx_ -- ; -- _dx_ )                | compiles _dx_ as a double literal
+| `FLITERAL` | ( F: _r_ -- ; F: -- _r_ )            | compiles _r_ as a floating point literal
 | `SLITERAL` | ( _c-addr1_ _u_ ; -- _c-addr2_ _u_ ) | compiles string _c-addr_ of size _u_ as a string literal
 | `[CHAR]`   | ( "name" -- ; -- _char_ )            | compiles the first character of "name" as a literal
 | `[']`      | ( "name" -- ; -- _xt_ )              | compiles "name" as an execution token literal _xt_
@@ -1917,7 +2201,8 @@ _c-addr2_ _u_.
 
 The `[CHAR]` word parses a name and compiles the first character as a literal.
 This is the compile-time equivalent of `CHAR`.  For example, `[CHAR] $` is the
-same as `[ CHAR $ ] LITERAL`.
+same as `[ CHAR $ ] LITERAL`.  Instead of `[CHAR] $`, the short form `'$` may
+be used.
 
 The `[']` word parses the name of a word and compiles the word's execution
 token as a literal.  This is the compile-time equivalent of `'` ("tick").  For
@@ -1930,7 +2215,8 @@ Immediate words cannot be compiled, unless we postpone their execution with
 it to execute when the colon definition executes.  If the name is not
 immediate, then `POSTPONE` compiles the word's execution token as a literal
 followed by `COMPILE,`, which means that this use of `POSTPONE` in a colon
-definition compiles code.
+definition compiles code.  Basically, `POSTPONE` may be used to define words
+that compile the postponed words into a definition, acting like macros.
 
 An example of `POSTPONE` to compile the immedate word `THEN` to execute when
 `ENDIF` executes, making `ENDIF` synonymous to `THEN`:
@@ -1988,14 +2274,14 @@ The interpreter and compiler parse input from two buffers, the `TIB` (terminal
 input buffer) and `FIB` (file input buffer).  Input from these two sources is
 controlled by the following words:
 
-| word        | stack effect        | comment
-| ----------- | ------------------- | ------------------------------------------
-| `TIB`       | ( -- _c-addr_ )     | a 256 character terminal input buffer
-| `FIB`       | ( -- _c-addr_ )     | a 256 character file input buffer
-| `SOURCE-ID` | ( -- 0\|-1 )        | identifies the source input from a string (-1) with `EVALUATE` or normal (0)
-| `SOURCE`    | ( -- _c-addr_ _u_ ) | returns the current buffer (`TIB` or `FIB`) and the number of characters stored in it
-| `>IN`       | ( -- _addr_ )       | a variable holding the current input position in the `SOURCE` buffer to parse from
-| `REFILL`    | ( -- _flag_ )       | refills the current input buffer from the current source, returns true if successful
+| word        | stack effect          | comment
+| ----------- | --------------------- | ----------------------------------------
+| `TIB`       | ( -- _c-addr_ )       | a 256 character terminal input buffer
+| `FIB`       | ( -- _c-addr_ )       | a 256 character file input buffer
+| `SOURCE-ID` | ( -- 0\|-1|_fileid_ ) | identifies the source input from a string (-1) with `EVALUATE` or the terminal (0) or from _fileid_
+| `SOURCE`    | ( -- _c-addr_ _u_ )   | returns the current buffer (`TIB` or `FIB`) and the number of characters stored in it
+| `>IN`       | ( -- _addr_ )         | a `VARIABLE` holding the current input position in the `SOURCE` buffer to parse from
+| `REFILL`    | ( -- _flag_ )         | refills the current input buffer from `SOURCE-ID`, returns true if successful
 
 The following words parse the current source of input:
 
@@ -2022,7 +2308,7 @@ input:
 ## Files
 
 The following words return _ior_ to indicate success (zero) or failure (nonzero
-[file error](#file-errors) code)
+[file error](#file-errors) code):
 
 | word              | stack effect ( _before_ -- _after_ )            | comment
 | ----------------- | ----------------------------------------------- | --------
@@ -2102,7 +2388,7 @@ connecting and checking the status of the printer with `PRINTER`, see also
 and device attribue _u2_.  See the PC-E500 technical manual for details on
 the attribute values.
 
-If an exception occurs before a file is closed, the file cannot be opened
+If an exception occurs before a file is closed, then the file cannot be opened
 again.  Doing so returns error _ior_=264.  The _fileid_ of open files start
 with 4, which means that the first file opened but not closed can be manually
 closed with `4 CLOSE-FILE .` displaying zero when successful.
@@ -2143,7 +2429,7 @@ The _ior_ code is the PC-E500(S) technical manual page 5 FCS error code + 256.
 | `'`      | ( "name" -- _xt_ )                   | tick returns the execution token of "name" on the stack
 | `[']`    | ( "name" -- ; -- _xt_ )              | compiles "name" as an execution token literal _xt_
 
-`ABORT` and `ABORT"` return control to the keyboard to enter commands.
+`ABORT`, `ABORT"` and `QUIT` return control to the keyboard to enter commands.
 
 Note that `test ABORT" test failed"` throws -2 if `test` leaves a nonzero on
 the stack.  This construct can be used to check return values and perform
@@ -2294,11 +2580,16 @@ The Forth500 dictionary is organized as follows:
          |---------|
          | code    |<--- LAST-XT Forth code and/or data
          |=========|<--- HERE pointer to free space
-         |         |
+         |         |     (and the 40 byte hold area for numerical output)
          | free    |
          | space   |
          |         |
          |=========|<--- dictionary limit
+         |         |
+         | float   |     stack of 96 bytes (8 floats)
+         | stack   |     grows toward lower addresses
+         |         |<--- FP stack pointer
+         |=========|
          |         |
          | data    |     stack of 256 bytes (128 cells)
          | stack   |     grows toward lower addresses
@@ -2312,24 +2603,25 @@ The Forth500 dictionary is organized as follows:
 
          high address
 
-A link field points to the previous link field.  The last link field is zero.
+A link field points to the previous link field.  The last link field at the
+lowest address of the dictionary is zero.
 
-The `LAST` variable holds the address of the last entry in the dictionary.
-This is where the search for dictionary words starts.
+`LAST` returns the address of the last entry in the dictionary.  This is where
+the search for dictionary words starts.
 
-The `LAST-XT` variable holds the address of the last compiled execution token,
-which is the location where the machine code of the last word starts.
+`LAST-XT` returns the execution token of the last definition, which is the
+location where the machine code of the last word starts.
 
 Code is either machine code or starts with a jump or call machine code
 instruction of 3 bytes, followed by Forth code (a sequence of execution tokens
 in a colon definition) or data (constants, variables, values and other words
 created with `CREATE`).
 
-Immediate words are marked with the high bit 7 set ($80).  Hidden words have
-the "smudge" bit 6 ($40) set.  A word is hidden until successfully compiled.
-`HIDE` hides the last defined word by setting the smudge bit.  `REVEAL` reveals
-it.  Incomplete colon definitions with compilation errors should never be
-revealed.
+Immediate words are marked with the length byte high bit 7 set ($80).  Hidden
+words have the "smudge" bit 6 ($40) set.  A word is hidden until successfully
+compiled.  `HIDE` hides the last defined word by setting the smudge bit.
+`REVEAL` reveals it.  Incomplete colon definitions with compilation errors
+should never be revealed.
 
 There are two words to search the dictionary:
 
@@ -2342,15 +2634,16 @@ There are two words to search the dictionary:
 _c-addr_ of size _u_ to search.  The search is case insensitive.  Hidden words
 are not searchable but are displayed by `WORDS`.
 
-`:NONAME` code has no dictionary entry.  The code is just part of the
-dictionary space as a block of code without link and name header.
+`:NONAME` and `CREATE-NONAME` code has no dictionary entry.  The code is just
+part of the dictionary space as a block of code without link and name header.
+Both words return the execution token of the code.
 
 ## Examples
 
 ### GCD
 
-The greatest common denominator of two integers is computed with Euclid's
-algorithm in Forth as follows:
+The greatest common divisor of two integers is computed with Euclid's algorithm
+in Forth as follows:
 
     : gcd   ( n1 n2 -- gcd ) BEGIN ?DUP WHILE TUCK MOD REPEAT ;
 
@@ -2358,10 +2651,32 @@ The double integer version:
 
     : dgcd  ( d1 d2 -- dgcd ) BEGIN 2DUP D0<> WHILE 2TUCK DMOD REPEAT 2DROP ;
 
+### RAND
+
+A Forth500 version of the C rand() function to generate pseudo-random numbers
+between 0 and 32767:
+
+    2VARIABLE seed
+    : rand  ( -- +n ) seed 2@ 1103515245. D* 12345. D+ TUCK seed 2! 32767 AND ;
+    : srand ( x -- ) S>D seed 2! ;
+    1 srand
+
+Note: do not use `rand` for serious applications.
+
+To draw a randomized "starry night" on the 240x32 pixel screen:
+
+    : starry-night PAGE 1000 0 DO rand 240 MOD rand 32 MOD GPOINT LOOP ;
+
+Note that Forth500 includes a `FRAND` floating point random number generator,
+see [floating point arithmetic](#floating-point-arithmetic).
+
 ### SQRT
 
-The square root of a number is approximated with Newton's method.  Given an
-initial guess _x_ for _f_(_x_) = 0, an improved guess is _x_' = _x_ -
+The square root of a number is approximated with Newton's method.  Forth500
+includes a floating point `FSQRT` word.  This example shows how the method can
+be used to efficiently compute the square root of an integer without `FSQRT`,
+
+Given an initial guess _x_ for _f_(_x_) = 0, an improved guess is _x_' = _x_ -
 _f_(_x_)/_f_'(_x_).  This is iterated with _x_=_x'_ until convergence.
 
 To compute _sqrt_(_a_), let _f_(_x_) = _x_^2 - _a_ to find the answer _x_ with
@@ -2387,7 +2702,7 @@ exception, which we want to avoid by returning zero if _a_ is zero.
 
 To implement the algorithm in Forth, we place _a_ on the return stack, because
 we only need _a_ to compute _x'_.  We place _y_ and _x_ on the stack and
-compute the new estimate _x'_ as the TOS above them.
+compute the new estimate _x'_ as the TOS above them:
 
     : sqrt      ( n -- sqrt )
       DUP IF            \ if a<>0
@@ -2405,8 +2720,8 @@ compute the new estimate _x'_ as the TOS above them.
         R>DROP          \ drop a from the return stack
       THEN ;
 
-Note that the second `WHILE` requires a `THEN` after `REPEAT`, see
-[loops](#loops).
+Note that the second `WHILE` requires a `THEN` after `REPEAT`.  For an
+explanation of this multi-`WHILE` structure, see [loops](#loops).
 
 A minor issue is the potential integer overflow to a negative value in
 (_a_/_x_+_x_) before dividing by 2.  This can lead to all sorts of problems,
@@ -2431,21 +2746,97 @@ The double integer square root implementation:
         R>DROP R>DROP
       THEN ;
 
-### RAND
+### Numerical integration
 
-A Forth500 version of the C rand function to generate pseudo-random numbers
-between 0 and 32767:
+Note: floating point support is work in progress and not available yet.
 
-    2VARIABLE seed
-    : rand  ( -- +n ) seed 2@ 1103515245. D* 12345. D+ TUCK seed 2! 32767 AND ;
-    : srand ( x -- ) S>D seed 2! ;
-    1 srand
+In this example we use Simpson's rule for numerical integration.  Simpson's
+rule approximates the definite integral of a function _f_ over a range [a,b]
+with 2n summation steps:
 
-Note: do not use rand for any serious applications.
+_I_ = _h_/3 × [ _f_(_a_) + ∑ᵢ₌₁ ⁿ ( 4 _f_(_a_+_h_×(2i-1)) + 2 _f_(_a_+_h_×2i) ) - _f_(_a_+_h_×2 _n_) ]
 
-To draw a randomized "starry night" on the 240x32 pixel screen:
+where _h_ = (_b_-_a_)/(2 _n_)
 
-    : starry-night PAGE 1000 0 DO rand 240 MOD rand 32 MOD GPOINT LOOP ;
+First we define the function to integrate as a deferred word in Forth, which
+means we can assign it later any given function _y_=_f_(_x_) defined in Forth
+to integrate:
+
+    DEFER integrand     ( F: x -- y )
+
+Next, we define three variables to hold _x_ = _a_+_h_×(2 i-1),
+_h_=(_b_-_a_)/(2 _n_) and the partial _sum_:
+
+    FVARIABLE x
+    FVARIABLE h
+    FVARIABLE sum
+
+Note that Forth doesn't care if you redefine `x` later, because `x` and the
+other variables remain visible to `integrate` as a form of static scoping.
+Thus, `x`, `h` and `sum` are essentially local variables of `integrate`.
+
+Variables `x` and `h` are initialized with _a_ and (_b_-_a_)/(2 _n_),
+respectively, where _a_ and _b_ are on the floating point stack and _n_ is on
+the regular stack:
+
+    : init      ( F: a b -- ; n -- ) FOVER F- 2* S>F F/ h F! x F! ;
+
+In the following definition we aim to update the next value of `x` and return
+its updated value on the floating point stack to use right away:
+
+    : nextx     ( F: -- x ) x F@ h F@ F+ FDUP x F! ;
+
+To accummulate the sum, we multiply _y_=_f_(_x_) by the FP TOS (4e or 2e) and
+add it to `sum`:
+
+    : *sum+!    ( F: y r -- ) F* sum F@ F+ sum F! ;
+
+The integration proceeds by first dividing the number of steps by 2 to get _n_,
+then set `x` to _a_ and `h` to (_b_-_a_)/(2 _n_) with `init` and the `sum` to
+_f_(_a_) before the summation loop:
+
+    : integrate         ( F: a b -- I ; 2n -- )
+      2/ DUP init
+      x F@ integrand 1e *sum+!
+      0 ?DO
+        nextx integrand 4e *sum+!
+        nextx integrand 2e *sum+!
+      LOOP
+      x F@ integrand -1e *sum+!
+      sum F@ h F@ F* 3e F/ ;
+
+Recall that all floating point values must be typed with an exponent `e` for
+single precision or `d` for double precision.  A zero exponent `e0` can be
+abbreviated to `e` for convenience, but a double precision zero exponenent `d0`
+cannot be abbreviated.
+
+Because Forth500 internally switches to double precision if any of the operands
+of an arithmetic operation are double precision, the function to integrate or
+the integration bounds may use double precision to produce a double precision
+result.  The double precision integration result is not affected by the use of
+the single precision weight values, such as `1e`, `2e`, `3e` and `4e`, in the
+`integrate` definition.
+
+Let's integrate _f_(_x_)=1/(_x_²+1) over [0,1] with 2 _n_ = 10 steps:
+
+    6 SET-PRECISION ↲
+    :NONAME FDUP F* 1e F+ 1e FSWAP F/ ; IS integrand ↲
+    0e 1e 10 integrate F. ↲
+    0.785398 OK[0]
+
+We set the precision to 6 digits to display the result with `F.`.  We defined
+an anonymous function with `:NONAME` as the `integrand` to integrate.
+
+With double precision floating point and 100 steps:
+
+    20 SET-PRECISION ↲
+    0d0 1d0 100 integrate F. ↲
+    0.78539816339743850904 OK[0]
+
+This example demonstrates how easy it is to switch to double precision.  But
+this is not very useful with Simpson's rule of integration.  The precision of
+the result is determined by Simpson's approximation and the number of steps
+performed, rather than by the use of higher precision floating point values.
 
 ### Strings
 
@@ -2454,9 +2845,11 @@ dictionary, which is pretty standard practice in Forth.  Each buffer includes
 the maximum length of the string as the first byte followed by the actual
 length of the string in the second byte.  The string contents follow these two
 bytes.  This implementation is safer than simpler implementations that do not
-store the maximum string buffer size and thus have no protections.
-Furthermore, we keep our definitions short and concise by reusing words as much
-as possible to avoid unnecessary complexity.
+store the maximum string buffer size and thus have no protections against
+buffer overflows.
+
+In this example we keep our definitions short and concise by reusing words as
+much as possible to avoid unnecessary complexity.
 
 We first define four auxilliary words to obtain the max length, the current
 length, the unused space and to set a new length limited by the max length:
@@ -2466,7 +2859,7 @@ length, the unused space and to set a new length limited by the max length:
     : strunused ( string -- unused ) DUP strmax SWAP strlen - ;
     : strupdate ( string len -- ) OVER strmax UMIN SWAP 1- C! ;
 
-Note that we used `UMIN` to prevent negative string lengths.
+Note that we used `UMIN` to prevent negative string lengths (`MIN` is signed).
 
 A `string` value on the stack is an address that points right after the max and
 length bytes to the string contents stored in a string buffer.
@@ -2604,16 +2997,16 @@ For example, to copy "John" from `name`, insert " J." and append " Doe" from
     name 0 4 slice strtmp strcpy ↲
     S"  J." strtmp strcat ↲
     name 5 3 slice strtmp strcat ↲
-    strmp TYPE ↲
+    strtmp TYPE ↲
     John J. Doe OK[0]
 
 Additional words to convert characters and string buffers to upper and lower
 case:
 
-    : toupper   ( char -- char ) [CHAR] a [CHAR] { WITHIN IF $20 - THEN ;
-    : tolower   ( char -- char ) [CHAR] A [CHAR] [ WITHIN IF $20 + THEN ;
-    : strupper  ( string u -- ) 0 ?DO DUP I + DUP C@ toupper C! LOOP DROP ;
-    : strlower  ( string u -- ) 0 ?DO DUP I + DUP C@ tolower C! LOOP DROP ;
+    : toupper   ( char -- char ) DUP 'a '{ WITHIN IF $20 - THEN ;
+    : tolower   ( char -- char ) DUP 'A '[ WITHIN IF $20 + THEN ;
+    : strupper  ( string len -- ) 0 ?DO DUP I + DUP C@ toupper SWAP C! LOOP DROP ;
+    : strlower  ( string len -- ) 0 ?DO DUP I + DUP C@ tolower SWAP C! LOOP DROP ;
 
 For example:
 
@@ -2823,5 +3216,6 @@ by J.V. Noble.
 [Thinking Forth](http://thinking-forth.sourceforge.net)
 by Leo Brodie.
 
+[Standard Forth alphabetic list of words](https://forth-standard.org/standard/alpha)
 
 _This document is Copyright Robert A. van Engelen (c) 2021_
