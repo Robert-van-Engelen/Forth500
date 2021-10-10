@@ -707,6 +707,8 @@ consecutive cells on the stack, i.e. the TOS and 2OS with TOS holding the
 16 high-order bits and 2OS holding the 16 low-order bits.  The `.` (dot) is
 typically placed at the end of the digits.
 
+Note: `'char'` literal character support is work in progress.
+
 The ASCII value of a single character is pushed on the stack with `'char'`.
 The closing quote may be omitted for convenience:
 
@@ -3003,8 +3005,8 @@ For example, to copy "John" from `name`, insert " J." and append " Doe" from
 Additional words to convert characters and string buffers to upper and lower
 case:
 
-    : toupper   ( char -- char ) DUP 'a '{ WITHIN IF $20 - THEN ;
-    : tolower   ( char -- char ) DUP 'A '[ WITHIN IF $20 + THEN ;
+    : toupper   ( char -- char ) DUP [CHAR] a [CHAR] { WITHIN IF $20 - THEN ;
+    : tolower   ( char -- char ) DUP [CHAR] A [CHAR] [ WITHIN IF $20 + THEN ;
     : strupper  ( string len -- ) 0 ?DO DUP I + DUP C@ toupper SWAP C! LOOP DROP ;
     : strlower  ( string len -- ) 0 ?DO DUP I + DUP C@ tolower SWAP C! LOOP DROP ;
 
