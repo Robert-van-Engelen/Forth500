@@ -150,8 +150,8 @@ to push them onto the stack:
 where `TRUE` pushes -1, `123` pushes 123, `DUP` duplicates the TOS and `.S`
 shows the stack values.  It helps to use `.S` to see what's currently on the
 stack when debugging.  `OK[3]` indicates that currently there are three values
-on the stack.  This may also show as `OK[3 1]` for example, when there is one
-floating point value on the floating point stack.
+on the stack.  This may show as `OK[3 1]` when there is one floating point
+value on the floating point stack indicated by the second number.
 
 You can spread the code over multiple lines.  It does not matter if you hit
 ENTER at the end or if you hit ENTER to input more than one line.
@@ -529,6 +529,14 @@ Forth source code is loaded from a file with `INCLUDE` or with `INCLUDED`:
 where `S" PROGRAM2.FTH"` specifies a string constant with the file name.  A
 drive letter such as F: can be specified to load from a specific drive, which
 becomes the current drive (the default drive is E:).
+
+To make sure to only include a file at most once, use `REQUIRE` or `REQUIRED`:
+
+    REQUIRE PROGRAM1.FTH ↲
+    S" PROGRAM2.FTH" REQUIRED ↲
+
+The name of the file will show up in the word dictionary, but with a space
+appended to the name.
 
 To list files on the current drive:
 
