@@ -789,8 +789,8 @@ of the operands is a double precision value.
 
 The `0e+0` word is predefined.  This word takes only 2 bytes of code space
 instead of the 14 bytes to store floating point literals in code (2 bytes code
-plus 12 bytes for the float).  To save more memory, you can also use `S>F` and
-`D>F` to push whole numbers on the floating point stack, which use only 6 bytes
+plus 12 bytes for the float).  To save memory, you can also use `S>F` and `D>F`
+to push small whole numbers on the floating point stack, which use only 6 bytes
 and 8 bytes of code space, respectively.
 
 A floating point value requires 12 bytes of storage for the sign, exponent and
@@ -1265,7 +1265,7 @@ escaped with `\`:
 | `\n`   | 13 10    | CR and LF; carriage return and line feed
 | `\q`   | 34       | `"`
 | `\r`   | 13       | CR; carriage return
-| `\t`   | 9        | HT; horizintal tab
+| `\t`   | 9        | HT; horizontal tab
 | `\v`   | 11       | VT; vertical tab
 | `\xhh` | hh (hex) |
 | `\z`   | 0        | NUL
@@ -1375,7 +1375,7 @@ to convert.
 
 `>FLOAT` returns a single or double float on the floating point stack when
 successful.  It also sets the `VALUE` flag `DBL` to true if the float is a
-double.
+double.  `>FLOAT` requires `BASE` to be `DECIMAL`.
 
 To convert a floating point value to a string saved to a string buffer, the
 `REPRESENT` word can be used:
@@ -1692,10 +1692,10 @@ A deferred word is defined with `DEFER` and assigned with `IS`:
     hi OK[0]
     ' NOOP IS greeting ↲
     greeting ↲
-    OK [0]
+    OK[0]
     :NOMAME ." hello" ; IS greeting ↲
     greeting ↲
-    hello OK [0]
+    hello OK[0]
 
 The tick `'` word parses the name of a word in the dictionary and returns its
 execution token on the stack.  An execution token points to executable code in
@@ -1754,7 +1754,7 @@ words](#deferred-words) to store and execute the unnamed code:
     lambda ↲
     this definition has no name OK[0]
     FORGET lambda ↲
-    OK [0]
+    OK[0]
 
 The no-name equivalent of `CREATE` is `CREATE-NONAME`, see [CREATE and
 DOES>](#create-and-does).
@@ -1767,7 +1767,7 @@ possible use of an incomplete colon definition that can crash the system when
 executed and to allow redefining a word to call the old definition while
 executing additional code in the redefinition.
 
-A recursive colon definition should use `RECURSE` to call itself:
+A recursive colon definition should use `RECURSE` to call itself, for example:
 
     : factorial ( u -- ud ) \ u<=12
       ?DUP IF DUP 1- RECURSE ROT UMD* ELSE 1. THEN ;
@@ -2325,7 +2325,9 @@ the result of which is:
     : foo       MAX ;
 
 Note that `[MAX]` is `IMMEDIATE` to compile `MAX` in the definition of `foo`.
-Basically, `[MAX]` acts like a macro that expands into `MAX`.
+Basically, `[MAX]` acts like a macro that expands into `MAX`.  Macros are
+useful as immediate words to performs specific operations to compile one or
+more words into a definition.
 
 ### Compile-time conditionals
 
