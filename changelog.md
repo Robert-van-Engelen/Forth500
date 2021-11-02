@@ -49,7 +49,7 @@ The following bug fixes and improvements were made to the original pceForth code
 - added `FILES` to list files on a drive, supports ? and * globbing
 - added `2TUCK` for consistency with `2NIP`
 - removed `VERIFY-FILE`, which is not usable
-- renamed internal `FORGET-LIMIT` to the more conventional `FENCE`
+- renamed internal `FORGET-LIMIT` to the more conventional `FENCE` and changed to a `VARIABLE`
 - renamed internal `CHECK-STACK` to the more conventional `?STACK`
 - optimized `(;CODE)` assembly
 - added standards-compliant `BEGIN-STRUCT`, `END-STRUCT`, `+FIELD`, `CFIELD:`, `FIELD:`, `2FIELD:`
@@ -71,3 +71,29 @@ The following bug fixes and improvements were made to the original pceForth code
 - optimized `?STACK` stack check in assembly
 - added stack overflow/underflow checks to all loop words
 - changed return address size from 3 bytes to 2 bytes (1 cell) for standard Forth compliance, support "caller cancelling" with `R>DROP` and "continuation passing"
+- reduced `MOVE` code size
+- replaced `S=` machine code with Forth code to call `COMPARE`, saving 50 bytes
+- optimized `DNEGATE`, `D2*`, `D+` and `D-`
+- added `-CHARS` used by `-TRAILING` and `F.`
+- added `(DORET)` to return from a colon definition instead of `(EXIT)`, this allows a future `SEE` to list a colon definition correctly
+- added `'char'` literals (standard Forth &lt;cnum%gt;), also permits `'char` literals without a closing quote
+- replaced `WITHIN` Forth code by faster assembly code of the same size
+- reduced code of `(?DO)` by reusing `(DO)`
+- reduced code of `(+TO)` and `(D+2TO)` by reusing `+!` and `D+!`
+- reduced code of `EVALUATE` and `INCLUDE-FILE`, both use `SAVE-INPUT N>R` and `NR> RESTORE-INPUT`
+- changed `LAST` and `LASTXT` to `VALUE` instead of `VARIABLE`
+- changed `(COLON-SYS)`, `(ORIG)`, `(DEST)`, `(DO-SYS)` constants to CREATEed words without data that return a unique address
+- changed `SOURCE` to `2VALUE` and removed `(SOURCE)`
+- removed `(REFILL)` and inlined its code into `(QUIT)`
+- optimized `FIND-WORD` dictionary search
+- added `PAUSE` to display text in reverse video and wait for a keypress
+- updated `WORDS` and `FILES` to break with BREAK and C/CE at the prompt
+- optimized `>NAME` to increase speed and reduce code size
+- added missing `REQUIRE` and `REQUIRED`
+- automatically close open `SOURCE-ID` file when an exception is raised, e.g. when `INCLUDE` fails
+- improved exception reporting, showing part of the input that caused the exception
+- replaced `>BINARY` with `>DIGIT` in assembly, shorter and faster
+- added Forth standard FLOAT (complete) and FLOAT-EXT (most) words
+- fixed `F/` double fp when divided by single fp returning garbage by the function driver syscall: make both arguments double fp if one is double fp
+- added blinking cursor at start and after an exception or `ABORT` and `QUIT` which are otherwise silent
+- improved `OK[]` prompt to also report the depth of the floating point stack, when not empty

@@ -15,20 +15,20 @@ I also wrote a new [Forth500 User Guide](manual.md) to introduce standard Forth 
 To use Forth500, first load the binary, then `CALL &B0000` (see [expanded E500](E500-expanded)) or `CALL &B9000` (see [unexpanded E500](E500-unexpanded)).  Forth500 starts immediately and can be exited with `BYE`.  Call again to continue using Forth500 where you left off.  Forth500 resides in protected memory and does not interfere with BASIC.
 
 Forth500 is [standard Forth](https://forth-standard.org) compliant and implements Forth CORE, CORE-EXT and most of the optional word sets:
-- CORE: all
-- CORE-EXT: all
-- (BLOCK is incomplete and removed to save space for now)
-- DOUBLE: all
-- DOUBLE-EXT: all
-- EXCEPTION: all
-- EXCEPTION-EXT: all
-- FACILITY: all
+- CORE: complete
+- CORE-EXT: complete
+- BLOCK: incomplete and removed to save space
+- DOUBLE: complete
+- DOUBLE-EXT: complete
+- EXCEPTION: complete
+- EXCEPTION-EXT: complete
+- FACILITY: complete
 - FACILITY-EXT: `EKEY`, `EKEY>CHAR`, `EKEY?`, `MS`, `BEGIN-STRUCTURE`, `END-STRUCTURE`, `+FIELD`, `CFIELD:`, `FIELD:`, `2FIELD:`
-- FILE: all (note: `RESIZE-FILE` cannot truncate files, but returns 0 no error anyway)
-- FILE-EXT: `FILE-STATUS`, `INCLUDE`, `REFILL`, `RENAME-FILE`, `S\"`
-- FLOATING (work in progress)
-- FLOATING-EXT (work in progress)
-- STRING: all
+- FILE: complete
+- FILE-EXT: complete
+- FLOATING: complete
+- FLOATING-EXT: complete except hyperbolics and `F~` to save space, see the manual for [the definitions](manual.md#floating-point-arithmetic) of these
+- STRING: complete
 - TOOLS: `.S`, `?`, `DUMP`, `WORDS`
 - TOOLS-EXT: `AHEAD`, `BYE`, `CS-PICK`, `CS-ROLL`, `FORGET`, `STATE`, `N>R`, `NR>`, `[DEFINED]`, `[ELSE]`, `[IF]`, `[THEN]`, `[UNDEFINED]`
 
@@ -36,10 +36,10 @@ Additional built-in words:
 - introspection: `COLON?`, `DOES>?`, `MARKER?`, `DEFER?`, `VALUE?`, `2VALUE?`
 - values: `+TO`
 - variables: `D+!`, `ON`, `OFF`
-- arithmetic: `UMAX`, `UMIN`, `2+`, `2-`, `M-`, `D/MOD`, `DMOD`, `UMD*`
+- arithmetic: `UMAX`, `UMIN`, `2+`, `2-`, `M-`, `D/MOD`, `DMOD`, `UMD*`, `FDEG`, `FDMS`, `FRAND`, `FSIGN`
 - stack: `-ROT`, `2NIP`, `2TUCK`, `DUP>R`, `R>DROP`, `CLEAR`
 - loops: `K`, `?LEAVE`
-- strings: `S=`, `-CHARS`, `EDIT`
+- strings: `NEXT-CHAR`, `S=`, `-CHARS`, `EDIT`, `>DOUBLE`
 - display: `REVERSE-TYPE`, `BASE.`, `BIN.`, `DEC.`, `HEX.`, `N.S`, `TTY`
 - printing: `STDL`, `PRINTER`
 - LCD: `SET-SYMBOLS`, `BUSY-ON`, `BUSY-OFF`, `CURSOR`, `SET-CURSOR`, `X@`, `X!`, `Y@`, `Y!`, `XMAX@`, `XMAX!`, `YMAX@`, `YMAX!`
@@ -55,5 +55,4 @@ Additional built-in words:
 
 Work in progress:
 
-- Floating point words and stack
 - A file editor to edit Forth source code (a command line editor is included)

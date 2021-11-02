@@ -55,6 +55,7 @@ Author: Dr. Robert A. van Engelen, 2021
 - [Environmental queries](#environmental-queries)
 - [Dictionary structure](#dictionary-structure)
 - [Examples](#examples)
+  - [CHDIR](#chdir)
   - [GCD](#gcd)
   - [RAND](#rand)
   - [SQRT](#sqrt)
@@ -134,7 +135,8 @@ To list words that fully and partially match a given name, type:
     WORDS NAME ↲
 
 For example, `WORDS DUP` lists all words with names that contain the part `DUP`
-(the `WORDS` search is case sensitive).
+(the `WORDS` search is case sensitive).  Press BREAK or C/CE to stop listing
+more words.
 
 Words like `DUP` operate on the stack.  `DUP` duplicates the top value,
 generally called TOS "Top Of Stack".  All computations in Forth occur on the
@@ -146,14 +148,24 @@ to push them onto the stack:
     -1 123 123 OK[3]
 
 where `TRUE` pushes -1, `123` pushes 123, `DUP` duplicates the TOS and `.S`
-shows the stack values.  `OK[3]` indicates that currently there are three
-values on the stack.  Also when debugging words, it helps to use `.S` to see
-what's currently on the stack.
+shows the stack values.  It helps to use `.S` to see what's currently on the
+stack when debugging.  `OK[3]` indicates that currently there are three values
+on the stack.  This may also show as `OK[3 1]` for example, when there is one
+floating point value on the floating point stack.
 
 You can spread the code over multiple lines.  It does not matter if you hit
 ENTER at the end or if you hit ENTER to input more than one line.
 
-To clear the stack, type `CLEAR`:
+When an error occurred, an error message will be shown and a blinking cursor
+will appear:
+
+    1 0 / 2 + . ↲
+    1 0 / <error -10
+
+Press the left or right cursor key to edit the last line.  For a description
+of the standard Forth error codes, see [exceptions](#exceptions).
+
+To clear the stacks, type `CLEAR`:
 
     CLEAR ↲
     OK[0]
@@ -196,10 +208,8 @@ The use of `.` to mark double integers is unfortunate, because the number is
 not a floating point number!  The `.` is traditional in Forth and still part of
 the Forth standard.
 
-Note: floating point support is work in progress and not available yet.
-
 Floating point numbers require an exponent `E` or `D` for double precision,
-even when the exponent is zero, as for example in `1.23e0` (the `E` and `D`
+even when the exponent is zero, as for example in `1.23e+0` (the `E` and `D`
 are case insensitive).  Floating point values are stored on a separate floating
 point stack and have their own words for floating point arithmetic:
 
@@ -524,7 +534,7 @@ To list files on the current drive:
 
     FILES ↲
 
-You can also specify a drive and glob pattern with `FILES`:
+You can also specify a drive with a glob pattern to list matching `FILES`:
 
     FILES F:*.FTH ↲
 
@@ -643,7 +653,7 @@ integers or one double integer):
 | `2TUCK` | ( _x1_ _x2_ _x3_ _x4_ -- _x3_ _x4_ _x1_ _x2_ _x3_ _x4_ )
 | `2ROT ` | ( _x1_ _x2_ _x3_ _x4_ _x5_ _x6_ -- _x3_ _x4_ _x5_ _x6_ _x1_ _x2_ )
 
-Other stack-related words:
+Other words related to the stack:
 
 | word    | stack effect           | comment
 | ------- | ---------------------- | -------------------------------------------
@@ -651,14 +661,14 @@ Other stack-related words:
 | `DEPTH` | ( -- _n_ )             | returns the current depth of the stack
 | `.S`    | ( -- )                 | displays the stack contents
 | `N.S`   | ( _n_ -- )             | displays the top _n_ values on the stack
+| `SP@`   | ( -- _addr_ )          | returns the stack pointer, points to the TOS
+| `SP!`   | ( _addr_ -- )          | assigns the stack pointer (danger!)
 
 `DEPTH` returns the current depth of the stack, which is the number of cells on
 the stack not counting the depth value returned on the stack.  The maximum
 stack depth in Forth500 is 128 cells or 64 double cells.
 
 ### Floating point stack manipulation
-
-Note: floating point support is work in progress and not available yet.
 
 The following words manipulate values on the floating point stack:
 
@@ -671,6 +681,8 @@ The following words manipulate values on the floating point stack:
 | `FROT`   | ( F: _r1_ _r2_ _r3_ -- _r2_ _r3_ _r1_ ) | rotate stack, FP 3OS goes to FP TOS
 | `CLEAR`  | ( ... -- ; F: ,,, -- )                  | clears the stack and the floating point stack
 | `FDEPTH` | ( -- _n_ )                              | returns the current depth of the floating point stack
+| `FP@`    | ( -- _addr_ )                           | returns the floating point stack pointer, points to the FP TOS
+| `FP!`    | ( _addr_ -- )                           | assigns the floating point stack pointer (danger!)
 
 `FDEPTH` returns the current depth of the floating point stack, which is the
 number of floats on the stack.  The maximum floating point stack depth in
@@ -683,7 +695,7 @@ The current `BASE` is used for conversion:
 
 | word        | comment
 | ----------- | ----------------------------------------------------------------
-| `BASE`      | a `VARIABLE` holding the current base
+| `BASE`      | a `VARIABLE` holding the current base, valid values range from 2 to 36
 | `DECIMAL`   | set `BASE` to 10
 | `HEX`       | set `BASE` to 16
 | `#d`...`d`  | a decimal single integer, ignores current `BASE`
@@ -696,10 +708,9 @@ The current `BASE` is used for conversion:
 Valid single integer constant values range from -32768 to 65535.  The unsigned
 integer range 32768 to 65535 is the same signed integer range -1 to -32768.
 
-Note that the signedness of an integer only applies to the way the integer
-value is used by a word.  For example, `-1 U.` displays 65535, because `U.`
-takes an unsigned integer to display and -1 is the same as 65535 (two's
-complement).
+The signedness of an integer only applies to the way the integer value is used
+by a word.  For example, `-1 U.` displays 65535, because `U.` takes an unsigned
+integer to display and -1 is the same as 65535 (two's complement).
 
 Double integer values have a `.` (dot) anywhere placed among the digits.  For
 example, `-1.` is double integer pushed on the stack, occupying the top pair of
@@ -707,7 +718,14 @@ consecutive cells on the stack, i.e. the TOS and 2OS with TOS holding the
 16 high-order bits and 2OS holding the 16 low-order bits.  The `.` (dot) is
 typically placed at the end of the digits.
 
-Note: `'char'` literal character support is work in progress.
+A word defined in the dictionary with a name that matches a number will be
+evaluated instead of the number.  Therefore, it makes sense to avoid defining
+words with numeric names.
+
+When the current `BASE` is not decimal, such as `HEX`, words in the dictionary
+may match instead of the integer constant specified.  For example, `F.` is a
+valid double integer value in `HEX` but the `F.` word will output a float
+instead.
 
 The ASCII value of a single character is pushed on the stack with `'char'`.
 The closing quote may be omitted for convenience:
@@ -727,43 +745,64 @@ The following words define common constants regardless of the current `BASE`:
 
 ### Floating point constants
 
-Note: floating point support is work in progress and not available yet.
-
 Floating point values when parsed from the input are directly pushed on the
 floating point stack.  Floating point values must include a `E` or `D`
-exponent.  An `E` or `e` exponent marks a single precision floating point
-value with up to 10 significant digits.  A `D` or `d` exponent marks a double
-precision floating point value with up to 20 significant digits.  The exponent
-ranges from -99 to +99.
+exponent.  An `E` exponent marks a single precision floating point value (see
+note below).  A `D` exponent marks a double precision floating point value with
+up to 20 significant digits.  The `E` and `D` exponent ranges from -99 to +99.
 
 | word                       | comment
 | -------------------------- | ------------------------------------------------
-| `3.141592654e0`            | single precision pi
-| `3.1415926535897932385d0`  | double precision pi
+| `3.141592654e+0`           | single precision pi
+| `3.1415926535897932385d+0` | double precision pi
 | `9.9999999999999999999d99` | maximum double precision value
 | `-1.234e-10`               | single precision -0.0000000001234
 | `1e0`                      | single precision 1
-| `0e`                       | single precision 0 (`e` is the same as `e0`)
-| `0d0`                      | double precision 0
+| `0e`                       | single precision 0
+| `0d`                       | double precision 0
 
-Note that the `e0` exponent may be abbreviated to `e`.  However, `d0` cannot be
-abbreviated to `d`.  This will result in a single precision value.
+Note that exponent `e+0` may be abbreviated to `e0` or just `e`.  A floating
+point value may not start with the decimal point `.`.  The formal syntax is:
 
-Floating point values are always parsed in base 10.  Therefore, the current
-`BASE` value has no effect.
+    <float>             := <significand> [ <exponent> ]
+    <significand>       := [ <sign> ] <digit>+ [ . <digit>* ]
+    <exponent>          := {E|e|D|d} [ <sign> ] [ <digit> ] [ <digit> ]
+    <sign>              := {+|-}
+    <digit>             := {0|1|2|3|4|5|6|7|8|9}
+
+Floating point values are parsed in base 10.  Floating point values are not
+parsed if the `BASE` is anything other than `DECIMAL`.  Exception -13 will be
+thrown instead, when the unrecognized word is not found in the dictionary.
+
+If the number of significant digits exceeds 10, then the floating point value
+is stored in double precision format even when marked with an `e`.  Digits are
+considered significant after removing all leading zeros, including zeros to the
+right of the decimal point.  For example, `0.001234567890e` is a single
+precision value because it has 10 significant digits (this differs with the
+PC-E500(S) BASIC where zero digits after the decimal point are considered
+significant) and `0.0012345678900e` is a double precision value because it has
+11 significant digits.
+
+Forth500 floating point operations are performed on both single and double
+precision floating point values.  A double precision value is returned if one
+of the operands is a double precision value.
+
+The `0e+0` word is predefined.  This word takes only 2 bytes of code space
+instead of the 14 bytes to store floating point literals in code (2 bytes code
+plus 12 bytes for the float).  To save more memory, you can also use `S>F` and
+`D>F` to push whole numbers on the floating point stack, which use only 6 bytes
+and 8 bytes of code space, respectively.
 
 A floating point value requires 12 bytes of storage for the sign, exponent and
-the binary-coded decimal mantissa:
+the binary-coded decimal mantissa with 10 or 20 digits:
 
-(sign-byte)(exp)(BCD0)(BCD1)(BCD2)(BCD3)(BCD4)(BCD5)(BCD6)(BCD7)(BCD8)(BCD9) 
+(sign)(exp)(BCD0)(BCD1)(BCD2)(BCD3)(BCD4)(BCD5)(BCD6)(BCD7)(BCD8)(BCD9) 
 
 - a single precision floating point value uses (BCD0) to (BCD4).  A double
   precision floating point value uses (BCD0) to (BCD9)
-- the (sign-byte) bit 0 is set to mark negative values
-- the (sign-byte) bit 3 is set to mark double precision values
-
-All Forth500 floating point operations are performed on single and double
-precision floating point values.
+- the (sign) byte bit 0 is set to mark double precision values
+- the (sign) byte bit 3 is set to mark negative values
+- the (exp) byte is a 2s-complement integer in the range [-99,99]
 
 The maximum depth of the floating point stack in Forth500 is 96 bytes to hold
 up to 8 floating point values.
@@ -927,8 +966,6 @@ by scaling the divisor down by 10 and the dividend up by 10 before dividing:
 
 ### Floating point arithmetic
 
-Note: floating point support is work in progress and not available yet.
-
 The following words cover floating point arithmetic operations.  The words
 accept single and double precision floating point numbers on the floating point
 stack (the F: stack effects):
@@ -943,10 +980,11 @@ stack (the F: stack effects):
 | `FMAX`    | ( F: _r1_ _r2_ -- _r1_ ) if _r1_>_r2_ otherwise ( F: _r1_ _r2_ -- _r2_ )
 | `FMIN`    | ( F: _r1_ _r2_ -- _r1_ ) if _r1_<_r2_ otherwise ( F: _r1_ _r2_ -- _r2_ )
 | `FABS`    | ( F: _r_ -- +_r_ )
-| `FSIGN`   | ( F: _r_ -- 0e0 ) if _r_=0 or ( F: _r_ -- 1e0 ) if _r_>0 otherwise ( F: _r_ -- -1e0 )
+| `FSIGN`   | ( F: _r_ -- 0e+0 ) if _r_=0 or ( F: _r_ -- 1e+0 ) if _r_>0 otherwise ( F: _r_ -- -1e+0 )
 | `FNEGATE` | ( F: _r_ -- -_r_ )
-| `FLOOR`   | ( F: _r_ -- ⌊_r_⌋ )
-| `FROUND`  | ( F: _r_ -- ⌊_r_+.5e0⌋ )
+| `FLOOR`   | ( F: _r_ -- ⌊_r_⌋ ) round towards negative infinity
+| `FROUND`  | ( F: _r_ -- [_r_+5e-1⌋ )
+| `FTRUNC`  | ( F: _r_ -- [_r_] ) round towards zero
 | `FSIN`    | ( F: _r_ -- sin(_r_) )
 | `FCOS`    | ( F: _r_ -- cos(_r_) )
 | `FTAN`    | ( F: _r_ -- tan(_r_) )
@@ -960,17 +998,36 @@ stack (the F: stack effects):
 | `FDEG`    | ( F: _r1_ -- _r2_ ) where _r1_ is in dd.mmss format and _r2_ is degrees
 | `FDMS`    | ( F: _r1_ -- _r2_ ) where _r1_ is degrees and _r2_ is in dd.mmss format
 | `FRAND`   | ( F: _r1_ -- _r2_ ) where _r2_ is a pseudo-random number, see below
-| `F>D`     | ( F: _r_ -- ; -- _d_ ) with _r_ converted to _d_
+| `F>D`     | ( F: _r_ -- ; -- _d_ ) or ( F: _r_ -- ; -- _ud_ ) with _r_ converted to _d_ or _ud_
 | `D>F`     | ( _d_ -- ; F: -- _r_ ) with _d_ converted to _r_
-| `F>S`     | ( F: _r_ -- ; -- _n_ ) with _r_ converted to _n_
+| `F>S`     | ( F: _r_ -- ; -- _n_ ) or ( F: _r_ -- ; -- u ) with _r_ converted to _n_ or _u_
 | `S>F`     | ( _n_ -- ; F: -- _r_ ) with _n_ converted to _r_
 
 If any of the operands of an arithmetic operation are double precision, then
 the result of the operation is a double precision floating point value.  For
-example, `0d0 F+` promotes a single precision value to a double precision
+example, `0d F+` promotes a single precision value to a double precision
 value by adding a double precision zero.
 
-Trigonometric functions are performed in radians.
+Trigonometric functions are performed in the current angular unit (DEG, RAD or
+GRAD).  You can use the BASIC interpreter to set the desired angular unit or
+define a word to scale degrees and radians to the current unit before applying
+a trigonometric function:
+
+    3.141592654e FCONSTANT PI
+    : ?>DBL     FP@ FLOAT+ C@ 1 AND FP@ C@ OR FP@ C! ;
+    : DEG>      90e F/ 0e ?>DBL FACOS F* ;
+    : RAD>      FDUP F+ PI F/ 0e ?>DBL FACOS F* ;
+    : >DEG      0e ?>DBL FACOS F/ 90e F* ;
+    : >RAD      0e ?>DBL FACOS FDUP F+ F/ PI F* ;
+
+For example, `30e DEG> FSIN` ("30 degree from sine") and `PI 3e F/ RAD> FSIN`
+both return 0.5e+0 on the floating point stack regardless of the current
+angular unit.  Likewise `0.5E FASIN >DEG` ("half arcsine to degree") returns
+30.0e+0 on the floating point stack regardless of the current angular unit.
+The `?>DBL` word promotes the FP TOS to a double if the FP 2OS is a double.
+This word allows angular unit conversion words to support both single and
+double precision floating point values.  See [floating point
+cnostants](#floating-point-constants) for the internal floating point format.
 
 `F**` returns _r1_ to the power _r2_.
 
@@ -986,25 +1043,22 @@ _r1_<1e and in the closed range _r2_ ∈ [1,_r1_] otherwise.  A double precision
 pseudo-random number is returned when _r1_ is a double precision floating point
 value.
 
-The following additional floating point extended word set definitions not
-defined in Forth500 can be defined as follows:
+`F>D` throws an exception when the floating point value _r_ is too large for an
+unsigned 32 bit integer, i.e. when |_r_|>4294967295.  Likewise, `F>S` throws an
+exception when _r_ is too large for an unsigned 16 bit integer, i.e. when
+|_r_|>65535.
+
+The following additional floating point extended word set definitions are not
+built in Forth500 and can be defined as follows to apply to both single and
+double floating point values.  For these definitions we do not need `?>DBL`:
 
     : FALOG     10e FSWAP F** ;
-
     : FCOSH     FEXP FDUP 1e FSWAP F/ F+ 2e F/ ;
-
     : FSINH     FEXP FDUP 1e FSWAP F/ F- 2e F/ ;
-
     : FTANH     FDUP F+ FEXP FDUP 1e F- FSWAP 1e F+ F/ ;
-
     : FACOSH    FDUP FDUP F* 1e F- FSQRT F+ FLN ;
-
     : FASINH    FDUP FDUP F* 1e F+ FSQRT F+ FLN ;
-
     : FATANH    FDUP 1e F+ FSWAP 1e FSWAP F- F/ FLN 2e F/ ;
-
-    : FTRUNC    FDUP F0< IF FNEGATE FLOOR FNEGATE ELSE FLOOR THEN ;
-
     : F~        ( F: r1 r2 r3 -- ; -- flag )
       FDUP F0= IF FDROP F= EXIT THEN
       FDUP F0< IF FROT FROT FOVER FOVER F- FROT FABS FROT FABS F+ FROT FABS F* F< EXIT THEN
@@ -1016,6 +1070,21 @@ negative, then _flag_ is _true_ if the absolute value of (_r1_ minus _r2_) is
 less than the absolute value of _r3_ times the sum of the absolute values of
 _r1_ and _r2_.  If _r3_ is positive, then _flag_ is _true_ if the absolute
 value of (_r1_ minus _r2_) is less than _r3_.  
+
+To check if a floating point value is a double precision value, define:
+
+    : DBL?      FP@ C@ 1 AND NEGATE ;
+
+`DBL?` returns true if the value is double precision.
+
+To promote a single to a double on the floating point stack, just add `0d` or
+define:
+
+    : E>D       FP@ C@ 1 OR FP@ C! ;
+
+To demote a double to a single on the floating point stack by truncation:
+
+    : D>E       FP@ C@ $fe AND FP@ C! FP@ 7 + 5 ERASE ;
 
 ### Numeric comparisons
 
@@ -1105,7 +1174,10 @@ The following words display floating point values:
 | --------------- | ---------------- | -----------------------------------------
 | `F.`            | ( F: _r_ -- )    | display _r_ in fixed-point notation followed by a space
 | `FS.`           | ( F: _r_ -- )    | display _r_ in scientific notation followed by a space
-| `SET-PRECISION` | ( _n_ -- )       | set the `VARIABLE` `PRECISION` to _n_ significant digits to display
+| `SET-PRECISION` | ( _n_ -- )       | set the `VARIABLE` `PRECISION` to _n_ significant digits to display with `F.` and `FS.`
+
+Note that `SET-PRECISION` does not affect the precision of floating point
+operations.
 
 ### Pictured numeric output
 
@@ -1197,6 +1269,8 @@ escaped with `\`:
 | `\v`   | 11       | VT; vertical tab
 | `\xhh` | hh (hex) |
 | `\z`   | 0        | NUL
+
+The escape letters are case sensitive.
 
 ## String operations
 
@@ -1294,11 +1368,14 @@ For `>NUMBER`, the initial _ud1_ value is the "seed" that is normally zero.
 This value can also be a previously converted high-order component of the
 number.
 
-`>DOUBLE` returns a double integer.  It also sets the variable `SINGLE` to true
-if the integer was specified without a dot (`.`) in the numeric string.  To
-convert a string to a single signed integer, use `D>S` afterwards to convert.
-This may throw a -11 exception when the integer value is out of range for a
-single integer.
+`>DOUBLE` returns a double integer when successful.  It also sets the `VALUE`
+flag `DBL` to true if the integer is a double with a dot (`.`) in the numeric
+string.  To convert a string to a single signed integer, use `D>S` afterwards
+to convert.
+
+`>FLOAT` returns a single or double float on the floating point stack when
+successful.  It also sets the `VALUE` flag `DBL` to true if the float is a
+double.
 
 To convert a floating point value to a string saved to a string buffer, the
 `REPRESENT` word can be used:
@@ -1314,7 +1391,7 @@ with the implied decimal point to the left of the first digit, and the first
 digit zero only if all digits are zero.  The significand is rounded to _u_
 digits following the "round to nearest" rule; _n_ is adjusted, if necessary, to
 correspond to the rounded magnitude of the significand.  If _flag_ is _true_
-then _r_ is negative.
+then _r_ is negative.  The `VALUE` flag `DBL` is true if the float is a double.
 
 The `F.` and `FS.` words are defined as follows in Forth500:
 
@@ -1331,7 +1408,7 @@ The `F.` and `FS.` words are defined as follows in Forth500:
 
     : FS. ( F: r -- )
       HERE PRECISION REPRESENT DROP IF '- EMIT THEN
-      HERE C@ EMIT '. HERE C! HERE PRECISION TYPE 'E EMIT 1- . ;
+      HERE C@ EMIT '. HERE C! HERE PRECISION TYPE 'E DBL + EMIT 1- . ;
 
     : ZEROS ( n -- )
       0 ?DO '0 EMIT LOOP ;
@@ -1363,10 +1440,16 @@ The following words display characters and text:
 | `EMIT`         | ( _char_ -- )       | display character _char_
 | `TYPE`         | ( _c-addr_ _u_ -- ) | display string _c-addr_ of size _u_
 | `REVERSE-TYPE` | ( _c-addr_ _u_ -- ) | same as `TYPE` with reversed video
+| `PAUSE`        | ( _c-addr_ _u_ -- ) | display string _c-addr_ of size _u_ in reverse video and wait for a key press
 | `DUMP`         | ( _addr_ _u_ -- )   | dump _u_ bytes at address _addr_ in hexadecimal
 | `CR`           | ( -- )              | moves the cursor to a new line with CR-LF
 | `SPACE`        | ( -- )              | displays a single space
 | `SPACES`       | ( _n_ -- )          | displays _n_ spaces
+
+The `PAUSE` word checks if the current `TTY` output is to `STDO`, then displays
+the string in reverse video and waits for a key press.  If the BREAK key or the
+C/CE key is pressed, then `PAUSE` executes `ABORT`.  If the output is not to
+`STDO`, then `PAUSE` drops _c-addr_ and _u_.
 
 The following words can be used to control character output:
 
@@ -1519,6 +1602,13 @@ example `2 N>R ... NR> DROP` moves 2+1 cells to the return stack and back,
 then dropping the restored 2.  Effectively the same as executing `2>R ... 2R>`.
 
 Note: `N>R` and `NR>` move _+n_ _mod_ 128 cells max as a precaution.
+
+Other words related to the return stack:
+
+| word    | stack effect  | comment
+| ------- | ------------- | ----------------------------------------------------
+| `RP@`   | ( -- _addr_ ) | returns the return stack pointer, points the to return TOS
+| `RP!`   | ( _addr_ -- ) | assigns the return stack pointer (danger!)
 
 Care must be taken to prevent return stack imbalences when a colon definition
 exits.  The return stack pointer must be restored to the original state when
@@ -1724,17 +1814,17 @@ words can be used:
 | `HERE`   | ( -- _addr_ )             | the next free address in the dictionary
 | `CELL`   | ( -- 2 )                  | the size of a cell (single integer) in bytes
 | `CELLS`  | ( _u_ -- 2\*_u_ )         | convert _u_ from cells to bytes
-| `CELL+`  | ( _addr_ -- _addr_+2 )    | increments _addr_ by a cell width (2)
+| `CELL+`  | ( _addr_ -- _addr_+2 )    | increments _addr_ by a cell width (2 bytes)
 | `CHARS`  | ( _u_ -- _u_ )            | convert _u_ from characters to bytes (does nothing)
-| `CHAR+`  | ( _addr_ -- _addr_+1 )    | increments _addr_ by a character width (1)
+| `CHAR+`  | ( _addr_ -- _addr_+1 )    | increments _addr_ by a character width (1 byte)
 | `FLOATS` | ( _u_ -- 12\*_u_ )        | convert _u_ from floats to bytes
-| `FLOAT+` | ( _addr_ -- _addr_+12 )   | increments _addr_ by a floating point value width (12)
+| `FLOAT+` | ( _addr_ -- _addr_+12 )   | increments _addr_ by a floating point value width (12 bytes)
 | `ALLOT`  | ( _n_ -- )                | reserves _n_ bytes in the dictionary starting `HERE`, adds _n_ to `HERE`
 | `UNUSED` | ( -- _u_ )                | returns the number of unused bytes remaining in the dictionary
-| `,`      | ( _x_ -- )                | stores _x_ at `HERE` then increments `HERE` by `CELL` (by 2)
-| `2,`     | ( _dx_ -- )               | stores _dx_ at `HERE` then increments `HERE` by `2 CELLS` (by 4)
-| `C,`     | ( _char_ -- )             | stores _char_ at `HERE` then increments `HERE` by `1 CHARS` (by 1)
-| `F,`     | ( F: _r_ -- )             | stores floating point value _r_ at `HERE` then increments `HERE` by `1 FLOATS` (by 12)
+| `,`      | ( _x_ -- )                | stores _x_ at `HERE` then increments `HERE` by `CELL` (by 2 bytes)
+| `2,`     | ( _dx_ -- )               | stores _dx_ at `HERE` then increments `HERE` by `2 CELLS` (by 4 bytes)
+| `C,`     | ( _char_ -- )             | stores _char_ at `HERE` then increments `HERE` by `1 CHARS` (by 1 byte)
+| `F,`     | ( F: _r_ -- )             | stores floating point value _r_ at `HERE` then increments `HERE` by `1 FLOATS` (by 12 bytes)
 | `DOES>`  | ( -- ; -- _addr_ )        | the following code will be compiled and executed by the word we `CREATE`
 | `@`      | ( _addr_ -- _x_)          | fetches _x_ stored at _addr_
 | `2@`     | ( _addr_ -- _dx_ )        | fetches _dx_ stored at _addr_
@@ -1888,15 +1978,15 @@ reserve space for the array data:
     720.    6 factorials 2! 5040. 7 factorials 2! 40320. 8 factorials 2! ↲
     362880. 9 factorials 2! ↲
 
-We can add "syntactic sugar" to enhance the readability of the code, using `{`
-and `}` to demarcate the array index expression as follows:
+We can add "syntactic sugar" to enhance the readability of the code, for
+example using `{` and `}` to demarcate the array index expression as follows:
 
     : { ; IMMEDIATE  \ Does nothing ↲
     10 2 CELLS array: }factorials ↲
     1. { 0 }factorials 2! 1. { 1 }factorials 2! 2. { 2 }factorials 2! ↲
 
 By making `{` immediate, it won't compile to a useless call to the `{` excution
-token.  This array implementation has no array index bound checks.
+token.  This array implementation has no array index bound checking.
 
 ### Markers
 
@@ -2315,6 +2405,8 @@ The following words return _ior_ to indicate success (zero) or failure (nonzero
 | word              | stack effect ( _before_ -- _after_ )            | comment
 | ----------------- | ----------------------------------------------- | --------
 | `FILES`           | ( [ "glob" ] -- )                               | lists files matching optional "glob" with wildcards `*` and `?`
+| `REQUIRE`         | ( "name" -- )                                   | load Forth source code file "name" if not already loaded
+| `REQUIRED`        | ( _c-addr_ _u_ -- )                             | load Forth source code file named by the string _c-addr_ _u_ if not already loaded
 | `INCLUDE`         | ( "name" -- )                                   | load Forth source code file "name"
 | `INCLUDED`        | ( _c-addr_ _u_ -- )                             | load Forth source code file named by the string _c-addr_ _u_
 | `INCLUDE-FILE`    | ( _fileid_ -- )                                 | load Forth source code from _fileid_
@@ -2344,7 +2436,7 @@ The following words return _ior_ to indicate success (zero) or failure (nonzero
 | `SEEK-END`        | ( -- 2 )                                        | to seek from the ens of the file
 | `SEEK-FILE`       | ( _d_ _fileid_ 0\|1\|2 -- _ior_ )               | seek file offset _d_ from the start, relative to the current position or from the end
 | `REPOSITION-FILE` | ( _ud_ _fileid_ -- _ior_ )                      | seek file offset _ud_ from the start
-| `RESIZE-FILE`     | ( _ud_ _fileid_ -- _ior_ )                      | resize _fileid_ to _ud_ bytes (does not truncate files, only enlarge)
+| `RESIZE-FILE`     | ( _ud_ _fileid_ -- _ior_ )                      | resize _fileid_ to _ud_ bytes (cannot truncate files, only enlarge)
 | `DRIVE`           | ( -- _addr_ )                                   | returns address _addr_ of the current drive letter
 | `FREE-CAPACITY`   | ( _c-addr_ _u_ -- _du_ _ior_ )                  | returns the free capacity of the drive in string _c-addr_ _u_
 | `STDO`            | ( -- 1 )                                        | returns _fileid_=1 for standard output to the screen
@@ -2362,10 +2454,13 @@ drive, for example:
     FILES PROGRAM.*   \ list all PROGRAM files with any extension on the current drive
     FILES PROGRAM.??? \ same as above
 
-Up to one `*` for the file name can be used and upt to one `*` for the file
-extension can be used.
+Up to one `*` for the file name may be used and up to one `*` for the file
+extension may be used.  Press BREAK or C/CE to stop the `FILES` listing.
 
-Press BREAK to stop the listing.
+Whenever a drive letter is used with a filename or glob pattern, the specified
+drive becomes the current drive.  To change the current drive letter:
+
+    'F DRIVE C!
 
 The PC-E500 drive names associated with devices:
 
@@ -2642,6 +2737,22 @@ Both words return the execution token of the code.
 
 ## Examples
 
+### CHDIR
+
+File operations like `FILES F:*.*` change the current drive letter to the
+specified drive letter.  This changes the `DRIVE` variable.
+
+We can also change the `DRIVE` letter by defining a new word that sets
+`DRIVE C!` by the drive letter parsed from the input with `PARSE-NAME`
+(we can `DROP` the length which is always positive non-zero):
+
+    : CHDIR     ( "letter" -- ) PARSE-NAME DROP C@ DRIVE C! ;
+
+For example:
+
+    CHDIR F
+    FILES
+
 ### GCD
 
 The greatest common divisor of two integers is computed with Euclid's algorithm
@@ -2750,8 +2861,6 @@ The double integer square root implementation:
 
 ### Numerical integration
 
-Note: floating point support is work in progress and not available yet.
-
 In this example we use Simpson's rule for numerical integration.  Simpson's
 rule approximates the definite integral of a function _f_ over a range [a,b]
 with 2n summation steps:
@@ -2781,7 +2890,7 @@ Variables `x` and `h` are initialized with _a_ and (_b_-_a_)/(2 _n_),
 respectively, where _a_ and _b_ are on the floating point stack and _n_ is on
 the regular stack:
 
-    : init      ( F: a b -- ; n -- ) FOVER F- 2* S>F F/ h F! x F! ;
+    : init      ( F: a b -- ; n -- ) FOVER F- 2* S>F F/ h F! x F! 0e sum F! ;
 
 In the following definition we aim to update the next value of `x` and return
 its updated value on the floating point stack to use right away:
@@ -2808,9 +2917,7 @@ _f_(_a_) before the summation loop:
       sum F@ h F@ F* 3e F/ ;
 
 Recall that all floating point values must be typed with an exponent `e` for
-single precision or `d` for double precision.  A zero exponent `e0` can be
-abbreviated to `e` for convenience, but a double precision zero exponenent `d0`
-cannot be abbreviated.
+single precision or `d` for double precision.
 
 Because Forth500 internally switches to double precision if any of the operands
 of an arithmetic operation are double precision, the function to integrate or
@@ -2832,13 +2939,16 @@ an anonymous function with `:NONAME` as the `integrand` to integrate.
 With double precision floating point and 100 steps:
 
     20 SET-PRECISION ↲
-    0d0 1d0 100 integrate F. ↲
-    0.78539816339743850904 OK[0]
+    0d 1d 100 integrate F. ↲
+    0.7853981633974 OK[0]
 
 This example demonstrates how easy it is to switch to double precision.  But
 this is not very useful with Simpson's rule of integration.  The precision of
 the result is determined by Simpson's approximation and the number of steps
 performed, rather than by the use of higher precision floating point values.
+Because Forth500 internally operates with BCD (Binary-Coded Decimal) floating
+point values, the numerical result of this example differs slightly from
+implementations that internally use IEEE 754 floating point values.
 
 ### Strings
 

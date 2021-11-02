@@ -1,32 +1,27 @@
-# Binary Forth500.bin for expanded PC-E500 with 256KB
+# Binary Forth500.bin for expanded PC-E500 with over >64KB
 
-Use a cassette interface, such as CE-126p or CE-124.
-
-Instead of the wav file, a RS-232 interface can be used.  This requires a
-uuencoded object file to transfer and install the binary.
-
-On the PC-E500 execute:
+On the PC-E500(S) execute:
 
     > POKE &BFE03,&1A,&FD,&0B,0,&FC,0: CALL &FFFD8
 
 This reserves &B0000-&BFC00 and resets the machine.
 
-Warning: memory cannot be allocated when in use by programs.  To check if
+Warning: memory cannot be allocated when in use by other programs.  To check if
 memory was allocated:
 
     > PEEK &BFD1B
     0
 
-The value 0 shows that memory was allocated from &B0000 on (&BFD1C contains the
-low-order address byte, which is also zero).
+The value 0 shows that memory was allocated from &B0000 up.
 
-Play the wav file, load and run Forth:
+## When using a cassette interface, such as CE-126P or CE-124
+
+Play the wav file and load Forth500 on the PC-E500(S) with `CLOADM`:
 
     > CLOADM
-    > CALL &B0000
 
-For best results, type `CLOADM` first, wait 2 seconds, then play the wav file.
-If I/O errors are persistent, then try loading Forth500 in three parts:
+Type `CLOADM` first then play the wav file on your desktop PC.  If I/O errors
+are persistent, then try loading Forth500 in three parts:
 
 1. play Forth500-1.wav and `CLOADM` on the PC-E500
 2. play Forth500-2.wav and `CLOADM` on the PC-E500
@@ -37,14 +32,48 @@ I/O errors.  After loading `CALL &B0000`.
 
 I get an acceptable success rate to load with MacOS `afplay` via the CE-126P
 and CE-124 interfaces.  Headphone output volume should be close to max or max.
-Quit all apps that may produce sound (messaging etc).  Make sure that the audio
-cable does not pick up electrical interference.
-
-To remove Forth from memory and release its allocated RAM space:
-
-    > POKE &BFE03,&1A,&FD,&0B,0,0,0: CALL &FFFD8
+Start with a volume lower than max, because max may cause distortion.  Quit all
+apps on your desktop PC that may produce sound (messaging etc).  Make sure that
+the audio cable does not pick up electrical interference.
 
 [PocketTools](https://www.peil-partner.de/ifhe.de/sharp/) was used to produce
 the wav file as follows:
 
-    $ bin2wav --pc=E500 --type=bin --addr=0xB0000 Forth500.bin
+    $ bin2wav --pc=E500 --type=bin --addr=0xB0000 --sync=9 Forth500.bin
+
+## When using the serial interface
+
+See the HP forum thread "FORTH for the SHARP PC-E500(S)"
+<https://www.hpmuseum.org/forum/thread-17440-post-153815.html#pid153815>
+
+## Run Forth500
+
+To run Forth500:
+
+    > CALL &B0000
+
+To exit Forth500, type `bye`.  Call Forth500 again to continue where you left
+off.  BASIC and Forth500 programs can co-exist.
+
+## Saving a Forth500 image
+
+Once Forth500 is loaded, you can save the entire Forth500 image to a RAM disk
+drive on the PC-E500(S), either the E: or F: drive:
+
+    > SAVEM "F:FORTH500.BIN",&B0000,&Bxxxx
+
+where `xxxx` is the address returned by `HERE HEX.`.  If you just loaded
+Forth500 without changing it, then `xxxx=4F68` and save the image with:
+
+    > SAVEM "F:FORTH500.BIN",&B0000,&B4F68
+
+This makes it possible to instantly reload Forth500, e.g. after a fatal error
+or crash that damaged the Forth500 dictionary:
+
+    > LOADM "F:FORTH500.BIN",&B0000
+
+## Removing Forth500
+
+To remove Forth500 from memory and release its allocated RAM space:
+
+    > POKE &BFE03,&1A,&FD,&0B,0,0,0: CALL &FFFD8
