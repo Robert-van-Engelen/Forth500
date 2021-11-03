@@ -2032,6 +2032,8 @@ The following words can be used to inspect words and dictionary contents:
 
 | word          | stack effect             | comment
 | ------------- | ------------------------ | -----------------------------------
+| `'`           | ( "name" -- _xt_ )       | tick returns the execution token of "name" on the stack
+| `[']`         | ( "name" -- ; -- _xt_ )  | compiles "name" as an execution token literal _xt_
 | `COLON?`      | ( _xt_ -- _flag_ )       | return `TRUE` if _xt_ is a `:` definition
 | `DEFER?`      | ( _xt_ -- _flag_ )       | return `TRUE` if _xt_ is a `DEFER`
 | `VALUE?`      | ( _xt_ -- _flag_ )       | return `TRUE` if _xt_ is a `VALUE`
@@ -2052,7 +2054,7 @@ pronounced "to xxx" and words named `xxx>` are pronounced "xxx from".
 See the [standard Forth word list](https://forth-standard.org/standard/alpha)
 with pronounciations of all standard words.
 
-See also [dictionary structure](#dictionary-structure).
+See also the [dictionary structure](#dictionary-structure).
 
 ## Control flow
 
