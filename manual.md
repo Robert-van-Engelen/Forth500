@@ -1041,8 +1041,8 @@ cnostants](#floating-point-constants) for the internal floating point format.
 
 `FLOOR` returns _r_ truncated towards negative values.
 
-`FDMS` returns the degrees (or hours) dd, minutes mm and seconds ss as a
-fraction.  `FDEG` performs the opposite.  For example, `36.09055e0 FDMS`
+`FDMS` returns the degrees (or hours) dd with the minutes mm and seconds ss as
+a fraction.  `FDEG` performs the opposite.  For example, `36.09055e0 FDMS`
 returns 36.052598 or 36° 5' 25.98".  The `FDEG` and `FDMS` words are also
 useful for time conversions.
 

@@ -37,6 +37,7 @@ Additional built-in words:
 - values: `+TO`
 - variables: `D+!`, `ON`, `OFF`
 - arithmetic: `UMAX`, `UMIN`, `2+`, `2-`, `M-`, `D/MOD`, `DMOD`, `UMD*`, `FDEG`, `FDMS`, `FRAND`, `FSIGN`
+- logic: `D<>`, `D>`, `D0<>`, `D0>`, `F<>`, `F>`, `F0<>`, `F0>`
 - stack: `-ROT`, `2NIP`, `2TUCK`, `DUP>R`, `R>DROP`, `CLEAR`
 - loops: `K`, `?LEAVE`
 - strings: `NEXT-CHAR`, `S=`, `-CHARS`, `EDIT`, `>DOUBLE`
