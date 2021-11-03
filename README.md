@@ -27,7 +27,7 @@ Forth500 is [standard Forth](https://forth-standard.org) compliant and implement
 - FILE: complete
 - FILE-EXT: complete
 - FLOATING: complete
-- FLOATING-EXT: complete except hyperbolics and `F~` to save space, see the manual for [the definitions](manual.md#floating-point-arithmetic) of these
+- FLOATING-EXT: complete except hyperbolics and `FE.`, `F~` to save space, see the manual for [the definitions](manual.md#floating-point-arithmetic) of these
 - STRING: complete
 - TOOLS: `.S`, `?`, `DUMP`, `WORDS`
 - TOOLS-EXT: `AHEAD`, `BYE`, `CS-PICK`, `CS-ROLL`, `FORGET`, `STATE`, `N>R`, `NR>`, `[DEFINED]`, `[ELSE]`, `[IF]`, `[THEN]`, `[UNDEFINED]`
