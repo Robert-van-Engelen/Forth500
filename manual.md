@@ -523,8 +523,8 @@ in practice.
 
 Forth source code is loaded from a file with `INCLUDE` or with `INCLUDED`:
 
-    INCLUDE PROGRAM1.FTH ↲
-    S" PROGRAM2.FTH" INCLUDED ↲
+    INCLUDE FLOATEXT.FTH ↲
+    S" FLOATEXT.FTH" INCLUDED ↲
 
 where `S" PROGRAM2.FTH"` specifies a string constant with the file name.  A
 drive letter such as F: can be specified to load from a specific drive, which
@@ -532,8 +532,8 @@ becomes the current drive (the default drive is E:).
 
 To make sure to only include a file at most once, use `REQUIRE` or `REQUIRED`:
 
-    REQUIRE PROGRAM1.FTH ↲
-    S" PROGRAM2.FTH" REQUIRED ↲
+    REQUIRE FLOATEXT.FTH ↲
+    S" FLOATEXT.FTH" REQUIRED ↲
 
 The name of the file will show up in the word dictionary, but with a space
 appended to the name.
@@ -871,6 +871,9 @@ words `* /`, which would truncate an overflowing product to a single integer.
 For example, `radius 355 * 113 /` with 355/133 to approximate pi overflows
 when `radius` exceeds 92, but `radius 355 113 */` gives the correct result.
 
+A logical `NOT` word not available.  Either `INVERT` should be used to invert
+bits or `0=` should be used, which returns `TRUE` for `0` and `FALSE`.
+
 ### Double arithmetic
 
 The following words perform double integer arithmetic operations.  Words
@@ -924,13 +927,14 @@ zero".
 The `UM/MOD`, `FM/MOD`, and `SM/REM` words return a remainder on the stack.  In
 all cases, the quotient _q_ and remainder _r_ satisfy _a_ = _b_ \* _q_ + _r_,
 
-In case of `FM/MOD`, the quotient is a single signed integer truncated
-towards negative _q_ = _trunc_(_a_ / _b_).  For example, `-10. 7 FM/MOD`
-returns remainder 4 and quotient -2.
+In case of `FM/MOD`, the quotient is a single signed integer rounded towards
+negative _q_ = _floor_(_a_ / _b_).  For example, `-10. 7 FM/MOD` returns
+remainder 4 and quotient -2.
 
-In case of `SM/REM`, the quotient is a single signed integer floored
-towards zero (hence symmetric) _q_ = _floor_(_a_ / _b_). For example,
-`-10. 7 SM/REM` returns remainder -3 and quotient -1.
+In case of `SM/REM`, the quotient is a single signed integer rounded towards
+zero (hence symmetric) _q_ = _trunc_(_a_ / _b_). For example, `-10. 7 SM/REM`
+returns remainder -3 and quotient -1.  This behavior is identical to `/MOD`,
+but `/MOD` behavior may differ on other Forth systems.
 
 ### Fixed point arithmetic
 
@@ -1057,8 +1061,9 @@ exception when _r_ is too large for an unsigned 16 bit integer, i.e. when
 |_r_|>65535.
 
 The following additional floating point extended word set definitions are not
-built in Forth500 and can be defined as follows to apply to both single and
-double floating point values.  For these definitions we do not need `?>DBL`:
+built in Forth500 and defined in `FLOATEXT.FTH`.  These words apply to both
+single and double floating point values.  For these definitions we do not need
+`?>DBL`:
 
     : FALOG     10e FSWAP F** ;
     : FCOSH     FEXP FDUP 1e FSWAP F/ F+ 2e F/ ;
@@ -1077,7 +1082,7 @@ If _r3_ is zero, then _flag_ is _true_ if _r1_ and _r2_ are equal.  If _r3_ is
 negative, then _flag_ is _true_ if the absolute value of (_r1_ minus _r2_) is
 less than the absolute value of _r3_ times the sum of the absolute values of
 _r1_ and _r2_.  If _r3_ is positive, then _flag_ is _true_ if the absolute
-value of (_r1_ minus _r2_) is less than _r3_.  
+value of (_r1_ minus _r2_) is less than _r3_.
 
 To check if a floating point value is a double precision value, define:
 
@@ -1403,7 +1408,7 @@ then _r_ is negative.  The `VALUE` flag `DBL` is true if the float is a double.
 
 The `F.` and `FS.` words are defined as follows in Forth500:
 
-    : F. ( F: r -- )
+    : F.        ( F: r -- )
       HERE PRECISION REPRESENT DROP IF '- EMIT THEN
       HERE PRECISION '0 -CHARS 1 UMAX NIP
       OVER 0> INVERT IF
@@ -1414,12 +1419,19 @@ The `F.` and `FS.` words are defined as follows in Forth500:
         SWAP HERE OVER TYPE '. EMIT HERE OVER + -ROT - TYPE
       THEN THEN SPACE ;
 
-    : FS. ( F: r -- )
+    : FS.       ( F: r -- )
       HERE PRECISION REPRESENT DROP IF '- EMIT THEN
       HERE C@ EMIT '. HERE C! HERE PRECISION TYPE 'E DBL + EMIT 1- . ;
 
-    : ZEROS ( n -- )
-      0 ?DO '0 EMIT LOOP ;
+    : ZEROS     ( n -- ) 0 ?DO '0 EMIT LOOP ;
+
+The standard `FE.` word is defined in `FLOATEXT.FTH` and displays a floating
+point value in engineering format:
+
+    : FE.       ( F: r -- )
+      HERE PRECISION 3 MAX REPRESENT DROP IF '- EMIT THEN
+      1- 3 /MOD SWAP DUP 0< IF 3 + SWAP 1- SWAP THEN 1+ HERE OVER TYPE '. EMIT
+      HERE OVER + SWAP PRECISION SWAP - 0 MAX TYPE 3 * 'E DBL + EMIT . ;
 
 See also [numeric output](#numeric-output).
 
