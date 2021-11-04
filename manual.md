@@ -1192,6 +1192,14 @@ The following words display floating point values:
 Note that `SET-PRECISION` does not affect the precision of floating point
 operations.
 
+The standard `FE.` word is defined in `FLOATEXT.FTH` and displays a floating
+point value in engineering format:
+
+    : FE.       ( F: r -- )
+      HERE PRECISION 3 MAX REPRESENT DROP IF '- EMIT THEN
+      1- 3 /MOD SWAP DUP 0< IF 3 + SWAP 1- SWAP THEN 1+ HERE OVER TYPE '. EMIT
+      HERE OVER + SWAP PRECISION SWAP - 0 MAX TYPE 3 * 'E DBL + EMIT . ;
+
 ### Pictured numeric output
 
 Formatted numeric output is produced with a sequence of "pictured numeric
@@ -1406,7 +1414,7 @@ digits following the "round to nearest" rule; _n_ is adjusted, if necessary, to
 correspond to the rounded magnitude of the significand.  If _flag_ is _true_
 then _r_ is negative.  The `VALUE` flag `DBL` is true if the float is a double.
 
-The `F.` and `FS.` words are defined as follows in Forth500:
+The `F.`, `FE.` and `FS.` words are defined as follows:
 
     : F.        ( F: r -- )
       HERE PRECISION REPRESENT DROP IF '- EMIT THEN
@@ -1419,19 +1427,16 @@ The `F.` and `FS.` words are defined as follows in Forth500:
         SWAP HERE OVER TYPE '. EMIT HERE OVER + -ROT - TYPE
       THEN THEN SPACE ;
 
+    : FE.       ( F: r -- )
+      HERE PRECISION 3 MAX REPRESENT DROP IF '- EMIT THEN
+      1- 3 /MOD SWAP DUP 0< IF 3 + SWAP 1- SWAP THEN 1+ HERE OVER TYPE '. EMIT
+      HERE OVER + SWAP PRECISION SWAP - 0 MAX TYPE 3 * 'E DBL + EMIT . ;
+
     : FS.       ( F: r -- )
       HERE PRECISION REPRESENT DROP IF '- EMIT THEN
       HERE C@ EMIT '. HERE C! HERE PRECISION TYPE 'E DBL + EMIT 1- . ;
 
     : ZEROS     ( n -- ) 0 ?DO '0 EMIT LOOP ;
-
-The standard `FE.` word is defined in `FLOATEXT.FTH` and displays a floating
-point value in engineering format:
-
-    : FE.       ( F: r -- )
-      HERE PRECISION 3 MAX REPRESENT DROP IF '- EMIT THEN
-      1- 3 /MOD SWAP DUP 0< IF 3 + SWAP 1- SWAP THEN 1+ HERE OVER TYPE '. EMIT
-      HERE OVER + SWAP PRECISION SWAP - 0 MAX TYPE 3 * 'E DBL + EMIT . ;
 
 See also [numeric output](#numeric-output).
 
