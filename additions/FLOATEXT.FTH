@@ -1,5 +1,6 @@
-( FLOATEXT.FTH floating point extended word set additions )
+\ FLOATEXT.FTH floating point extended word set additions
 
+: FSINCOS   FDUP FSIN FCOS ;
 : FALOG     10e FSWAP F** ;
 : FCOSH     FEXP FDUP 1e FSWAP F/ F+ 2e F/ ;
 : FSINH     FEXP FDUP 1e FSWAP F/ F- 2e F/ ;
@@ -7,6 +8,13 @@
 : FACOSH    FDUP FDUP F* 1e F- FSQRT F+ FLN ;
 : FASINH    FDUP FDUP F* 1e F+ FSQRT F+ FLN ;
 : FATANH    FDUP 1e F+ FSWAP 1e FSWAP F- F/ FLN 2e F/ ;
+: FATAN2    ( F: r1 r2 -- r3 )
+  FDUP F0> IF
+    F/ FATAN
+  ELSE FSWAP FDUP F0<> IF
+    FDUP FSIGN FASIN FROT FROT F/ FATAN F-
+  ELSE
+    FDROP F0< S>F FACOS THEN THEN ;
 : F~        ( F: r1 r2 r3 -- ; -- flag )
   FDUP F0= IF FDROP F= EXIT THEN
   FDUP F0< IF FROT FROT FOVER FOVER F- FROT FABS FROT FABS F+ FROT FABS F* F< EXIT THEN

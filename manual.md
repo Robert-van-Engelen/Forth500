@@ -526,17 +526,22 @@ Forth source code is loaded from a file with `INCLUDE` or with `INCLUDED`:
     INCLUDE FLOATEXT.FTH ↲
     S" FLOATEXT.FTH" INCLUDED ↲
 
-where `S" PROGRAM2.FTH"` specifies a string constant with the file name.  A
+where `S" FLOATEXT.FTH"` specifies a string constant with the file name.  A
 drive letter such as F: can be specified to load from a specific drive, which
 becomes the current drive (the default drive is E:).
+
+To compile a source code file transmitted to the PC-E500 via the serial
+interface:
+
+    INCLUDE COM:
 
 To make sure to only include a file at most once, use `REQUIRE` or `REQUIRED`:
 
     REQUIRE FLOATEXT.FTH ↲
     S" FLOATEXT.FTH" REQUIRED ↲
 
-The name of the file will show up in the word dictionary, but with a space
-appended to the name.
+The name of the file will show up in the dictionary, but with a space appended
+to the name.
 
 To list files on the current drive:
 
@@ -633,7 +638,8 @@ The following words manipulate values on the stack:
 | `ROT`  | ( _x1_ _x2_ _x3_ -- _x2_ _x3_ _x1_ ) | rotate stack, 3OS goes to TOS
 | `-ROT` | ( _x1_ _x2_ _x3_ -- _x3_ _x1_ _x2_ ) | rotate stack, TOS goes to 3OS
 
-Note that `NIP` is the same as `SWAP DROP` and `TUCK` is the same as `DUP -ROT`.
+Note that `NIP` is the same as `SWAP DROP`, `TUCK` is the same as `DUP -ROT`,
+and `-ROT` ("not rot") is the same as `ROT ROT`.
 
 There are also two words to reach deeper into the stack:
 
@@ -1065,6 +1071,7 @@ built in Forth500 and defined in `FLOATEXT.FTH`.  These words apply to both
 single and double floating point values.  For these definitions we do not need
 `?>DBL`:
 
+    : FSINCOS   FDUP FSIN FCOS ;
     : FALOG     10e FSWAP F** ;
     : FCOSH     FEXP FDUP 1e FSWAP F/ F+ 2e F/ ;
     : FSINH     FEXP FDUP 1e FSWAP F/ F- 2e F/ ;
@@ -1072,6 +1079,13 @@ single and double floating point values.  For these definitions we do not need
     : FACOSH    FDUP FDUP F* 1e F- FSQRT F+ FLN ;
     : FASINH    FDUP FDUP F* 1e F+ FSQRT F+ FLN ;
     : FATANH    FDUP 1e F+ FSWAP 1e FSWAP F- F/ FLN 2e F/ ;
+    : FATAN2    ( F: r1 r2 -- r3 )
+      FDUP F0> IF
+        F/ FATAN
+      ELSE FSWAP FDUP F0<> IF
+        FDUP FSIGN FASIN FROT FROT F/ FATAN F-
+      ELSE
+        FDROP F0< S>F FACOS THEN THEN ;
     : F~        ( F: r1 r2 r3 -- ; -- flag )
       FDUP F0= IF FDROP F= EXIT THEN
       FDUP F0< IF FROT FROT FOVER FOVER F- FROT FABS FROT FABS F+ FROT FABS F* F< EXIT THEN
@@ -1315,9 +1329,9 @@ actual string contained.  To do so, we can use a `CONSTANT` and a `VARIABLE`:
 
 For example, to let the user edit the name:
 
-    name name-max name-len @ DUP 0 EDIT DROP name-len ! ↲
+    name name-max name-len @ DUP 0 EDIT name-len ! DROP ↲
 
-See also the example [strings](#strings) for an improved implementation of
+See also the [strings](#strings) example for an improved implementation of
 string buffers that hold both the maximum and actual string lengths.
 
 The following words move and copy characters in and between string buffers:
@@ -1360,14 +1374,16 @@ stack:
 | `-TRAILING` | ( _c-addr_ _u1_ -- _c-addr_ _u2_ )          | returns string _c-addr_ with adjusted size _u2_<=_u1_ to ignore trailing spaces
 | `-CHARS`    | ( _c-addr_ _u1_ _char_ -- _c-addr_ _u2_ )   | returns string _c-addr_ with adjusted size _u2_<=_u1_ to ignore trailing _char_
 
-For example, to remove trailing spaces from `name` to update `name-len`, then
+Note that `-TRAILING` ("not trailing") is the same as `BL -CHARS`.  For
+example, to remove trailing spaces from `name` to update `name-len`, then
 display the name without the `name=` prefix:
 
     name name-len @ -TRAILING name-len ! ↲
     name name-len @ 5 /STRING TYPE ↲
 
-Note that `/STRING` does not perform any checking on the length of the string
-and the size of the adjustment _n_.
+Beware that `/STRING` ("slash string") does not perform any checking on the
+length of the string and the size of the adjustment _n_ that may be negative,
+e.g. to add slashed characters back.
 
 The following words compare and search two strings:
 
@@ -1381,13 +1397,12 @@ To convert a string to a number:
 
 | word      | stack effect ( _before_ -- _after_ )                                  | comment
 | --------- | --------------------------------------------------------------------- | -------
-| `>NUMBER` | ( _ud1_ _c-addr1_ _u1_ -- _ud2_ _c-addr2_ _u2_ )                      | convert the integer in string _c-addr1_ _u1_ to _ud2_ using the current `BASE`, returns the remaining non-convertable string _c-addr2_ _u2_
+| `>NUMBER` | ( _ud1_ _c-addr1_ _u1_ -- _ud2_ _c-addr2_ _u2_ )                      | convert the integer in string _c-addr1_ _u1_ to _ud2_ using the current `BASE` and _ud1_ as seed, returns the remaining non-convertable string _c-addr2_ _u2_
 | `>DOUBLE` | ( _c-addr_ _u_ -- _d_ _true_ ) or ( _c-addr_ _u_ -- _false_ )         | convert the integer in string _c-addr_ _u_ to _d_ using the current `BASE`, returns _true_ if successful, otherwise returns _false_ without _d_
 | `>FLOAT`  | ( _c-addr_ _u_ -- _true_ ; F: -- _r_ ) or ( _c-addr_ _u_ -- _false_ ) | convert the floating point value in string _c-addr_ _u_ to _r_, returns _true_ if successful, otherwise returns _false_ without _r_
 
 For `>NUMBER`, the initial _ud1_ value is the "seed" that is normally zero.
-This value can also be a previously converted high-order component of the
-number.
+This value can also be a previously converted high-order part of the number.
 
 `>DOUBLE` returns a double integer when successful.  It also sets the `VALUE`
 flag `DBL` to true if the integer is a double with a dot (`.`) in the numeric
@@ -1398,21 +1413,22 @@ to convert.
 successful.  It also sets the `VALUE` flag `DBL` to true if the float is a
 double.  `>FLOAT` requires `BASE` to be `DECIMAL`.
 
-To convert a floating point value to a string saved to a string buffer, the
-`REPRESENT` word can be used:
+The `REPRESENT` word can be used to convert a floating point value to a string
+saved to a string buffer
 
 | word        | stack effect ( _before_ -- _after_ )              | comment
 | ----------- | ------------------------------------------------- | ----------
 | `REPRESENT` | ( _c-addr_ _u_ -- _n_ _flag_ _true_ ; F: _r_ -- ) | save the string representation of the significant of _r_ to _c-addr_ of size _u_, returns exponent _n_ and sign _flag_
 
-`REPRESENT` is used by the `F.` and `FS.` words, which save the string to the
-hold area at `HERE` to display.  The character string contains the _u_ most
-significant digits of the significand of _r_ represented as a decimal fraction
-with the implied decimal point to the left of the first digit, and the first
-digit zero only if all digits are zero.  The significand is rounded to _u_
-digits following the "round to nearest" rule; _n_ is adjusted, if necessary, to
-correspond to the rounded magnitude of the significand.  If _flag_ is _true_
-then _r_ is negative.  The `VALUE` flag `DBL` is true if the float is a double.
+`REPRESENT` is used by the `F.`, `FE.` and `FS.` words, which save the string
+to the hold area at `HERE` to display.  The character string contains the _u_
+most significant digits of the significand of _r_ represented as a decimal
+fraction with the implied decimal point to the left of the first digit, and the
+first digit zero only if all digits are zero.  The significand is rounded to
+_u_ digits following the "round to nearest" rule; _n_ is adjusted, if
+necessary, to correspond to the rounded magnitude of the significand.  If
+_flag_ is _true_ then _r_ is negative.  The `VALUE` flag `DBL` is true if the
+float is a double.
 
 The `F.`, `FE.` and `FS.` words are defined as follows:
 
@@ -1639,8 +1655,8 @@ Care must be taken to prevent return stack imbalences when a colon definition
 exits.  The return stack pointer must be restored to the original state when
 the colon definition started before the colon definition exits.
 
-"Caller cancelling" is possible with `R>DROP` to remove a return address before
-exiting:
+"Caller cancelling" is possible with `R>DROP` ("r from drop" or just "r drop")
+to remove a return address before exiting:
 
     : bar  ." bar " R>DROP ;
     : foo  ." foo " bar ." rest of foo" ;
@@ -1685,6 +1701,8 @@ The following words define constants, variables and values:
 | `2VALUE`    | ( _dx1_ "name" -- ; -- _dx2_ )     | define "name" with initial value _dx1_ to return its current value _dx2_ on the stack
 | `TO`        | ( _dx_ "name" -- )                 | assign "name" the value _dx_, if "name" is a `2VALUE`
 | `+TO`       | ( _d_ "name" -- )                  | add _d_ to the value of "name", if "name" is a `2VALUE`
+| `FVALUE`    | ( F: _r1_ "name" -- ; -- F: _r2_ ) | define "name" with initial value _r1_ to return its current value _r2_ on the floating point stack
+| `TO`        | ( F: _r_ "name" -- )               | assign "name" the value _r_, if "name" is an `FVALUE`
 
 Values are initialized with the specified initial values and do not require
 fetch operations, exactly like constants.  By contrast to constants, values can
@@ -2055,6 +2073,7 @@ The following words can be used to inspect words and dictionary contents:
 | `DEFER?`      | ( _xt_ -- _flag_ )       | return `TRUE` if _xt_ is a `DEFER`
 | `VALUE?`      | ( _xt_ -- _flag_ )       | return `TRUE` if _xt_ is a `VALUE`
 | `2VALUE?`     | ( _xt_ -- _flag_ )       | return `TRUE` if _xt_ is a `2VALUE`
+| `FVALUE?`     | ( _xt_ -- _flag_ )       | return `TRUE` if _xt_ is an `FVALUE`
 | `DOES>?`      | ( _xt_ -- _flag_ )       | return `TRUE` if _xt_ is created by a word that uses `CREATE` with `DOES>`
 | `MARKER?`     | ( _xt_ -- _flag_ )       | return `TRUE` if _xt_ is a `MARKER`
 | `>BODY`       | ( _xt_ -- _addr_ )       | return the _addr_ of the body of execution token _xt_, usually data
@@ -2467,7 +2486,7 @@ The following words return _ior_ to indicate success (zero) or failure (nonzero
 | `REPOSITION-FILE` | ( _ud_ _fileid_ -- _ior_ )                      | seek file offset _ud_ from the start
 | `RESIZE-FILE`     | ( _ud_ _fileid_ -- _ior_ )                      | resize _fileid_ to _ud_ bytes (cannot truncate files, only enlarge)
 | `DRIVE`           | ( -- _addr_ )                                   | returns address _addr_ of the current drive letter
-| `FREE-CAPACITY`   | ( _c-addr_ _u_ -- _du_ _ior_ )                  | returns the free capacity of the drive in string _c-addr_ _u_
+| `DSKF`            | ( _c-addr_ _u_ -- _du_ _ior_ )                  | returns the free capacity of the drive in string _c-addr_ _u_
 | `STDO`            | ( -- 1 )                                        | returns _fileid_=1 for standard output to the screen
 | `STDI`            | ( -- 2 )                                        | returns _fileid_=2 for standard input from the keyboard
 | `STDL`            | ( -- 3 )                                        | returns _fileid_=3 for standard output to the line printer
@@ -2578,11 +2597,13 @@ _x_ as the new TOS.  Otherwise,  a zero is left on the stack.  For example:
     cannot divide by zero OK[0]
 
 `CATCH` restores the stack pointers when an exception is thrown, but the stack
-values may be changed by the word executed and thus may not holds the original
-values before `CATCH`.
+values may be changed by the word executed and thus may or may not hold the
+original values before `CATCH`.
 
 To throw and catch any errors when opening a file read-only, read it in blocks
-of 256 bytes into the `PAD` to display on screen, and close it:
+of 256 bytes into the `PAD` to display on screen, and close at the end of the
+file.  We also want to catch a `read` exception to properly `close` the file
+then re-throw the exception:
 
     : VARIABLE fh \ file handle, nonzero when file is open
     : open      ( c-addr u -- ) R/O OPEN-FILE THROW fh ! ;
@@ -2591,7 +2612,10 @@ of 256 bytes into the `PAD` to display on screen, and close it:
     : more      ( c-addr u -- )
       open
       BEGIN
-        read
+        ['] read CATCH ?DUP IF
+          close
+          THROW \ rethrow exception thrown by read
+        THEN
       ?DUP WHILE
         PAD SWAP TYPE
       REPEAT
@@ -2975,6 +2999,7 @@ This example demonstrates how easy it is to switch to double precision.  But
 this is not very useful with Simpson's rule of integration.  The precision of
 the result is determined by Simpson's approximation and the number of steps
 performed, rather than by the use of higher precision floating point values.
+
 Because Forth500 internally operates with BCD (Binary-Coded Decimal) floating
 point values, the numerical result of this example differs slightly from
 implementations that internally use IEEE 754 floating point values.

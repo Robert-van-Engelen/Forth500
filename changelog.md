@@ -97,3 +97,6 @@ The following bug fixes and improvements were made to the original pceForth code
 - fixed `F/` double fp when divided by single fp returning garbage by the function driver syscall: make both arguments double fp if one is double fp
 - added blinking cursor at start and after an exception or `ABORT` and `QUIT` which are otherwise silent
 - improved `OK[]` prompt to also report the depth of the floating point stack, when not empty
+- improved `EDIT` to fix long line editing issues and to reduce code size
+- optimized `DECIMAL`, `HEX`, `UNUSED` to reduce code size
+- added `FVALUE` and `FVALUE?`, changed the corresponding `TO` code to assign `FVALUE`
