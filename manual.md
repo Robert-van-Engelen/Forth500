@@ -2833,7 +2833,7 @@ To draw a randomized "starry night" on the 240x32 pixel screen:
 
     : starry-night PAGE 1000 0 DO rand 240 MOD rand 32 MOD GPOINT LOOP ;
 
-Note that Forth500 includes a `FRAND` floating point random number generator,
+Note that Forth500 includes an `FRAND` floating point random number generator,
 see [floating point arithmetic](#floating-point-arithmetic).
 
 ### SQRT
@@ -3247,9 +3247,9 @@ token, we can implement a word `enum.` to display the color name:
     : body>     ( addr -- xt ) 3 - ;
     : enum.     ( addr -- ) body> >NAME NAME>STRING TYPE ;
 
-The `body>` "body from" word converts a body address of a word to its execution
-token, `>NAME` converts the execution token to a name token and `NAME>STRING`
-converts the name token to a string on the stack.  For example:
+The `body>` "body from" word converts the address of the body of a word to its
+execution token, `>NAME` converts the execution token to a name token and
+`NAME>STRING` returns the string of a name token on the stack.  For example:
 
     red enum. ↲
     red OK[0]
@@ -3263,8 +3263,8 @@ string" as a unique enumeration value:
 
 The string of a color word is displayed with `COUNT TYPE`.
 
-This example shows how Forth encourages creativity to come up with an approach
-that is best suited for an application.
+This example shows how Forth encourages a bit of creativity to come up with an
+approach that is best suited for an application.
 
 ### Slurp
 
