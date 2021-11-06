@@ -63,12 +63,12 @@ drive on the PC-E500(S), either the E: or F: drive:
     > SAVEM "F:FORTH500.BIN",&B9000,&Bxxxx
 
 where `xxxx` is the address returned by `HERE HEX.`.  If you just loaded
-Forth500 without changing it, then `xxxx=AF68` and save the image with:
+Forth500 without changing it, then `xxxx=DF0C` and save the image with:
 
 where `xxxx` is the address returned by `HERE HEX.`.  If you just loaded
 Forth500 without changing it, then save the image with:
 
-    > SAVEM "F:FORTH500.BIN",&B9000,&BAF68
+    > SAVEM "F:FORTH500.BIN",&B9000,&BDF0C
 
 This makes it possible to instantly reload Forth500, e.g. after a fatal error
 or crash that damaged the Forth500 dictionary:
