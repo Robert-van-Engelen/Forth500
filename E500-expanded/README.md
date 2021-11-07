@@ -58,16 +58,16 @@ A new file UUDECODE. of 1446 bytes was created.  The BASIC program currently
 in use can be deleted with NEW.  Then execute the following on the PC-E500(S)
 and transfer the FORTH500.UUE file to the PC-E500(S):
 
-   > LOADM "UUDECODE." 
-   > CALL &BE000"FORTH500.UUE 
-   uudecode V1.1 by E.Kako
-   filename = 'E:FORTH500.BIN'
-   decoded. 
+    > LOADM "UUDECODE." 
+    > CALL &BE000"FORTH500.UUE 
+    uudecode V1.1 by E.Kako
+    filename = 'E:FORTH500.BIN'
+    decoded. 
 
 A new file FORTH500.BIN is created, which can be loaded and run with:
 
-   > LOADM "FORTH500"
-   > CALL &B0000
+    > LOADM "FORTH500"
+    > CALL &B0000
 
 See the HP forum thread "FORTH for the SHARP PC-E500(S)"
 <https://www.hpmuseum.org/forum/thread-17440-post-153815.html#pid153815>
