@@ -533,7 +533,7 @@ becomes the current drive (the default drive is E:).
 To compile a source code file transmitted to the PC-E500 via the serial
 interface:
 
-    INCLUDE COM:
+    INCLUDE COM: ↲
 
 To make sure to only include a file at most once, use `REQUIRE` or `REQUIRED`:
 
@@ -812,12 +812,16 @@ the binary-coded decimal mantissa with 10 or 20 digits:
 
 (sign)(exp)(BCD0)(BCD1)(BCD2)(BCD3)(BCD4)(BCD5)(BCD6)(BCD7)(BCD8)(BCD9) 
 
-- a single precision floating point value uses (BCD0) to (BCD4) and may use
-  (BCD5) and (BCD6) to store so-called guard digits that are not displayed.  A
-  double precision floating point value uses (BCD0) to (BCD9)
 - the (sign) byte bit 0 is set to mark double precision values
 - the (sign) byte bit 3 is set to mark negative values
 - the (exp) byte is a 2s-complement integer in the range [-99,99]
+- a single precision floating point value uses (BCD0) to (BCD4) and may use
+  (BCD5) and (BCD6) to store so-called guard digits that are not displayed.  A
+  double precision floating point value uses (BCD0) to (BCD9)
+
+To view the internal format of a floating point value on the stack:
+
+    FP@ 12 DUMP ↲
 
 The maximum depth of the floating point stack in Forth500 is 96 bytes to hold
 up to 8 floating point values.

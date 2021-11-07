@@ -50,23 +50,25 @@ Transfer the UUDECODE.BAS program to the PC-E500(S) E: or F: drive via serial:
 Load UUDECODE.BAS into the PC-E500(S) and RUN the program:
 
     UUENCODE SELF-DECODER 
-    DATA_FILE = 'UUDECODE.'
+    DATA_FILE = 'UUDECODE.BIN'
     OK? (Y / N) = Y <return>
     success
 
-A new file UUDECODE. of 1446 bytes was created.  The BASIC program currently
+A new file UUDECODE.BIN of 1446 bytes was created.  The BASIC program currently
 in use can be deleted with NEW.  Then execute the following on the PC-E500(S)
-and transfer the FORTH500.UUE file to the PC-E500(S):
+and transfer the FORTH500.UUE file to the PC-E500(S) via the serial interface:
 
-    > LOADM "UUDECODE." 
-    > CALL &BE000"FORTH500.UUE 
+    > LOADM "UUDECODE.BIN" 
+    > CALL &BE000"COM:
     uudecode V1.1 by E.Kako
-    filename = 'E:FORTH500.BIN'
+    filename = 'E:FORTH500.'
     decoded. 
 
-A new file FORTH500.BIN is created, which can be loaded and run with:
+A new file FORTH500. is created (the Forth500.bin file specified with the
+BINTOPCE.EXE and UUENCODE.EXE tools but without filename extension), which can
+be loaded and run with:
 
-    > LOADM "FORTH500.BIN"
+    > LOADM "FORTH500."
     > CALL &B0000
 
 See the HP forum thread "FORTH for the SHARP PC-E500(S)"
