@@ -535,13 +535,14 @@ interface:
 
     INCLUDE COM: ↲
 
-To make sure to only include a file at most once, use `REQUIRE` or `REQUIRED`:
+To make sure that a file is included at most once, use `REQUIRE` or `REQUIRED`
+instead of `INCLUDE` and `INCLUDED`, respectively:
 
     REQUIRE FLOATEXT.FTH ↲
     S" FLOATEXT.FTH" REQUIRED ↲
 
-The name of the file will show up in the dictionary, but with a space appended
-to the name.
+The name of the file will show up in the dictionary to record its presence, but
+with a space appended to the name to distinguish it from executable words.
 
 To list files on the current drive:
 
