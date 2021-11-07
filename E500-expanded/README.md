@@ -43,11 +43,11 @@ the wav file as follows:
 
 ## When using the serial interface
 
-Copy the UUDECODE.BAS program to the PC-E500(S) E: or F: drive:
+Transfer the UUDECODE.BAS program to the PC-E500(S) E: or F: drive via serial:
 
     > COPY "COM:" TO "E:FORTH500.UUE",A 
 
-Load UUDECODE.BAS into the PC-E500(S), then RUN the program:
+Load UUDECODE.BAS into the PC-E500(S) and RUN the program:
 
     UUENCODE SELF-DECODER 
     DATA_FILE = 'UUDECODE.'
@@ -55,7 +55,8 @@ Load UUDECODE.BAS into the PC-E500(S), then RUN the program:
     success
 
 A new file UUDECODE. of 1446 bytes was created.  The BASIC program currently
-in use can be deleted with NEW.  Then execute:
+in use can be deleted with NEW.  Then execute the following on the PC-E500(S)
+and transfer the FORTH500.UUE file to the PC-E500(S):
 
    > LOADM "UUDECODE." 
    > CALL &BE000"FORTH500.UUE 
