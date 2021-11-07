@@ -66,7 +66,7 @@ and transfer the FORTH500.UUE file to the PC-E500(S):
 
 A new file FORTH500.BIN is created, which can be loaded and run with:
 
-    > LOADM "FORTH500"
+    > LOADM "FORTH500.BIN"
     > CALL &B0000
 
 See the HP forum thread "FORTH for the SHARP PC-E500(S)"
