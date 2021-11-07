@@ -43,10 +43,6 @@ the wav file as follows:
 
 ## When using the serial interface
 
-Transfer the UUDECODE.BAS program to the PC-E500(S) E: or F: drive via serial:
-
-    > COPY "COM:" TO "E:FORTH500.UUE",A 
-
 Load UUDECODE.BAS into the PC-E500(S) and RUN the program:
 
     UUENCODE SELF-DECODER 
