@@ -1039,7 +1039,7 @@ a trigonometric function:
     : >DEG      0e ?>DBL FACOS F/ 90e F* ;
     : >RAD      0e ?>DBL FACOS FDUP F+ F/ PI F* ;
 
-For example, `30e DEG> FSIN` ("30 degree from sine") and `PI 3e F/ RAD> FSIN`
+For example, `30e DEG> FSIN` ("30 degree from sine") and `PI 6e F/ RAD> FSIN`
 both return 0.5e+0 on the floating point stack regardless of the current
 angular unit.  Likewise `0.5E FASIN >DEG` ("half arcsine to degree") returns
 30.0e+0 on the floating point stack regardless of the current angular unit.
