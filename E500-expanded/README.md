@@ -43,6 +43,31 @@ the wav file as follows:
 
 ## When using the serial interface
 
+Copy the UUDECODE.BAS program to the PC-E500(S) E: or F: drive:
+
+    > COPY "COM:" TO "E:FORTH500.UUE",A 
+
+Load UUDECODE.BAS into the PC-E500(S), then RUN the program:
+
+    UUENCODE SELF-DECODER 
+    DATA_FILE = 'UUDECODE.'
+    OK? (Y / N) = Y <return>
+    success
+
+A new file UUDECODE. of 1446 bytes was created.  The BASIC program currently
+in use can be deleted with NEW.  Then execute:
+
+   > LOADM "UUDECODE." 
+   > CALL &BE000"FORTH500.UUE 
+   uudecode V1.1 by E.Kako
+   filename = 'E:FORTH500.BIN'
+   decoded. 
+
+A new file FORTH500.BIN is created, which can be loaded and run with:
+
+   > LOADM "FORTH500"
+   > CALL &B0000
+
 See the HP forum thread "FORTH for the SHARP PC-E500(S)"
 <https://www.hpmuseum.org/forum/thread-17440-post-153815.html#pid153815>
 
