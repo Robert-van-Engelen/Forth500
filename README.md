@@ -12,7 +12,7 @@ I've rewritten large parts of the code to optimize for speed, code size and comp
 
 I also wrote a new [Forth500 User Guide](manual.md) to introduce standard Forth and the Forth500 system.
 
-Forth500 is fast.  The [n-queens benchmark](https://www.hpmuseum.org/cgi-sys/cgiwrap/hpmuseum/articles.cgi?read=700) is solved in 4.15 seconds, faster than the Sharp PC-G850VS C n-queens program.
+Forth500 is fast.  The [n-queens benchmark](https://www.hpmuseum.org/cgi-sys/cgiwrap/hpmuseum/articles.cgi?read=700) is solved in 4.15 seconds, faster than the compiled n-queens C program on a Sharp PC-G850VS.
 
 To use Forth500, first load the binary, then `CALL &B0000` (see [expanded E500](E500-expanded)) or `CALL &B9000` (see [unexpanded E500](E500-unexpanded)).  Forth500 starts immediately and can be exited with `BYE`.  Call again to continue using Forth500 where you left off.  Forth500 resides in protected memory and does not interfere with BASIC.
 
