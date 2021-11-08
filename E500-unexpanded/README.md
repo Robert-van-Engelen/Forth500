@@ -39,7 +39,7 @@ the audio cable does not pick up electrical interference.
 [PocketTools](https://www.peil-partner.de/ifhe.de/sharp/) was used to produce
 the wav file as follows:
 
-    $ bin2wav --pc=E500 --type=bin --addr=0xB9000 --sync=9 Forth500.bin
+    $ bin2wav --pc=E500 --type=bin --addr=0xB9000 -dMAX --sync=9 Forth500.bin
 
 ## When using the serial interface
 
