@@ -50,6 +50,7 @@ Author: Dr. Robert A. van Engelen, 2021
   - [Compile-time conditionals](#compile-time-conditionals)
 - [Source input and parsing](#source-input-and-parsing)
 - [Files](#files)
+  - [Tape data](#tape-data)
   - [File errors](#file-errors)
 - [Exceptions](#exceptions)
 - [Environmental queries](#environmental-queries)
@@ -530,7 +531,7 @@ where `S" FLOATEXT.FTH"` specifies a string constant with the file name.  A
 drive letter such as F: can be specified to load from a specific drive, which
 becomes the current drive (the default drive is E:).
 
-To compile a source code file transmitted to the PC-E500 via the serial
+To compile a Forth source code file transmitted to the PC-E500 via the serial
 interface:
 
     INCLUDE COM: ↲
@@ -543,6 +544,21 @@ instead of `INCLUDE` and `INCLUDED`, respectively:
 
 The name of the file will show up in the dictionary to record its presence, but
 with a space appended to the name to distinguish it from executable words.
+
+To compile a Forth source code file transmitted by a CE-126P or CE-124 cassette
+interface to the PC-E500:
+
+    CLOAD ↲
+
+The wav file transmitted from the host computer, such as a PC, should be
+created with [PocketTools](https://www.peil-partner.de/ifhe.de/sharp/) from the
+source code file (e.g. `FLOATEXT.FTH`) as follows:
+
+    $ bin2wav --pc=E500 --type=bin -dMAX FLOATEXT.FTH
+    $ afplay FLOATEXT.wav
+
+The `afplay` plays the wav file.  Use maximum volume or close to maximum to
+avoid distortion.  If `-dMAX` does not transfer the file, then try `-dINV`.
 
 To list files on the current drive:
 
@@ -1168,14 +1184,16 @@ or _n1_|_u1_ < _n3_|_u3_)) is true, returning false otherwise.
 The following words return true (-1) or false (0) on the stack by comparing
 floating point values on the floating point stack:
 
-| word  | stack effect ( _before_ -- _after_ )
-| ----- | ----------------------------------------------------------------------
-| `F<`  | ( F: _r1_ _r2_ -- ; -- _true_ ) if _r1_<_r2_ otherwise ( F: _r1_ _r2_ -- ; -- _false_ )
-| `F>`  | ( F: _r1_ _r2_ -- ; -- _true_ ) if _r1_>_r2_ otherwise ( F: _r1_ _r2_ -- ; -- _false_ )
-| `F=`  | ( F: _r1_ _r2_ -- ; -- _true_ ) if _r1_=_r2_ otherwise ( F: _r1_ _r2_ -- ; -- _false_ )
-| `F<>` | ( F: _r1_ _r2_ -- ; -- _true_ ) if _r1_<>_r2_ otherwise ( F: _r1_ _r2_ -- ; -- _false_ )
-| `F0<` | ( F: _r_ -- ; -- _true_ ) if _r_<0e otherwise ( F: _r_ -- ; -- _false_ )
-| `F0=` | ( F: _r_ -- ; -- _true_ ) if _r_=0e otherwise ( F: _r_ -- ; -- _false_ )
+| word   | stack effect ( _before_ -- _after_ )
+| ------ | ---------------------------------------------------------------------
+| `F<`   | ( F: _r1_ _r2_ -- ; -- _true_ ) if _r1_<_r2_ otherwise ( F: _r1_ _r2_ -- ; -- _false_ )
+| `F>`   | ( F: _r1_ _r2_ -- ; -- _true_ ) if _r1_>_r2_ otherwise ( F: _r1_ _r2_ -- ; -- _false_ )
+| `F=`   | ( F: _r1_ _r2_ -- ; -- _true_ ) if _r1_=_r2_ otherwise ( F: _r1_ _r2_ -- ; -- _false_ )
+| `F<>`  | ( F: _r1_ _r2_ -- ; -- _true_ ) if _r1_<>_r2_ otherwise ( F: _r1_ _r2_ -- ; -- _false_ )
+| `F0<`  | ( F: _r_ -- ; -- _true_ ) if _r_<0e otherwise ( F: _r_ -- ; -- _false_ )
+| `F0>`  | ( F: _r_ -- ; -- _true_ ) if _r_>0e otherwise ( F: _r_ -- ; -- _false_ )
+| `F0=`  | ( F: _r_ -- ; -- _true_ ) if _r_=0e otherwise ( F: _r_ -- ; -- _false_ )
+| `F0<>` | ( F: _r_ -- ; -- _true_ ) if _r_<>0e otherwise ( F: _r_ -- ; -- _false_ )
 
 ## Numeric output
 
@@ -2453,8 +2471,7 @@ input:
 
 ## Files
 
-The following words return _ior_ to indicate success (zero) or failure (nonzero
-[file error](#file-errors) code):
+The following file-related words are available:
 
 | word              | stack effect ( _before_ -- _after_ )            | comment
 | ----------------- | ----------------------------------------------- | --------
@@ -2498,6 +2515,9 @@ The following words return _ior_ to indicate success (zero) or failure (nonzero
 | `STDL`            | ( -- 3 )                                        | returns _fileid_=3 for standard output to the line printer
 | `>FILE`           | ( _fileid_ -- _s-addr_ )                        | returns file _s-addr_ data for _fileid_
 | `FILE>STRING`     | ( _s-addr_ -- _c-addr_ _u_ )                    | returns string _c-addr_ _u_ file name converted from file _s-addr_ data
+
+Low-level file I/O words return _ior_ to indicate success (zero) or failure
+with nonzero [file error](#file-errors) code.
 
 Globs with wildcard `*` and `?` can be used to list files on the E: or F:
 drive, for example:
@@ -2543,6 +2563,50 @@ If an exception occurs before a file is closed, then the file cannot be opened
 again.  Doing so returns error _ior_=264.  The _fileid_ of open files start
 with 4, which means that the first file opened but not closed can be manually
 closed with `4 CLOSE-FILE .` displaying zero when successful.
+
+### Tape data
+
+The following words load raw binary data or text and Forth source code from
+tape, which requires a CE-126P printer and cassette interface or a CE-124
+cassette interface:
+
+| word    | stack effect            | comment
+| ------- | ----------------------- | ------------------------------------------
+| `TAPE`  | ( -- _addr_ _u_ _ior_ ) | load data (binary or text) from tape into free dictionary space, returning data _addr_ of size _u_
+| `CLOAD` | ( -- )                  | load and compile Forth source code from tape
+
+`TAPE` stores the raw tape data in free space located directly below the
+floating point stack.  When data was successfully loaded, zero is returned.
+Otherwise a nonzero _ior_ [file error](#file-errors) code is returned.
+
+`CLOAD` calls `TAPE` then `EVALUATE` when _ior_ is zero.  Because `TAPE`
+saves the tape data to the free space in the dictionary, the Forth source
+code should not initially allocate large chunks of the dictionary with `ALLOT`.
+Doing so may overwrite the tape data and cause strange compilation errors.
+
+A wav file of the data or Forth source code should be created on a PC with
+[PocketTools](https://www.peil-partner.de/ifhe.de/sharp/) and then "played"
+on the audio output to transmit the file to the PC-E500(S) via a cassette
+interface:
+
+    $ bin2wav --pc=E500 --type=bin -dMAX sourcefile
+    $ afplay sourcefile.wav
+
+Use maximum volume or close to maximum to play the file to avoid distortion.
+If `-dMAX` does not transfer the file, then try `-dINV`.
+
+For example, the following `tcopy` definition copies tape data to a new file on
+the E: or F: drive:
+
+    : ?ior      ( fileid ior -- fileid ) ?DUP IF SWAP CLOSE-FILE DROP THROW THEN ;
+    : tcopy     ( "filename" -- )
+      PARSE-NAME W/O CREATE-FILE THROW
+      DUP TAPE ?ior
+      ROT WRITE-FILE ?ior
+      CLOSE-FILE DROP ;
+
+Executing `tcopy FLOATEXT.FTH` copies the Forth source code transmitted from
+tape to the new file `FLOATEXT.FTH` on the current drive.
 
 ### File errors
 

@@ -100,3 +100,8 @@ The following bug fixes and improvements were made to the original pceForth code
 - improved `EDIT` to fix long line editing issues and to reduce code size
 - optimized `DECIMAL`, `HEX`, `UNUSED` to reduce code size
 - added `FVALUE` and `FVALUE?`, changed the corresponding `TO` code to assign `FVALUE`
+- added missing extra words `F0>` and `F0<>`
+- added `TAPE` and `CLOAD` to load raw data and compile Forth source code from cassette tape
+- reduduced code size by rewriting `?COMP`, `HIDE`, `REVEAL`, `IMMEDIATE` in assembly
+- reduduced code size by refactoring `VALUE?`, `2VALUE?`, `FVALUE?`, `COLON?`, `MARKER?` to share code
+- renamed some of the internal `(...)` words to reduce code size

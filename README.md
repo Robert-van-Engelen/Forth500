@@ -12,6 +12,8 @@ I've rewritten large parts of the code to optimize for speed, code size and comp
 
 I also wrote a new [Forth500 User Guide](manual.md) to introduce standard Forth and the Forth500 system.
 
+Forth500 is fast.  The [n-queens benchmark](https://www.hpmuseum.org/cgi-sys/cgiwrap/hpmuseum/articles.cgi?read=700) is solved in 4.15 seconds, faster than the Sharp PC-G850VS C n-queens program.
+
 To use Forth500, first load the binary, then `CALL &B0000` (see [expanded E500](E500-expanded)) or `CALL &B9000` (see [unexpanded E500](E500-unexpanded)).  Forth500 starts immediately and can be exited with `BYE`.  Call again to continue using Forth500 where you left off.  Forth500 resides in protected memory and does not interfere with BASIC.
 
 Forth500 is [standard Forth](https://forth-standard.org) compliant and implements Forth CORE, CORE-EXT and most of the optional word sets:
@@ -43,6 +45,7 @@ Additional built-in words:
 - strings: `NEXT-CHAR`, `S=`, `-CHARS`, `EDIT`, `>DOUBLE`
 - display: `REVERSE-TYPE`, `BASE.`, `BIN.`, `DEC.`, `HEX.`, `N.S`, `TTY`
 - printing: `STDL`, `PRINTER`
+- tape: `TAPE`, `CLOAD`
 - LCD: `SET-SYMBOLS`, `BUSY-ON`, `BUSY-OFF`, `CURSOR`, `SET-CURSOR`, `X@`, `X!`, `Y@`, `Y!`, `XMAX@`, `XMAX!`, `YMAX@`, `YMAX!`
 - graphics: `GMODE!`, `GPOINT`, `GPOINT?`, `GLINE`, `GBOX`, `GDOTS`, `GDOTS?`, `GDRAW`, `GBLIT!`, `GBLIT@`
 - sound: `BEEP`
