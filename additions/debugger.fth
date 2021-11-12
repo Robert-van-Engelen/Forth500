@@ -1,11 +1,12 @@
 \ Debugger for the E500-Forth environment.
 \ Author: Sebastien Furic
 \ 14th september 2002
-\ Updated to Forth500 but may need some more testing!
+\ Updated to Forth500 by Robert van Engelen
+\ NOT THOROUGHLY TESTED, MAY HAVE ISSUES
 
 .( Loading debugger... )
 
-ANEW DEBUGGER
+ANEW _DEBUGGER_
 
 VARIABLE STOP                   \ Step-by-step/continuous debugging
 STOP ON
@@ -32,7 +33,7 @@ CREATE RSL                      \ Return stack
 0 VALUE IP                      \ Interpretation pointer register
 0 VALUE W                       \ Working register
 0 VALUE NESTING                 \ # of nested calls
-FALSE VALUE CONTINUE          \ Exit debugger
+FALSE VALUE CONTINUE            \ Exit debugger
 
 0 CONSTANT #TERMINATED          \ Token indicating 'root' return stack address
 1 CONSTANT #VALUE               \ Token indicating value pushed using >R
@@ -70,7 +71,7 @@ CREATE FORTH-BUFF 255 CHARS ALLOT
 ;
 
 : .SR ( -- )
-  ." R:( "
+      ." R:( "
   RSP
   RSP R-DPTH 2* CELLS - RSL UMAX
   BEGIN
@@ -127,15 +128,17 @@ DEFER STEP-KEY ( i*x -- j*x )
 : .TOKEN ( -- )
   W .NAME
   W CASE
-    ['] (DOLIT)  OF IP @ .                                 ENDOF
-    ['] (DO2LIT) OF IP 2@ D. [CHAR] . EMIT                 ENDOF
-    ['] (DOSLIT) OF
+    ['] (LIT)  OF IP ?                   ENDOF
+    ['] (2LIT) OF IP 2@ D. [CHAR] . EMIT ENDOF
+    ['] (FLIT) OF IP F@ FS.              ENDOF
+    ['] (SLIT) OF
       IP CELL+ IP @ [CHAR] " EMIT TYPE [CHAR] " EMIT SPACE ENDOF
-    ['] (TO)     OF IP @ CFA-SIZE - .NAME                  ENDOF
-    ['] (2TO)    OF IP @ CFA-SIZE - .NAME                  ENDOF
-    ['] (+TO)    OF IP @ CFA-SIZE - .NAME                  ENDOF
-    ['] (D+2TO)  OF IP @ CFA-SIZE - .NAME                  ENDOF
-  \ ['] (IS)     OF IP @ CFA-SIZE - .NAME                  ENDOF
+    ['] (TO)   OF IP @ CFA-SIZE - .NAME  ENDOF
+    ['] (2TO)  OF IP @ CFA-SIZE - .NAME  ENDOF
+    ['] (FTO)  OF IP @ CFA-SIZE - .NAME  ENDOF
+    ['] (+TO)  OF IP @ CFA-SIZE - .NAME  ENDOF
+    ['] (D+TO) OF IP @ CFA-SIZE - .NAME  ENDOF
+  \ ['] (IS)   OF IP @ CFA-SIZE - .NAME  ENDOF
   ENDCASE
 ;
 
@@ -155,18 +158,23 @@ DEFER STEP-KEY ( i*x -- j*x )
 
 : W<-IP@++
   IP @ TO W
-  1 CELLS +TO IP
+  CELL +TO IP
 ;
 
-: DO-DOLIT ( -- x )
+: DO-LIT ( -- x )
   W<-IP@++ W
 ;
 
-: DO-DO2LIT ( -- x1 x2 )
+: DO-2LIT ( -- x1 x2 )
   W<-IP@++ W W<-IP@++ W
 ;
 
-: DO-DOSLIT ( -- c-addr u )
+: DO-FLIT ( -- r )
+  IP F@
+  1 FLOATS +TO IP
+;
+
+: DO-SLIT ( -- c-addr u )
   W<-IP@++
   IP W
   W +TO IP
@@ -186,6 +194,13 @@ DEFER STEP-KEY ( i*x -- j*x )
   -32 THROW \ Invalid name argument
 ;
 
+: (>FVALUE) ( -- a-addr xt )
+  W<-IP@++
+  W CFA-SIZE - ( cfa of the value )
+  FVALUE? IF W EXIT THEN
+  -32 THROW \ Invalid name argument
+;
+
 : DO-TO ( x -- )
   (>VALUE)
   !
@@ -196,14 +211,19 @@ DEFER STEP-KEY ( i*x -- j*x )
   2!
 ;
 
+: DO-FTO ( x -- )
+  (>FVALUE)
+  F!
+;
+
 : DO-+TO ( n -- )
   (>VALUE)
   +!
 ;
 
-: DO-+2TO ( x -- )
+: DO-D+TO ( x -- )
   (>2VALUE)
-  DUP>R 2@ D+ R> 2!
+  D+!
 ;
 
 \ : DO-IS ( xt -- )
@@ -429,28 +449,33 @@ DEFER STEP-KEY ( i*x -- j*x )
   CFA-SIZE +TO IP
 ;
 
-: TRACE-DOVAR ( -- a-addr )
+: TRACE-VAR ( -- a-addr )
   ." CREATE " .NAME<-STACK
   IP CFA-SIZE + \ Push the address of the CREATEd word on the stack
 ;
 
-: TRACE-DOVAL ( -- x )
+: TRACE-VAL ( -- x )
   ." VALUE " .NAME<-STACK
   IP CFA-SIZE + @ \ Push the value of the VALUE on the stack
 ;
 
-: TRACE-DO2VAL ( -- x1 x2 )
+: TRACE-2VAL ( -- x1 x2 )
   ." 2VALUE " .NAME<-STACK
   IP CFA-SIZE + 2@ \ Push the value of the 2VALUE on the stack
 ;
 
+: TRACE-FVAL ( -- x1 x2 )
+  ." FVALUE " .NAME<-STACK
+  IP CFA-SIZE + F@ \ Push the value of the FVALUE on the stack
+;
+
 : TRACE-DOES ( -- a-addr )
-  TRACE-DOVAR
+  TRACE-VAR
   .NEST ." DOES> " .NAME<-STACK
   IP CHAR+ @ CFA-SIZE + TO IP \ The DOES> indirection
 ;
 
-: TRACE-DODEFER ( -- )
+: TRACE-DEF ( -- )
   ." DEFER " IP .NAME
   BEGIN
     IP CFA-SIZE + @ TO IP
@@ -460,14 +485,19 @@ DEFER STEP-KEY ( i*x -- j*x )
   CR
 ;
 
-: TRACE-DOCON ( -- x )
+: TRACE-CON ( -- x )
   ." CONSTANT " .NAME<-STACK
   IP CFA-SIZE + @ \ Push the value of the CONSTANT on the stack
 ;
 
-: TRACE-DO2CON ( -- x1 x2 )
+: TRACE-2CON ( -- x1 x2 )
   ." 2CONSTANT " .NAME<-STACK
   IP CFA-SIZE + 2@ \ Push the value of the 2CONSTANT on the stack
+;
+
+: TRACE-FCON ( -- r )
+  ." FCONSTANT " .NAME<-STACK
+  IP CFA-SIZE + F@ \ Push the value of the FCONSTANT on the stack
 ;
 
 : CALL-PRIMITIVE ( i*x -- j*x )
@@ -481,14 +511,16 @@ DEFER STEP-KEY ( i*x -- j*x )
   IP DOES>? IF TRACE-DOES EXIT THEN \ No immediate DO-EXIT
   IP C@ $2 = IF  \ Check whether cfa begins with 'jp' or not
     IP 1+ @ CASE \ Get the address of the jump instruction
-      ['] (DOCOL)   OF TRACE-COLON EXIT           ENDOF \ No immediate DO-EXIT
-      ['] (DOVAR)   OF TRACE-DOVAR                ENDOF
-      ['] (DOVAL)   OF TRACE-DOVAL                ENDOF
-      ['] (DO2VAL)  OF TRACE-DO2VAL               ENDOF
-      ['] (DODEFER) OF TRACE-DODEFER RECURSE EXIT ENDOF \ Reenter JUMP-CFA
-      ['] (DOCON)   OF TRACE-DOCON                ENDOF
-      ['] (DO2CON)  OF TRACE-DO2CON               ENDOF
-      ( DEFAULT )   >R CALL-PRIMITIVE             R>
+      ['] (:)    OF TRACE-COLON EXIT       ENDOF \ No immediate DO-EXIT
+      ['] (VAR)  OF TRACE-VAR              ENDOF
+      ['] (VAL)  OF TRACE-VAL              ENDOF
+      ['] (2VAL) OF TRACE-2VAL             ENDOF
+      ['] (FVAL) OF TRACE-FVAL             ENDOF
+      ['] (DEF)  OF TRACE-DEF RECURSE EXIT ENDOF \ Reenter JUMP-CFA
+      ['] (CON)  OF TRACE-CON              ENDOF
+      ['] (2CON) OF TRACE-2CON             ENDOF
+      ['] (FCON) OF TRACE-FCON             ENDOF
+      ( DEFAULT )   >R CALL-PRIMITIVE R>
     ENDCASE
   ELSE
     CALL-PRIMITIVE
@@ -512,38 +544,40 @@ DEFER STEP-KEY ( i*x -- j*x )
 
 : DO-TOKEN ( i*x -- j*x )
   W CASE
-    ['] (DOLIT)   OF DO-DOLIT  ENDOF
-    ['] (DO2LIT)  OF DO-DO2LIT ENDOF
-    ['] (DOSLIT)  OF DO-DOSLIT ENDOF
-    ['] (TO)      OF DO-TO     ENDOF
-    ['] (2TO)     OF DO-2TO    ENDOF
-    ['] (+TO)     OF DO-+TO    ENDOF
-    ['] (D+2TO)   OF DO-+2TO   ENDOF
-  \ ['] (IS)      OF DO-IS     ENDOF
-    ['] (;CODE)   OF DO-;CODE  ENDOF
-    ['] (AHEAD)   OF DO-AHEAD  ENDOF
-    ['] (AGAIN)   OF DO-AGAIN  ENDOF
-    ['] (IF)      OF DO-IF     ENDOF
-    ['] (OF)      OF DO-OF     ENDOF
-    ['] (UNTIL)   OF DO-UNTIL  ENDOF
-    ['] (DO)      OF DO-DO     ENDOF
-    ['] (?DO)     OF DO-?DO    ENDOF
-    ['] (LOOP)    OF DO-LOOP   ENDOF
-    ['] (+LOOP)   OF DO-+LOOP  ENDOF
-    ['] (UNLOOP)  OF DO-UNLOOP ENDOF
-    ['] (LEAVE)   OF DO-LEAVE  ENDOF
-    ['] I         OF DO-I      ENDOF
-    ['] J         OF DO-J      ENDOF
-    ['] K         OF DO-K      ENDOF
-    ['] >R        OF DO-TO-R   ENDOF
-    ['] R>        OF DO-R>     ENDOF
-    ['] 2>R       OF DO-2>R    ENDOF
-    ['] 2R>       OF DO-2R>    ENDOF
-    ['] DUP>R     OF DO-DUP>R  ENDOF
-    ['] R>DROP    OF DO-R>DROP ENDOF
-    ['] R@        OF DO-R@     ENDOF
-    ['] R'@       OF DO-R'@    ENDOF
-    ['] R"@       OF DO-R"@    ENDOF
+    ['] (LIT)    OF DO-LIT    ENDOF
+    ['] (2LIT)   OF DO-2LIT   ENDOF
+    ['] (FLIT)   OF DO-FLIT   ENDOF
+    ['] (SLIT)   OF DO-SLIT   ENDOF
+    ['] (TO)     OF DO-TO     ENDOF
+    ['] (2TO)    OF DO-2TO    ENDOF
+    ['] (FTO)    OF DO-FTO    ENDOF
+    ['] (+TO)    OF DO-+TO    ENDOF
+    ['] (D+TO)   OF DO-D+TO   ENDOF
+  \ ['] (IS)     OF DO-IS     ENDOF
+    ['] (;CODE)  OF DO-;CODE  ENDOF
+    ['] (AHEAD)  OF DO-AHEAD  ENDOF
+    ['] (AGAIN)  OF DO-AGAIN  ENDOF
+    ['] (IF)     OF DO-IF     ENDOF
+    ['] (OF)     OF DO-OF     ENDOF
+    ['] (UNTIL)  OF DO-UNTIL  ENDOF
+    ['] (DO)     OF DO-DO     ENDOF
+    ['] (?DO)    OF DO-?DO    ENDOF
+    ['] (LOOP)   OF DO-LOOP   ENDOF
+    ['] (+LOOP)  OF DO-+LOOP  ENDOF
+    ['] (UNLOOP) OF DO-UNLOOP ENDOF
+    ['] (LEAVE)  OF DO-LEAVE  ENDOF
+    ['] I        OF DO-I      ENDOF
+    ['] J        OF DO-J      ENDOF
+    ['] K        OF DO-K      ENDOF
+    ['] >R       OF DO-TO-R   ENDOF
+    ['] R>       OF DO-R>     ENDOF
+    ['] 2>R      OF DO-2>R    ENDOF
+    ['] 2R>      OF DO-2R>    ENDOF
+    ['] DUP>R    OF DO-DUP>R  ENDOF
+    ['] R>DROP   OF DO-R>DROP ENDOF
+    ['] R@       OF DO-R@     ENDOF
+    ['] R'@      OF DO-R'@    ENDOF
+    ['] R"@      OF DO-R"@    ENDOF
     ( DEFAULT )
       DUP ['] RP! = ABORT" Can't trace RP!."
       DO-OTHER  EXIT \ Immediate EXIT

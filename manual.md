@@ -50,7 +50,7 @@ Author: Dr. Robert A. van Engelen, 2021
   - [Compile-time conditionals](#compile-time-conditionals)
 - [Source input and parsing](#source-input-and-parsing)
 - [Files](#files)
-  - [Tape data](#tape-data)
+  - [Loading from tape](#loading-from-tape)
   - [File errors](#file-errors)
 - [Exceptions](#exceptions)
 - [Environmental queries](#environmental-queries)
@@ -554,11 +554,11 @@ The wav file transmitted from the host computer, such as a PC, should be
 created with [PocketTools](https://www.peil-partner.de/ifhe.de/sharp/) from the
 source code file (e.g. `FLOATEXT.FTH`) as follows:
 
-    $ bin2wav --pc=E500 --type=bin -dMAX FLOATEXT.FTH
+    $ bin2wav --pc=E500 --type=bin -dINV FLOATEXT.FTH
     $ afplay FLOATEXT.wav
 
 The `afplay` plays the wav file.  Use maximum volume or close to maximum to
-avoid distortion.  If `-dMAX` does not transfer the file, then try `-dINV`.
+avoid distortion.  If `-dINV` does not transfer the file, then try `-dMAX`.
 
 To list files on the current drive:
 
@@ -759,12 +759,17 @@ valid double integer value in `HEX` but the `F.` word will output a float
 instead.
 
 The ASCII value of a single character is pushed on the stack with `'char'`.
-The closing quote may be omitted for convenience:
+The quoted form `'char` can be used interactively and to compile a literal:
 
-| word | comment
-| ---- | -----------------------------------------------------------------------
-| `'A'`| ASCII code 65 of letter A
-| `'B` | ASCII code 66 of letter B
+| word       | comment
+| ---------- | -----------------------------------------------------------------
+| `'A'`      | ASCII code 65 of letter A
+| `'B`       | ASCII code 66 of letter B, the closing quote may be omitted
+| `CHAR C`   | ASCII code 67 of letter C, use this word interactively
+| `[CHAR] D` | ASCII code 68 of letter D, use this word to compile a literal
+
+The quoted form is essentially the same as `CHAR` or `[CHAR]` depending on the
+current `STATE`.
 
 The following words define common constants regardless of the current `BASE`:
 
@@ -793,7 +798,7 @@ up to 20 significant digits.  The `E` and `D` exponent ranges from -99 to +99.
 | `0d`                       | double precision 0
 
 Note that exponent `e+0` may be abbreviated to `e0` or just `e`.  A floating
-point value may not start with the decimal point `.`.  The formal syntax is:
+point value may not start with a decimal point `.`.  The formal syntax is:
 
     <float>             := <significand> [ <exponent> ]
     <significand>       := [ <sign> ] <digit>+ [ . <digit>* ]
@@ -1291,7 +1296,7 @@ The following words store or display string constants:
 | `S\" ..."` | ( -- _c-addr_ _u_ ) | same as `S"` with special character escapes (see below)
 | `C" ..."`  | ( -- _c-addr_ )     | return a counted string on the stack, can only be used in colon definitions
 | `." ..."`  | ( -- )              | displays the string, can only be used in colon definitions
-| `.( ...)`  | ( -- )              | displays the string immediately, even when compiling
+| `.( ...)`  | ( -- )              | displays the string immediately, even when compiling, followed by a `CR`, 
 
 Strings contain 8-bit characters, including special characters.
 
@@ -1527,10 +1532,21 @@ The following words can be used to control character output:
 
 Normally `TTY` is `STDO` for screen output.  The output can be redirected by
 setting the `TTY` value to a _fileid_ of an open file with `fileid TO TTY`.
-
 When an exception occurs, including `ABORT`, `TTY` is set back to `STDO`.
 
-To redirect all character output to a printer:
+For example, to print "This is printed":
+
+    PRINTER . ↲
+    24 OK[0]
+    STDL TO TTY .( This is printed) STDO TO TTY ↲
+    OK[0]
+    Printer: This is printed           
+
+Note that a final `CR` may be needed to print the last line on the printer.
+The `.(` output includes a final `CR`.
+
+To make this easier, you can define two words to redirect all character output
+to a printer:
 
     : print-on  PRINTER IF STDL TO TTY THEN ;
     : print-off STDO TO TTY ;
@@ -2513,7 +2529,7 @@ The following file-related words are available:
 | `STDO`            | ( -- 1 )                                        | returns _fileid_=1 for standard output to the screen
 | `STDI`            | ( -- 2 )                                        | returns _fileid_=2 for standard input from the keyboard
 | `STDL`            | ( -- 3 )                                        | returns _fileid_=3 for standard output to the line printer
-| `>FILE`           | ( _fileid_ -- _s-addr_ )                        | returns file _s-addr_ data for _fileid_
+| `>FILE`           | ( _fileid_ -- _s-addr_ _ior_ )                  | returns file _s-addr_ data for _fileid_
 | `FILE>STRING`     | ( _s-addr_ -- _c-addr_ _u_ )                    | returns string _c-addr_ _u_ file name converted from file _s-addr_ data
 
 Low-level file I/O words return _ior_ to indicate success (zero) or failure
@@ -2564,11 +2580,11 @@ again.  Doing so returns error _ior_=264.  The _fileid_ of open files start
 with 4, which means that the first file opened but not closed can be manually
 closed with `4 CLOSE-FILE .` displaying zero when successful.
 
-### Tape data
+### Loading from tape
 
 The following words load raw binary data or text and Forth source code from
-tape, which requires a CE-126P printer and cassette interface or a CE-124
-cassette interface:
+"tape" (any audio device) via a SHARP CE-126P printer and cassette interface or
+a CE-124 cassette interface:
 
 | word    | stack effect            | comment
 | ------- | ----------------------- | ------------------------------------------
@@ -2576,27 +2592,33 @@ cassette interface:
 | `CLOAD` | ( -- )                  | load and compile Forth source code from tape
 
 `TAPE` stores the raw tape data in free space located directly below the
-floating point stack.  When data was successfully loaded, zero is returned.
-Otherwise a nonzero _ior_ [file error](#file-errors) code is returned.
+floating point stack.  When data was successfully loaded, zero is returned with
+the address and size of the data.  Otherwise a nonzero _ior_ [file
+error](#file-errors) code is returned with incomplete data.  The data stored in
+free space is not persistent and may be overwritten when the dictionary grows.
 
-`CLOAD` calls `TAPE` then `EVALUATE` when _ior_ is zero.  Because `TAPE`
-saves the tape data to the free space in the dictionary, the Forth source
-code should not initially allocate large chunks of the dictionary with `ALLOT`.
-Doing so may overwrite the tape data and cause strange compilation errors.
+`CLOAD` calls `TAPE` `THROW` and `EVALUATE`.  Because `TAPE` saves the tape
+data to the free space in the dictionary, the Forth source code should not
+initially allocate large chunks of the dictionary with `ALLOT`.  Doing so may
+overwrite the Forth source code stored in the remaining free space and may
+cause strange compilation errors.
 
-A wav file of the data or Forth source code should be created on a PC with
-[PocketTools](https://www.peil-partner.de/ifhe.de/sharp/) and then "played"
-on the audio output to transmit the file to the PC-E500(S) via a cassette
+To transfer data and Forth source code from a host PC to the PC-E500(S), a wav
+file of the data or Forth source code should be created with the popular
+[PocketTools](https://www.peil-partner.de/ifhe.de/sharp/) and then "played" on
+the audio output to transmit the file to the PC-E500(S) via a cassette
 interface:
 
-    $ bin2wav --pc=E500 --type=bin -dMAX sourcefile
+    $ bin2wav --pc=E500 --type=bin -dINV sourcefile
     $ afplay sourcefile.wav
 
-Use maximum volume or close to maximum to play the file to avoid distortion.
-If `-dMAX` does not transfer the file, then try `-dINV`.
+Use maximum volume to play the file or close to maximum to avoid distortion.
+If `-dINV` does not transfer the file, then try `-dMAX`.  The `bin2wav` tool
+reports the "start address" and "end address", which are not relevant and can
+be ignored.
 
-For example, the following `tcopy` definition copies tape data to a new file on
-the E: or F: drive:
+The following `tcopy` definition copies tape data to a new file on the E: or F:
+drive:
 
     : ?ior      ( fileid ior -- fileid ) ?DUP IF SWAP CLOSE-FILE DROP THROW THEN ;
     : tcopy     ( "filename" -- )

@@ -98,10 +98,18 @@ The following bug fixes and improvements were made to the original pceForth code
 - added blinking cursor at start and after an exception or `ABORT` and `QUIT` which are otherwise silent
 - improved `OK[]` prompt to also report the depth of the floating point stack, when not empty
 - improved `EDIT` to fix long line editing issues and to reduce code size
+- added new `FLOATEXT.FTH` with additional words to complete FLOATEXT
 - optimized `DECIMAL`, `HEX`, `UNUSED` to reduce code size
-- added `FVALUE` and `FVALUE?`, changed the corresponding `TO` code to assign `FVALUE`
+- added `FVALUE` and `FVALUE?`, changed the corresponding `TO` part of this code to assign `FVALUE`
 - added missing extra words `F0>` and `F0<>`
 - added `TAPE` and `CLOAD` to load raw data and compile Forth source code from cassette tape
 - reduduced code size by rewriting `?COMP`, `HIDE`, `REVEAL`, `IMMEDIATE` in assembly
-- reduduced code size by refactoring `VALUE?`, `2VALUE?`, `FVALUE?`, `COLON?`, `MARKER?` to share code
-- renamed some of the internal `(...)` words to reduce code size
+- reduduced code size by refactoring `VALUE?`, `2VALUE?`, `FVALUE?`, `COLON?`, `MARKER?` to reuse and share code
+- renamed some of the internal `(...)` words to shorter names to reduce code size
+- changed `(UNDEF)` and `CHECK-NAME` to assembly to increase speed and reduce code size
+- removed variable `HP` and optimized `<#`, `HOLD` and `#>` in assembly to increase speed and reduce code size
+- changed `MS` to allow BREAK
+- replaced "illegal" instruction `mv a,il` with `mv ba,i` and `mv il,a` with `mv i,ba` that perform the same operation anyway
+- optimized assembly code of all filesystem-related words to reduce code size
+- added new `SEE.FTH`, `NQUEENS.FTH` and updated `DEBUGGER.FTH`
+- fixed a floating point exception -46 problem that caused the system to hang without progress

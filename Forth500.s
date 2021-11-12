@@ -1,12 +1,53 @@
 ;-------------------------------------------------------------------------------
 ;
-;		FORTH500
+;         FFFFFFFF  OOOOOO  RRRRRRR  TTTTTTTT HH    HH  55555555   0000     0000
+;        FF       OO    OO RR    RR    TT    HH    HH  55        00  00   00  00
+;       FF       OO    OO RR    RR    TT    HH    HH  55       00    00 00    00
+;      FF       OO    OO RR    RR    TT    HH    HH  55       00    00 00    00
+;     FFFFFF   OO    OO RRRRRRR     TT    HHHHHHHH  5555555  00    00 00    00
+;    FF       OO    OO RR RR       TT    HH    HH        55 00    00 00    00
+;   FF       OO    OO RR  RR      TT    HH    HH        55 00    00 00    00
+;  FF       OO    OO RR   RR     TT    HH    HH  55    55  00  00   00  00 
+; FF        OOOOOO  RR    RR    TT    HH    HH   555555    0000     0000 
 ;
-;-------------------------------------------------------------------------------
 ;
 ; Authors:
 ;   Sébastien Furic (original incomplete pce500forth-v1)
 ;   Dr. Robert van Engelen (Forth500)
+;
+;-------------------------------------------------------------------------------
+;
+; BSD 3-Clause License
+; 
+; Copyright (c) 2021, Robert van Engelen
+; All rights reserved.
+; 
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions are met:
+; 
+; 1. Redistributions of source code must retain the above copyright notice, this
+;    list of conditions and the following disclaimer.
+; 
+; 2. Redistributions in binary form must reproduce the above copyright notice,
+;    this list of conditions and the following disclaimer in the documentation
+;    and/or other materials provided with the distribution.
+; 
+; 3. Neither the name of the copyright holder nor the names of its
+;    contributors may be used to endorse or promote products derived from
+;    this software without specific prior written permission.
+; 
+; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+; IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+; DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+; FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+; DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+; SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+; CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+; OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+;
+;-------------------------------------------------------------------------------
 ;
 ; Change org in Forth500.s according to the available RAM memory:
 ; 
@@ -156,7 +197,7 @@ dict_limit:	equ	f_limit			; The upper limit of the dictionary space
 ;		FORTH500 LOCATION AND BOOT ADDRESS
 ;
 ;-------------------------------------------------------------------------------
-		org	$b9000			; $b0000 or $b1000 or $b9000 ...
+		org	$b0000			; $b0000 or $b1000 or $b9000 ...
 ;-------------------------------------------------------------------------------
 ;
 ;		FORTH500 BOOTING
@@ -196,10 +237,11 @@ s_value:	ds	3			; To restore S
 symbols:	ds	4			; To restore display's symbols when returning to BASIC
 ;-------------------------------------------------------------------------------
 ;
-;		SAVED FORTH500 REGISTERS
+;		FORTH500 REGISTERS IN EXTERNAL RAM
 ;
 ;-------------------------------------------------------------------------------
 wi_value:	dp	_end_			; Saved (wi) HERE pointer
+hp_value:	dp	_end_			; Temporary hold area pointer
 ;-------------------------------------------------------------------------------
 ;
 ;		FORTH500 INTERNALS
@@ -347,19 +389,7 @@ do2lit__xt:	local
 		jr	!cont__
 		endl
 ;-------------------------------------------------------------------------------
-doslit_:	dw	do2lit_
-		db	$06
-		db	'(SLIT)'
-doslit__xt:	local
-		pushu	ba			; Save old TOS
-		mv	ba,[x++]		; Read the length of the string
-		mv	i,x			; I holds the short address of the string
-		pushu	i			; Save it on the stack
-		add	x,ba			; Update IP to skip up to the end of the string
-		jr	!cont__
-		endl
-;-------------------------------------------------------------------------------
-doflit_:	dw	doslit_
+doflit_:	dw	do2lit_
 		db	$06
 		db	'(FLIT)'		; ( F: -- r )
 doflit__xt:	local
@@ -377,7 +407,19 @@ fppushcheck__:	inc	(!ll)			; Increment FP stack size
 		mv	il,-44			; Floating-point stack overflow
 		jr	!throw__
 ;-------------------------------------------------------------------------------
-dovar_:		dw	doflit_
+doslit_:	dw	doflit_
+		db	$06
+		db	'(SLIT)'
+doslit__xt:	local
+		pushu	ba			; Save old TOS
+		mv	ba,[x++]		; Read the length of the string
+		mv	i,x			; I holds the short address of the string
+		pushu	i			; Save it on the stack
+		add	x,ba			; Update IP to skip up to the end of the string
+		jr	!cont__
+		endl
+;-------------------------------------------------------------------------------
+dovar_:		dw	doslit_
 		db	$05
 		db	'(VAR)'
 dovar__xt:	local
@@ -469,7 +511,7 @@ do2to__xt:	local
 		jp	!cont__
 		endl
 ;-------------------------------------------------------------------------------
-dofto_:		dw	doto_
+dofto_:		dw	do2to_
 		db	$05
 		db	'(FTO)'
 dofto__xt:	local
@@ -1128,7 +1170,7 @@ roll_xt:	local
 		popu	ba			; Set new TOS
 		jp	!cont__
 lbl1:		mv	y,u			; Store SP value
-		mv	il,a			; Store the TOS into I
+		mv	i,ba			; Store the TOS into I
 		add	a,a			; Compute the offset
 		add	y,a			; Y holds the address of the value to fetch
 		mv	ba,[y]			; BA holds the new TOS
@@ -1980,7 +2022,7 @@ lshift:		dw	d_two_star
 		db	$06
 		db	'LSHIFT'
 lshift_xt:	local
-		mv	il,a			; Bit count, ignore the bigh-order 8 bits
+		mv	i,ba			; Bit count, ignore the bigh-order 8 bits
 		popu	ba
 		inc	il
 		jr	lbl2
@@ -1995,7 +2037,7 @@ two_slash:	dw	lshift
 		db	'2/'
 two_slash_xt:	local
 		ex	a,b
-		mv	il,a			; Copy sign bit
+		mv	i,ba			; Copy sign bit
 		add	il,il			; to the carry flag
 		shr	a			; Right bit-shift 8 high-order bits
 		ex	a,b
@@ -2008,7 +2050,7 @@ d_two_slash:	dw	two_slash
 		db	'D2/'
 d_two_slash_xt:	local
 		ex	a,b
-		mv	il,a			; Copy sign bit
+		mv	i,ba			; Copy sign bit
 		add	il,il			; to the carry flag
 		shr	a			; Right bit-shift 8 high-order bits
 		ex	a,b
@@ -2119,17 +2161,17 @@ doplusto__xt:	local
 		jr	!plus_store__
 		endl
 ;-------------------------------------------------------------------------------
-dodplus2to_:	dw	doplusto_
-		db	$07
-		db	'(D+2TO)'
-dodplus2to__xt:	local
+dodplusto_:	dw	doplusto_
+		db	$06
+		db	'(D+TO)'
+dodplusto__xt:	local
 		mv	i,[x++]			; Read the short address of the value
 		mv	y,!base_address+2	; Y holds the
 		add	y,i			; address of the low-order bits
 		jr	!d_plus_store__
 		endl
 ;-------------------------------------------------------------------------------
-d_plus:		dw	dodplus2to_
+d_plus:		dw	dodplusto_
 		db	$02
 		db	'D+'
 d_plus_xt:	local
@@ -3036,7 +3078,7 @@ f_ln_xt:		local
 ;---------------
 fop__:		local
 		pushu	ba			; Save TOS
-		mv	a,il			; A holds the function/operation code $41 to $5b
+		mv	ba,i			; A holds the function/operation code $41 to $5b
 		mv	il,30			; Clear (fp) floats (X) and (Y)
 		sbcl	(!fp),(!fp)
 ;		COPY FP TOS ARGUMENT TO (X)
@@ -3069,7 +3111,7 @@ lbl1:		test	(!ll),$80
 		pushu	y			; Save FP
 		pre_on
 		mvw	(!cx),$0009		; Function driver
-		mv	il,a			; Function $41 to $7f
+		mv	i,ba			; Function $41 to $7f
 		callf	!iocs			;
 		popu	y			; Restore FP
 		popu	x			; Restore IP
@@ -3095,7 +3137,7 @@ lbl2:		add	(!fp+15),$f8		; Check if float result in (Y) is negative (carry flag)
 ;		ERROR
 lbl3:		mv	il,-46			; Floating-point invalid argument
 		cmp	a,$4a			; Division by zero?
-		jrnz	lbl3
+		jrnz	lbl4
 		mv	il,-42			; Floating-point divide by zero
 lbl4:		jp	!throw__
 		endl
@@ -3702,15 +3744,17 @@ off_xt:		local
 ms:		dw	off
 		db	$02
 		db	'MS'			; ( u -- )
-ms_xt:		local				; 126x6-1+13=768 cycles per ms matching 768KHz clock
-		pushu	imr			; Disable interruptions
+ms_xt:		local				; 768 cycles/ms match 768Khz (but interrupts add 2%~3% overhead)
 		inc	ba			;
 		jr	lbl2			;
-lbl1:		mv	i,758			; 3 cycles
-		wait				; 759 (=I+1) cycles
+lbl1:		mv	i,750-20		; 3 cycles
+		wait				; 751 (=I+1) cycles - 20 cycles taken by interrupts
+		pre_on
+		test	($ff),$08		; 5 cycles
+		pre_off
+		jpnz	!break__		; 3/4 break was pushed
 lbl2:		dec	ba			; 3 cycles
 		jrnz	lbl1			; 2/3 cycles
-		popu	imr			; Enable interruptions
 		popu	ba			; Set new TOS
 		jp	!cont__
 		endl
@@ -4271,61 +4315,47 @@ to_file:	dw	file_to_str
 		db	$05
 		db	'>FILE'			; ( fileid -- s-addr ior )
 to_file_xt:	local
+		dec	ba			; Decrement fileid (because fileIDs start at index 1)
 		pre_on
-		pushs	x			; Save IP
-		dec	ba			; Decrement it (because fileIDs start at index 1)
 		mv	(!cl),a			; File handle
-		;ex	a,b
-		;cmp	a,$00
-		;mv	a,$06			; 'Ineffective file handle was attempted'
-		;jrnz	lbl3
 		call	!which_file__
+		pushu	ba			; Set new TOS to address of the filename
+		pushu	x			; Save IP
 		mv	x,!base_address
 		add	x,ba			; X holds current filename area address
-		pushs	x			; Save current filename area address
 		mv	il,$0a			; 'Reading various information of a file'
-		mv	a,$01			; 'Reading of file name, extension and attribute'
+		mv	a,1			; 'Reading of file name, extension and attribute'
 		callf	!fcs
-		pops	x			; Restore current filename area address
-		jrnc	lbl5
-lbl3:		mv	il,$00			; Address where to find
-		pushu	i			; information is zero in case of an error
-		mv	b,a			; Set new TOS
+		pre_off
+		popu	x			; Restore IP
+		endl
+;---------------
+iorcheck__:	jrc	ior__
+		sub	ba,ba			; Set new TOS to zero (no error)
+		jp	!interp__
+ior__:		mv	b,a			; Set new TOS to ior
 		mv	a,$01			; (an error
 		ex	a,b			; occurred)
-lbl4:		pops	x			; Restore IP
 		jp	!interp__
-lbl5:		mv	i,x			; Save current filename
-		pushu	i			; area address on the stack
-		sub	ba,ba			; Set new TOS (no error)
-		jr	lbl4
-		pre_off
-		endl
 ;-------------------------------------------------------------------------------
 creat_:		dw	to_file
 		db	$07
 		db	'(CREAT)'		; ( s-addr fam -- fileid ior )
 creat__xt:	local
-		pre_on
-		pushs	x			; Save IP
-		popu	i			; Read the short address of the file name
+		popu	ba			; Discard TOS and read the short address of the file name
+		pushu	x			; Save IP
 		mv	x,!base_address
-		add	x,i			; X holds the address of the file name
+		add	x,ba			; X holds the address of the file name
+		pre_on
 		mv	il,$00			; 'Creating a file'
-		mv	a,$00			; Discard the access mode (which will be as free as possible) and
+		mv	a,0			; Not write protected or invisible
 		callf	!fcs			; set file attribute to 'visible and writable'
 		mv	il,(!cl)		; Read the file handle
-		inc	i			; Increment it (because fileIDs must start at index 1)
-		pushu	i			; Save the file handle on the stack
-		jrnc	lbl2
-		mv	b,a			; Set new TOS
-		mv	a,$01			; (an error
-		ex	a,b			; occurred)
-lbl1:		pops	x			; Restore IP
-		jp	!interp__
-lbl2:		sub	ba,ba			; Set new TOS (no error)
-		jr	lbl1
 		pre_off
+		popu	x			; Restore IP
+		inc	i			; Increment fileid (because fileIDs must start at index 1)
+		pushu	i			; Save the file handle on the stack
+		jr	!iorcheck__
 		endl
 ;-------------------------------------------------------------------------------
 create_file:	dw	creat_
@@ -4344,21 +4374,15 @@ delete_:	dw	create_file
 		db	$08
 		db	'(DELETE)'		; ( s-addr -- ior )
 delete__xt:	local
-		pre_on
-		pushs	x			; Save IP
+		pushu	x			; Save IP
 		mv	x,!base_address
 		add	x,ba			; X holds the address of the file name
+		pre_on
 		mv	il,$0e			; 'Deleting a file'
 		callf	!fcs
-		jrnc	lbl2
-		mv	b,a			; Set new TOS
-		mv	a,$01			; (an error
-		ex	a,b			; occurred)
-lbl1:		pops	x			; Restore IP
-		jp	!interp__
-lbl2:		sub	ba,ba			; Set new TOS (no error)
-		jr	lbl1
 		pre_off
+		popu	x			; Restore IP
+		jr	!iorcheck__
 		endl
 ;-------------------------------------------------------------------------------
 delete_file:	dw	delete_
@@ -4375,35 +4399,19 @@ status_:	dw	delete_file
 		db	$08
 		db	'(STATUS)'		; ( s-addr -- s-addr ior )
 status__xt:	local
-		pre_on
-		pushs	x			; Save IP
 		pushu	ba			; Save TOS
+		pushu	x			; Save IP
 		mv	x,!base_address
 		add	x,ba			; X holds the address of the file name
 		mv	y,18
 		add	y,x			; Y holds the current file attribute area
+		pre_on
 		mv	il,$0b			; 'Changing directory information of drive'
-		mv	a,$00			; 'Reading of the directory information of drive'
+		mv	a,0			; 'Reading of the directory information of drive'
 		callf	!fcs
-		;mv	il,[y++]		; Read the file attribute
-		;pushu	i			; Save it on the stack
-		;mv	i,[y++]			; Read the time information
-		;pushu	i			; Save it on the stack
-		;mv	i,[y++]			; Read the date information
-		;pushu	i			; Save it on the stack
-		;mv	i,[y++]			; Read the 16 low-order bits of the size information
-		;pushu	i			; Save them on the stack
-		;mv	il,[y]			; Read the 8 high-order bits of the size information
-		;pushu	i			; Save it on the stack
-		jrnc	lbl2
-		mv	b,a			; Set new TOS
-		mv	a,$01			; (an error
-		ex	a,b			; occurred)
-lbl1:		pops	x			; Restore IP
-		jp	!interp__
-lbl2:		sub	ba,ba			; Set new TOS (no error)
-		jr	lbl1
 		pre_off
+		popu	x			; Restore IP
+		jr	!iorcheck__
 		endl
 ;-------------------------------------------------------------------------------
 file_status:	dw	status_
@@ -4420,24 +4428,18 @@ rename_:	dw	file_status
 		db	$08
 		db	'(RENAME)'		; ( s-addr s-addr -- ior )
 rename__xt:	local
-		pre_on
-		pushs	x			; Save IP
+		popu	i			; I holds the 2OS
+		pushu	x			; Save IP
 		mv	x,!base_address
 		mv	y,x
 		add	y,ba			; Y holds the address of the new file name
-		popu	i
 		add	x,i			; X holds the address of the initial file name
+		pre_on
 		mv	il,$0d			; 'Renaming a file'
 		callf	!fcs
-		jrnc	lbl2
-		mv	b,a			; Set new TOS
-		mv	a,$01			; (an error
-		ex	a,b			; occurred)
-lbl1:		pops	x			; Restore IP
-		jp	!interp__
-lbl2:		sub	ba,ba			; Set new TOS (no error)
-		jr	lbl1
 		pre_off
+		popu	x			; Restore IP
+		jr	!iorcheck__
 		endl
 ;-------------------------------------------------------------------------------
 rename_file:	dw	rename_
@@ -4490,32 +4492,19 @@ open_:		dw	rename_file
 		db	$06
 		db	'(OPEN)'		; ( s-addr fam -- fileid ior )
 open__xt:	local
-		pre_on
-		pushs	x			; Save IP
+		popu	i			; I holds the 2OS
+		pushu	x			; Save IP
 		mv	x,!base_address
-		popu	i
 		add	x,i			; X holds the address of the filename (e.g. in FILENAME0 or FILENAME1)
-		ex	a,b
-		cmp	a,$00
-		mv	a,$01			; 'The parameter is beyond the range'
-		jrnz	lbl1
-		ex	a,b			; A holds the open mode: bit0 = read, bit1 = write
-		mv	il,$01			; 'Opening a file'
+		pre_on
+		mv	il,$01			; 'Opening a file', A holds the open mode: bit0 = read, bit1 = write
 		callf	!fcs
-		jrnc	lbl3
-lbl1:		mv	il,$00			; File handle is zero when
-		pushu	i			; an eror occurred
-		mv	b,a			; Set new TOS
-		mv	a,$01			; (an error
-		ex	a,b			; occurred)
-lbl2:		pops	x			; Restore IP
-		jp	!interp__
-lbl3:		mv	il,(!cl)		; Read file handle
-		inc	i			; Increment it (because fileIDs must start at index 1)
-		pushu	i			; Save it on the stack
-		sub	ba,ba			; Set new TOS (no error)
-		jr	lbl2
+		mv	il,(!cl)		; Read file handle
 		pre_off
+		popu	x
+		inc	i			; Increment fileid (because fileIDs must start at index 1)
+		pushu	i
+		jp	!iorcheck__
 		endl
 ;-------------------------------------------------------------------------------
 open_file:	dw	open_
@@ -4534,62 +4523,44 @@ close_file:	dw	open_file
 		db	$0a
 		db	'CLOSE-FILE'		; ( fileid -- ior )
 close_file_xt:	local
+		dec	ba			; Decrement fileid (because fileIDs start at index 1)
+		pushu	x			; Save IP
 		pre_on
-		pushs	x			; Save IP
-		dec	ba			; Decrement it (because fileIDs start at index 1)
 		mv	(!cl),a			; File handle
-		;ex	a,b
-		;cmp	a,$00
-		;mv	a,$06			; 'Ineffective file handle was attempted'
-		;jrnz	lbl1
 		mv	il,$02			; 'Closing a file'
 		callf	!fcs
-		jrnc	lbl3
-lbl1:		mv	b,a			; Set new TOS
-		mv	a,$01			; (an error
-		ex	a,b			; occurred)
-lbl2:		pops	x			; Restore IP
-		jp	!interp__
-lbl3:		sub	ba,ba			; Set new TOS (no error)
-		jr	lbl2
 		pre_off
+		popu	x			; Restore IP
+		jp	!iorcheck__
 		endl
 ;-------------------------------------------------------------------------------
 file_info:	dw	close_file
 		db	$09
 		db	'FILE-INFO'		; ( fileid -- ud ud u u ior )
 file_info_xt:	local
+		dec	ba			; Decrement fileid (because fileIDs start at index 1)
+		pushu	x			; Save IP
 		pre_on
-		pushs	x			; Save IP
-		dec	ba			; Decrement it (because fileIDs start at index 1)
 		mv	(!cl),a			; File handle
-		;ex	a,b
-		;cmp	a,$00
-		;mv	a,$06			; 'Ineffective file handle was attempted'
-		;jrnz	lbl1
 		mv	il,$0a			; 'Reading various information of a file'
-		mv	a,$00			; 'Reading of file size, pointer value'
+		mv	a,0			; 'Reading of file size, pointer value'
 		callf	!fcs
+		popu	x			; Restore IP
 		mvw	[--u],(!si)		; Read file
 		mv	il,(!si+2)		; position
 		pushu	i			; and save it on the stack
 		mvw	[--u],(!di)		; Read file
 		mv	il,(!di+2)		; size
 		pushu	i			; and save it on the stack
-		mv	i,a			; I holds the open attribute
-		pushu	i			; Save it on the stack
-		mv	a,$00
-		ex	a,b			; A holds the device attribute
-		pushu	ba			; Save it on the stack
-		jrnc	lbl3
-lbl1:		mv	b,a			; Set new TOS
-		mv	a,$01			; (an error
-		ex	a,b			; occurred)
-lbl2:		pops	x			; Restore IP
-		jp	!interp__
-lbl3:		sub	ba,ba			; Set new TOS (no error)
-		jr	lbl2
 		pre_off
+		mv	il,0
+		pushu	il			; High order byte 0 to save the open attribute on the stack
+		pushu	a			; A holds the open attribute
+		ex	a,b
+		pushu	il			; High order byte 0 to save the device attribute on the stack
+		pushu	a			; A holds the device attribute
+		ex	a,b			; Restore old A
+		jp	!iorcheck__
 		endl
 ;-------------------------------------------------------------------------------
 file_pos:	dw	file_info
@@ -4635,148 +4606,105 @@ read_file:	dw	fil_end_qst
 		db	$09
 		db	'READ-FILE'		; ( c-addr u fileid -- u ior )
 read_file_xt:	local
-		pre_on
-		pushs	x			; Save IP
-		mv	x,!base_address
-		dec	ba			; Decrement it (because fileIDs start at index 1)
-		mv	(!cl),a			; File handle
+		dec	ba			; Decrement fileid (because fileIDs start at index 1)
 		popu	i			; I holds the number of bytes to read
 		mv	y,i			; Save them into Y
 		popu	i			; I holds the short address where to store the data
+		pushu	x			; Save IP
+		mv	x,!base_address
 		add	x,i			; X holds the address where to store the data
-		;ex	a,b
-		;cmp	a,$00
-		;mv	a,$06			; 'Ineffective file handle was attempted'
-		;jrnz	lbl1
+		pre_on
+		mv	(!cl),a			; File handle
 		mv	il,$03			; 'Reading a block of the file'
-		mv	a,$01			; 'File end is physical end of file'
+		mv	a,1			; 'File end is physical end of file'
 		callf	!fcs
+		pre_off
+		popu	x			; Restore IP
 		mv	i,y			; I holds the number of bytes that was read correctly
 		pushu	i			; Save it on the stack
-		jrnc	lbl3
+		jrnc	lbl1
 		cmp	a,$0c			; Test whether the specified number of bytes wasn't read
-		jrz	lbl3
-lbl1:		mv	b,a			; Set new TOS
-		mv	a,$01			; (an error
-		ex	a,b			; occurred)
-lbl2:		pops	x			; Restore IP
+		jrz	lbl1
+		jp	!ior__
+lbl1:		sub	ba,ba
 		jp	!interp__
-lbl3:		sub	ba,ba			; Set new TOS (no error)
-		jr	lbl2
-		pre_off
 		endl
 ;-------------------------------------------------------------------------------
 read_char:	dw	read_file
 		db	$09
 		db	'READ-CHAR'		; ( fileid -- char ior )
 read_char_xt:	local
-		pre_on
-		pushs	x			; Save IP
 		dec	ba			; Decrement it (because fileIDs start at index 1)
+		pushu	x			; Save IP
+		pre_on
 		mv	(!cl),a			; File handle
-		mv	(bp+!el),a		; Make a copy of the file handle
-		;ex	a,b
-		;cmp	a,$00
-		;mv	a,$06			; 'Ineffective file handle was attempted'
-		;jrnz	lbl2
+		; SEE COMMENT BELOW
+		pushu	a			; Make a copy of the file handle
 		mv	il,$0a			; 'Reading various information of a file'
-		mv	a,$00			; 'Reading of file size, pointer value'
+		mv	a,0			; 'Reading of file size, pointer value'
 		callf	!fcs
-		jrc	lbl2
+		mv	(!cl),[u++]		; Set the file handle again
+		jrc	!eof__			; lbl1
 		cmpp	(!si),(!di)		; Compare file position
-		;cmpw	(!si),(!di)		; Compare file position
-		;jrnz	lbl1			; with
-		;cmp	(!si+2),(!di+2)		; file size
-		jrz	lbl2
-lbl1:		mv	il,$05			; 'Reading a byte of the file'
-		mv	(!cl),(bp+!el)		; Restore the file handle
-		mv	a,$01			; 'File end is physical end of file'
+		jrz	!eof__			; lbl1
+		; END OF COMMENT
+		mv	il,$05			; 'Reading a byte of the file'
+		mv	a,1			; 'File end is physical end of file'
 		callf	!fcs
-		jrnc	lbl4
-lbl2:		mv	il,$00			; Set the value of the character to zero
-		pushu	i			; (an error occurred)
+		pre_off
+		mv	i,ba			; Return character if successful (cf=0)
+		endl
+;---------------
+eofcheck__:	jrc	eof__			; Error?
+		mv	a,b			; Test whether
+		shr	a			; a character was read when B=1
+		mv	a,$0c			; 'Processing of byte number has not been completed'
+		jrnc	eof__			; THERE IS A BUG IN THIS PRIMITIVE
+		;				; SO THAT THAT NEVER HAPPENS, HENCE THE ABOVE CODE
+		;				; TO TEST THE FILE POSITION
+		mv	ba,i			; Copy character or flag
+		mv	a,0			; Set new TOS low order 8 bits to zero
+		sub	i,ba			; Clear high 8 bits of I
+		mv	b,a			; Set new TOS to zero (no error)
+eofcheckdone__:	popu	x			; Restore IP
+		pushu	i			; Return character or flag
+		jp	!interp__
+eof__:		mv	il,0			; Set the value of the character or flag to zero
 		mv	b,a			; Set new TOS
 		mv	a,$01			; (an error
 		ex	a,b			; occurred)
-lbl3:		pops	x			; Restore IP
-		jp	!interp__
-lbl4:		ex	a,b			; Test
-		cmp	a,$00			; whether
-		mv	a,$0c			; no character
-		jrz	lbl2			; was read (THERE IS A BUG IN THIS PRIMITIVE
-		mv	a,$00			; SO THAT THAT NEVER HAPPENS, HENCE THE ABOVE CODE
-		ex	a,b			; TO TEST THE FILE POSITION)
-		pushu	ba			; Save the character on the stack
-		sub	ba,ba			; Set new TOS (no error)
-		jr	lbl3
-		pre_off
-		endl
+		jr	eofcheckdone__
 ;-------------------------------------------------------------------------------
 peek_char:	dw	read_char
 		db	$09
 		db	'PEEK-CHAR'		; ( fileid -- char ior )
 peek_char_xt:	local
-		pre_on
-		pushs	x			; Save IP
 		dec	ba			; Decrement it (because fileIDs start at index 1)
+		pushu	x			; Save IP
+		pre_on
 		mv	(!cl),a			; File handle
-		;ex	a,b
-		;cmp	a,$00
-		;mv	a,$06			; 'Ineffective file handle was attempted'
-		;jrnz	lbl1
 		mv	il,$08			; 'Non destructive reading a file'
 		mv	a,$81			; 'File end is physical end of file, with data'
 		callf	!fcs
-		jrnc	lbl3
-lbl1:		mv	il,$00			; Set the value of the character to zero
-		pushu	i			; (an error occurred)
-		mv	b,a			; Set new TOS
-		mv	a,$01			; (an error
-		ex	a,b			; occurred)
-lbl2:		pops	x			; Restore IP
-		jp	!interp__
-lbl3:		ex	a,b			; Test
-		cmp	a,$00			; whether no character was read
-		mv	a,$0c			; 'Processing of byte number has not been completed.'
-		jrz	lbl1
-		mv	a,$00			
-		ex	a,b
-		pushu	ba			; Save the character on the stack
-		sub	ba,ba			; Set new TOS (no error)
-		jr	lbl2
 		pre_off
+		mv	i,ba			; Return character if successful (cf=0)
+		jr	!eofcheck__
 		endl
 ;-------------------------------------------------------------------------------
 chr_rdy_qst:	dw	peek_char
 		db	$0b
 		db	'CHAR-READY?'		; ( fileid -- flag ior )
 chr_rdy_qst_xt:	local
-		pre_on
-		pushs	x			; Save IP
 		dec	ba			; Decrement it (because fileIDs start at index 1)
+		pushu	x			; Save IP
+		pre_on
 		mv	(!cl),a			; File handle
-		;ex	a,b
-		;cmp	a,$00
-		;mv	a,$06			; 'Ineffective file handle was attempted'
-		;jrnz	lbl1
 		mv	il,$08			; 'Non destructive reading a file'
 		mv	a,$01			; 'File end is physical end of file, without data'
 		callf	!fcs
-		jrnc	lbl3
-		mv	b,a			; Set new TOS
-		mv	a,$01			; (an error
-		ex	a,b			; occurred)
-lbl1:		mv	il,$00			; Set I to FALSE
-lbl2:		pushu	i			; Save I contents
-		pops	x			; Restore IP
-		jp	!interp__
-lbl3:		ex	a,b			; Test whether
-		cmp	a,0			; no character was read
-		mv	ba,0			; Set new TOS (no error)
-		jrz	lbl1			; 
-		mv	i,-1			; Set I to TRUE
-		jr	lbl2
 		pre_off
+		mv	i,-1			; Return TRUE if successful (cf=0)
+		jr	!eofcheck__
 		endl
 ;-------------------------------------------------------------------------------
 read_line:	dw	chr_rdy_qst
@@ -4841,63 +4769,38 @@ write_file:	dw	read_line
 		db	$0a
 		db	'WRITE-FILE'		; ( c-addr u fileid -- ior )
 write_file_xt:	local
-		pre_on
-		pushs	x			; Save IP
-		mv	x,!base_address
-		dec	ba			; Decrement it (because fileIDs start at index 1)
-		mv	(!cl),a			; File handle
+		dec	ba			; Decrement fileid (because fileIDs start at index 1)
 		popu	i			; I holds the number of bytes to write
 		mv	y,i			; Save them into Y
 		popu	i			; I holds the short address where to fetch the data
+		pushu	x			; Save IP
+		mv	x,!base_address
 		add	x,i			; X holds the address where to fetch the data
-		;ex	a,b
-		;cmp	a,$00
-		;mv	a,$06			; 'Ineffective file handle was attempted'
-		;jrnz	lbl1
+		pre_on
+		mv	(!cl),a			; File handle
 		mv	il,$04			; 'Writing a block of the file'
 		callf	!fcs
-		jrnc	lbl3
-		;cmp	a,$0c			; FIXME this looks wrong; Test whether the specified number of bytes wasn't written
-		;jrz	lbl3
-lbl1:		mv	b,a			; Set new TOS
-		mv	a,$01			; (an error
-		ex	a,b			; occurred)
-lbl2:		pops	x			; Restore IP
-		jp	!interp__
-lbl3:		mv	ba,0			; Set new TOS (no error)
-		jr	lbl2
 		pre_off
+		popu	x			; Restore IP
+		jp	!iorcheck__
 		endl
 ;-------------------------------------------------------------------------------
 write_char:	dw	write_file
 		db	$0a
 		db	'WRITE-CHAR'		; ( char fileid -- ior )
 write_char_xt:	local
+		dec	ba			; Decrement fileid (because fileIDs start at index 1)
 		pre_on
-		;pushs	x			; Save IP
-		dec	ba			; Decrement it (because fileIDs start at index 1)
 		mv	(!cl),a			; File handle
-		popu	i			; I holds the value of the character to write
-		;ex	a,b
-		;cmp	a,$00
-		;mv	a,$06			; 'Ineffective file handle was attempted'
-		;jrnz	lbl1
-		mv	a,il			; A holds the 8 low-order bits of the character value
+		popu	ba			; A holds the 8 low-order bits of the character value
 		mv	il,$06			; 'Writing a byte of the file'
 		callf	!fcs
-		jrnc	lbl3
-lbl1:		mv	b,a			; Set new TOS
-		mv	a,$01			; (an error
-		ex	a,b			; occurred)
-lbl2:		;pops	x			; Restore IP
-		jp	!interp__
-lbl3:		ex	a,b			; Test
-		cmp	a,$00			; whether
-		mv	a,$0c			; no character
-		jrz	lbl1			; was written
-		sub	ba,ba			; Set new TOS (no error)
-		jr	lbl2
 		pre_off
+		jpc	!ior__
+		mv	a,b			; Test
+		cmp	a,1			; whether
+		mv	a,$0c			; no character
+		jp	!iorcheck__		; was written
 		endl
 ;-------------------------------------------------------------------------------
 write_line:	dw	write_char
@@ -4945,40 +4848,26 @@ seek_file:	dw	seek_end
 		db	$09
 		db	'SEEK-FILE'		; ( d fileid u -- ior )
 seek_file_xt:	local
+		mv	i,ba			; Save position attribute (relative from top, etc.)
+		popu	ba			; Read the fileid
+		dec	ba			; Decrement fileid (because fileIDs start at index 1)
 		pre_on
-		pushs	x			; Save IP
-		mv	(bp+!el),a		; Save position attribute (relative from top, etc.)
-		popu	ba
-		dec	ba			; Decrement it (because fileIDs start at index 1)
 		mv	(!cl),a			; File handle
-		;ex	a,b
-		;cmp	a,$00
-		;mv	a,$06			; 'Ineffective file handle was attempted'
-		;jrnz	lbl3
 		popu	ba			; Read the 16 high-order bits
-		mv	i,ba			; I holds the 16 high-order bits
+		mv	(!si+2),a		; Store the 8 last low-order of the high-order bits
+		mvw	(!si),[u++]		; Read and store the 16 low-order bits
 		shl	a			; Test the high-order bits for signed overflow
-		ex	a,b
+		mv	a,b
 		adc	a,0			; $ff+cf = 0 and $00 = 0 means no signed overflow
-		mv	a,$01
-		jrnz	lbl4
-		popu	ba
-		mv	(!si+2),il		; Store the 8 last low-order ones (ignore others)
-		mv	(!si),ba		; Store the 16 low-order bits
+		mv	a,$01			; 'The parameter is beyond the range'
+		jpnz	!ior__
+		pushu	x			; Save IP
+		mv	ba,i			; Restore position attribute
 		mv	il,$09			; 'Moving a file pointer'
-		mv	a,(bp+!el)		; Restore position attribute
 		callf	!fcs
-		jrc	lbl5
-		sub	ba,ba			; No error
-		jr	lbl6
-lbl3:		popu	i			; Discard the 16 high-order bits
-lbl4:		popu	i			; Discard the 16 low-order bits
-lbl5:		mv	b,a			; Set new TOS
-		mv	a,$01			; (an error
-		ex	a,b			; occurred)
-lbl6:		pops	x			; Restore IP
-		jp	!interp__
 		pre_off
+		popu	x			; Restore IP
+		jp	!iorcheck__
 		endl
 ;-------------------------------------------------------------------------------
 repos_file:	dw	seek_file
@@ -5076,33 +4965,27 @@ stat_:		dw	resize_file
 		db	'(STAT)'		; ( s-addr u -- s-addr u s-addr ior )
 stat__xt:	local
 		pre_on
-		pushs	x			; Save IP
 		mv	(!bx),ba		; Position to start searching
 		call	!which_file__
 		mv	y,!base_address
 		add	y,ba			; Y holds current filename area address
-lbl2:		mv	x,!base_address	
 		popu	i
+		pushu	x			; Save IP
+		mv	x,!base_address	
 		add	x,i			; X holds the file name pattern ('?' are wildcard characters, '*' cannot be used)
-		pushs	y			; Save the current filename area address
+		pushu	y			; Save the current filename area address
 		mv	il,$0c			; 'Searching for corresponding file name'
-		mv	a,$00			; 'Searching for the back of the specified directory number'
+		mv	a,0			; 'Searching for the back of the specified directory number'
 		callf	!fcs
-		pops	y			; Restore the current filename area address
+		popu	y			; Restore the current filename area address
 		mv	i,x
+		popu	x			; Restore IP
 		pushu	i			; Save the file name pattern on the stack
 		mvw	[--u],(!bx)		; Save the actual file directory position on the stack
 		mv	i,y
 		pushu	i			; Save the detected file name address on the stack
-		jrnc	lbl5
-lbl3:		mv	b,a			; Set new TOS
-		mv	a,$01			; (an error
-		ex	a,b			; occurred)
-lbl4:		pops	x			; Restore IP
-		jp	!interp__
-lbl5:		sub	ba,ba			; Set new TOS (no error)
-		jr	lbl4
 		pre_off
+		jp	!iorcheck__
 		endl
 ;-------------------------------------------------------------------------------
 find_file:	dw	stat_
@@ -5114,7 +4997,7 @@ find_file_xt:	local
 		dw	!two_dup_xt		;   2DUP
 		dw	!str_to_file_xt		;   STRING>FILE
 		dw	!r_from_xt		;   R>          \ c-addr u s-addr u
-		dw	!stat__xt		;   (STAT)     \ c-addr u s-addr u s-addr ior
+		dw	!stat__xt		;   (STAT)      \ c-addr u s-addr u s-addr ior
 		dw	!to_r_xt		;   >R          \ c-addr u s-addr u s-addr
 		dw	!rot_xt			;   ROT         \ c-addr u u s-addr s-addr
 		dw	!drop_xt		;   DROP        \ c-addr u u s-addr
@@ -5153,7 +5036,7 @@ lbl5:			dw	!over_xt		;     OVER
 			dw	!to_r_xt		;     >R
 			dw	!type_xt		;     TYPE
 			dw	!r_from_xt		;     R>            \ c-addr u u s-addr
-			dw	!status__xt		;     (STATUS)     \ c-addr u u s-addr ior
+			dw	!status__xt		;     (STATUS)      \ c-addr u u s-addr ior
 			dw	!drop_xt		;     DROP
 			dw	!dolit__xt		;     23
 			dw	23			;
@@ -5199,26 +5082,26 @@ free_capty:	dw	files
 		db	$04
 		db	'DSKF'			; ( c-addr u -- du ior )
 free_capty_xt:	local
-		pre_on
-		pushs	x			; Save IP
-		mv	x,!base_address
 		popu	ba			; Discard the length of the string (':' is the terminator)
+		pushu	x			; Save IP
+		mv	x,!base_address
 		add	x,ba			; X holds the address of the string
+		pre_on
 		mv	il,$0f			; 'Reading a free capacity of drive'
-		mv	a,$00			; Required
+		mv	a,0			; Required
 		callf	!fcs
+		popu	x			; Restore IP
 		mvw	[--u],(!si)		; Push on the stack the free
 		mv	il,(!si+2)		; capacity
 		pushu	i			; as a double
+		pre_off
 		jrnc	lbl3
 lbl1:		mv	b,a			; Set new TOS
 		mv	a,$01			; (an error
 		ex	a,b			; occurred)
-lbl2:		pops	x			; Restore IP
-		jp	!interp__
+lbl2:		jp	!interp__
 lbl3:		sub	ba,ba			; Set new TOS (no error)
 		jr	lbl2
-		pre_off
 		endl
 ;-------------------------------------------------------------------------------
 ;
@@ -5398,7 +5281,6 @@ set_symbols:	dw	key
 		db	$0b
 		db	'SET-SYMBOLS'		; ( u u -- )
 set_symbols_xt:	local
-		pushs	x			; Save IP
 		pre_on
 		mv	(!bl),a			; Store the symbol number
 		popu	ba			; BA (A, in fact) holds the pattern to display
@@ -5406,7 +5288,6 @@ set_symbols_xt:	local
 		mv	il,$46			; 'Symbol display'
 		callf	!iocs
 		pre_off
-		pops	x			; Restore IP
 		popu	ba			; Set new TOS
 		jp	!interp__
 		endl
@@ -5512,7 +5393,7 @@ tape_xt:	local
 		jrnc	lbl2			; Too large
 		mv	y,i			; Size
 		pre_on
-		;mvw	(!cx),$0004		; Tape (cx) is still set
+		mvw	(!cx),$0004		; Tape
 		mv	il,$42			; 'Input from tape'
 		callf	!iocs
 		pre_off
@@ -5553,23 +5434,20 @@ emit:		dw	tty
 		db	$04
 		db	'EMIT'			; : EMIT ( char -- )
 emit_xt:	local
-		pre_on
 		mv	i,[!tty_xt+3]		; The current output device file handle
 		dec	i			; Decrement it (because fileIDs start at index 1)
+		pre_on
 		mv	(!cl),il
 		mv	il,$06			; 'Writing a byte of the file'
 		callf	!fcs
+		pre_off
 		jrc	lbl1
 		popu	ba			; Set new TOS
 		jp	!interp__
 lbl1:		cmp	a,$ff			; Test if break key has been pushed
-		;mv	i,[!handler_xt+3]	; Test whether there is
-		;inc	i			; a handler for this exception or not
-		;dec	i			;
 		jpz	!break__
 		mv	il,-57			; Exception in sending or receiving a character
 		jp	!throw__
-		pre_off
 		endl
 ;-------------------------------------------------------------------------------
 cr:		dw	emit
@@ -5651,7 +5529,7 @@ x_store_xt:	local
 		dec	i
 		sub	i,ba			; Test if the value is not out of range
 		jrnc	lbl1
-		add	ba,i			; Set the value to its upper bound
+		mv	ba,i			; Set the value to its upper bound
 lbl1:		mv	[$bfc27],a
 		mv	[$bfc9b],a
 		popu	ba			; Set new TOS
@@ -5676,7 +5554,7 @@ y_store_xt:	local
 		dec	i
 		sub	i,ba			; Test if the value is not out of range
 		jrnc	lbl1
-		add	ba,i			; Set the value to its upper bound
+		mv	ba,i			; Set the value to its upper bound
 lbl1:		mv	[$bfc28],a
 		mv	[$bfc9c],a
 		popu	ba			; Set new TOS
@@ -5744,22 +5622,19 @@ type__xt:	local
 		mv	(!cl),il
 		popu	ba			; BA holds the length of the string to display
 		popu	i			; I holds the short address of the string to display
-		pushs	x			; Save IP
+		pushu	x			; Save IP
 		mv	x,!base_address		; X contains the address
 		add	x,i			; of the character string
 		mv	y,ba			; Y holds the number of characters into the string
 		mv	il,$04			; 'Writing a block of the file'
 		callf	!fcs
 		pre_off
+		popu	x			; Restore IP
 		mv	[$bfca1],(!el)		; Restore display mode
-		pops	x			; Restore IP
 		jrc	lbl1
 		popu	ba			; Set new TOS
 		jp	!interp__
 lbl1:		cmp	a,$ff			; Test if break key has been pushed
-		;mv	i,[!handler_xt+3]	; Test whether there is
-		;inc	i			; a handler for this exception or not
-		;dec	i			;
 		jpz	!break__
 		mv	il,-57			; Exception in sending or receiving a character
 		jp	!throw__
@@ -5822,16 +5697,16 @@ at_type:	dw	pause
 		db	$07
 		db	'AT-TYPE'		; ( n n c-addr u -- )
 at_type_xt:	local
-		pre_on
 		mv	y,ba			; Y holds the length of the character string
-		pushs	x			; Save IP
-		mv	x,!base_address
 		popu	ba			; BA holds the short address of the character string
-		add	x,ba			; X holds the address of the character string
+		pre_on
 		popu	i			; I holds the y coordinate at output position
 		mv	(!bh),il		; Save its 8 low-order bits
 		popu	i			; I holds the x coordinate at output position
 		mv	(!bl),il		; Save its 8 low-order bits
+		pushu	x			; Save IP
+		mv	x,!base_address
+		add	x,ba			; X holds the address of the character string
 lbl3:		mvw	(!cx),$0000		; LCD driver
 		mv	il,$42			; 'Character output to arbitrary position'		
 		callf	!iocs
@@ -5841,7 +5716,7 @@ lbl3:		mvw	(!cx),$0000		; LCD driver
 		mv	a,[$bfc9e]		; Test if the end of the
 		cmp	(!bh),a			; display has been reached
 		jrc	lbl3
-lbl4:		pops	x			; Restore IP
+lbl4:		popu	x			; Restore IP
 		popu	ba			; Set new TOS
 		jp	!interp__
 		pre_off
@@ -5851,24 +5726,24 @@ scroll:		dw	at_type
 		db	$06
 		db	'SCROLL'		; ( n -- )
 scroll_xt:	local
-		pre_on
 		pushu	x			; Save IP
 		mv	i,ba			; I holds the number of lines to be scrolled
 		add	i,i			; Test its sign
 		jrc	lbl2
-lbl1:		mv	il,$47			; 'n line scroll-up'
+		mv	il,$47			; 'n line scroll-up'
 		jr	lbl3		
-lbl2:		mv	il,$00
+lbl2:		mv	il,0
 		sub	i,ba
 		mv	ba,i
 		mv	il,$48			; 'n line scroll-down'
-lbl3:		mvw	(!cx),$0000
+lbl3:		pre_on
+		mvw	(!cx),$0000
 		mvw	(!bx),$0000
 		callf	!iocs
+		pre_off
 		popu	x			; Restore IP
 		popu	ba			; Set new TOS
 		jp	!interp__
-		pre_off
 		endl
 ;-------------------------------------------------------------------------------
 at_clr:		dw	scroll
@@ -5884,10 +5759,10 @@ at_clr_xt:	local
 		mvw	(!cx),$0000		; LCD driver
 		mv	il,$52			; 'Clearing of display 2'
 		callf	!iocs
-		popu	x			; Restore IP
-		popu	ba			; Restore TOS
-		jp	!interp__
 		pre_off
+		popu	x			; Restore IP
+		popu	ba			; Set new TOS
+		jp	!interp__
 		endl
 ;-------------------------------------------------------------------------------
 ;
@@ -5916,18 +5791,18 @@ gpoint:		dw	gmode_stor
 		db	$06
 		db	'GPOINT'		; ( n n -- )
 gpoint_xt:	local
-		pushs	x
-		pre_on
 		mv	y,ba
 		popu	i
+		pushu	x			; Save IP
 		mv	x,i
 		mv	ba,[!gmode_xt+3]
+		pre_on
 		mvw	(!cx),$0000
 		mv	il,$4c
 		callf	!iocs
 		pre_off
+		popu	x			; Restore IP
 		popu	ba
-		pops	x
 		jp	!interp__
 		endl
 ;-------------------------------------------------------------------------------
@@ -5935,19 +5810,19 @@ gpoint_qust:	dw	gpoint
 		db	$07
 		db	'GPOINT?'		; ( n n -- u )
 gpoint_qust_xt:	local
-		pushs	x
 		pre_on
 		mv	y,ba
 		popu	i
+		pushu	x			; Save IP
 		mv	x,i
 		mvw	(!cx),$0000
 		mv	il,$4d
 		callf	!iocs
 		pre_off
+		popu	x			; Restore IP
 		mv	b,a
-		mv	a,$00
+		mv	a,0
 		ex	a,b
-		pops	x
 		jp	!interp__
 		endl
 ;-------------------------------------------------------------------------------
@@ -5955,11 +5830,10 @@ gline:		dw	gpoint_qust
 		db	$05
 		db	'GLINE'			; ( n n n n u -- )
 gline_xt:	local
-		pushs	x
-		pre_on
 		mv	[$bfc2a],ba
 		mv	i,[!gmode_xt+3]
 		mv	[$bfc96],i
+		pre_on
 		popu	i
 		mv	(!dx),i
 		popu	i
@@ -5967,13 +5841,14 @@ gline_xt:	local
 		popu	i
 		mv	y,i
 		popu	i
+		pushu	x			; Save IP
 		mv	x,i
 		mvw	(!cx),$0000
 		mv	il,$4e
 		callf	!iocs
 		pre_off
-		popu	ba
-		pops	x
+		popu	x			; Restore IP
+		popu	ba			; Set new TOS
 		jp	!interp__
 		endl
 ;-------------------------------------------------------------------------------
@@ -5981,11 +5856,10 @@ gbox:		dw	gline
 		db	$04
 		db	'GBOX'			; ( n n n n u -- )
 gbox_xt:	local
-		pushs	x
-		pre_on
 		mv	[$bfc2a],ba
 		mv	i,[!gmode_xt+3]
 		mv	[$bfc96],i
+		pre_on
 		popu	i
 		mv	(!dx),i
 		popu	i
@@ -5993,13 +5867,14 @@ gbox_xt:	local
 		popu	i
 		mv	y,i
 		popu	i
+		pushu	x			; Save IP
 		mv	x,i
 		mvw	(!cx),$0000
 		mv	il,$4f
 		callf	!iocs
 		pre_off
-		popu	ba
-		pops	x
+		popu	x			; Restore IP
+		popu	ba			; Set new TOS
 		jp	!interp__
 		endl
 ;-------------------------------------------------------------------------------
@@ -6007,20 +5882,20 @@ gdots:		dw	gbox
 		db	$05
 		db	'GDOTS'			; ( n n u -- )
 gdots_xt:	local
-		pushs	x
-		pre_on
 		mv	i,[!gmode_xt+3]
 		mv	[$bfc96],i
 		popu	i
 		mv	y,i
 		popu	i
+		pushu	x			; Save IP
 		mv	x,i
+		pre_on
 		mvw	(!cx),$0000
 		mv	il,$4a
 		callf	!iocs
 		pre_off
-		popu	ba
-		pops	x
+		popu	x			; Restore IP
+		popu	ba			; Set new TOS
 		jp	!interp__
 		endl
 ;-------------------------------------------------------------------------------
@@ -6028,19 +5903,19 @@ gdots_quest:	dw	gdots
 		db	$06
 		db	'GDOTS?'		; ( n n -- u )
 gdots_quest_xt:	local
-		pushs	x
-		pre_on
 		mv	y,ba
 		popu	i
+		pushu	x			; Save IP
 		mv	x,i
+		pre_on
 		mvw	(!cx),$0000
 		mv	il,$4b
 		callf	!iocs
 		pre_off
+		popu	x			; Restore IP
 		mv	b,a
-		mv	a,$00
+		mv	a,0
 		ex	a,b
-		pops	x
 		jp	!interp__
 		endl
 ;-------------------------------------------------------------------------------
@@ -6075,18 +5950,18 @@ gblit_store:	dw	gdraw
 		db	$06
 		db	'GBLIT!'		; ( u addr -- )
 gblit_store_xt:	local
-		pushs	x
-		pre_on
+		popu	i
+		pushu	x			; Save IP
 		mv	x,!base_address
 		add	x,ba			; Address of 240 bytes 8-dot data to copy from the screen
-		popu	i
+		pre_on
 		mv	(!bh),il		; y coordinate (line 0 to 3) on screen
 		mvw	(!cx),$0000
 		mv	il,$55
 		callf	!iocs
 		pre_off
-		popu	ba
-		pops	x
+		popu	x			; Restore IP
+		popu	ba			; Set new TOS
 		jp	!interp__
 		endl
 ;-------------------------------------------------------------------------------
@@ -6094,18 +5969,18 @@ gblit_fetch:	dw	gblit_store
 		db	$06
 		db	'GBLIT@'		; ( u addr -- )
 gblit_fetch_xt:	local
-		pushs	x
-		pre_on
+		popu	i
+		pushu	x			; Save IP
 		mv	x,!base_address
 		add	x,ba			; Address of 240 bytes 8-dot data to copy to the screen
-		popu	i
+		pre_on
 		mv	(!bh),il		; y coordinate (line 0 to 3) on screen to write the data to
 		mvw	(!cx),$0000
 		mv	il,$56
 		callf	!iocs
 		pre_off
-		popu	ba
-		pops	x
+		popu	x			; Restore IP
+		popu	ba			; Set new TOS
 		jp	!interp__
 		endl
 ;-------------------------------------------------------------------------------
@@ -6959,26 +6834,35 @@ word_xt:	local
 ;-------------------------------------------------------------------------------
 check_name:	dw	word
 		db	$0a
-		db	'CHECK-NAME'
+		db	'CHECK-NAME'		; ( c-addr u -- c-addr u )
 check_name_xt:	local
-		jp	!docol__xt		; : CHECK-NAME ( c-addr u -- c-addr u )
-		dw	!dup_xt			;   DUP
-		dw	!zero_equals_xt		;   0=
-		dw	!if__xt			;   IF
-		dw	lbl2-lbl1		;
-lbl1:			dw	!dolit__xt	;     -16
-			dw	-16		;     \ Attempt to use a zero-length string as a name
-			dw	!throw_xt	;     THROW THEN
-lbl2:		dw	!dup_xt			;   DUP
-		dw	!dolit__xt		;   63
-		dw	63			;
-		dw	!u_grtr_than_xt		;   U>
-		dw	!if__xt			;   IF
-		dw	lbl4-lbl3		;
-lbl3:			dw	!dolit__xt	;     -19
-			dw	-19		;     \ Definition name too long
-			dw	!throw_xt	;     THROW THEN
-lbl4:		dw	!doret__xt		; ;
+		inc	ba			; Check if TOS is zero
+		dec	ba			;
+		mv	il,-16			; Attempt to use a zero-length string as a name
+		jpz	!throw__		;
+		mv	il,63			; Compare unsigned TOS to 63
+		sub	i,ba			;
+		mv	il,-19			; Definition name too long
+		jpc	!throw__		;
+		jp	!cont__
+;		jp	!docol__xt		; : CHECK-NAME ( c-addr u -- c-addr u )
+;		dw	!dup_xt			;   DUP
+;		dw	!zero_equals_xt		;   0=
+;		dw	!if__xt			;   IF
+;		dw	lbl2-lbl1		;
+;lbl1:			dw	!dolit__xt	;     -16
+;			dw	-16		;     \ Attempt to use a zero-length string as a name
+;			dw	!throw_xt	;     THROW THEN
+;lbl2:		dw	!dup_xt			;   DUP
+;		dw	!dolit__xt		;   63
+;		dw	63			;
+;		dw	!u_grtr_than_xt		;   U>
+;		dw	!if__xt			;   IF
+;		dw	lbl4-lbl3		;
+;lbl3:			dw	!dolit__xt	;     -19
+;			dw	-19		;     \ Definition name too long
+;			dw	!throw_xt	;     THROW THEN
+;lbl4:		dw	!doret__xt		; ;
 		endl
 ;-------------------------------------------------------------------------------
 parse_name:	dw	check_name
@@ -7461,18 +7345,6 @@ two_val_qst:	dw	value_quest
 two_val_qst_xt:	local
 		mv	i,!do2val__xt		; The (2VAL) execution token
 		jr	!quest__
-;		mv	y,!base_address		; Compute the address
-;		add	y,ba			; code field routine
-;		mv	a,[y++]			; Test the nature of the word
-;		cmp	a,$02			; (is it a call to a do2val ?)
-;		jrnz	lbl2
-;		mv	ba,[y]			; Read the address of the code field routine
-;		mv	i,!do2val__xt		; Compare it with
-;		sub	ba,i			; the do2val execution token
-;lbl2:		mv	ba,0			; Set new TOS to FALSE
-;		jrnz	lbl1
-;		dec	ba			; Set new TOS to TRUE
-;lbl1:		jp	!cont__
 		endl
 ;-------------------------------------------------------------------------------
 f_val_quest:	dw	two_val_qst
@@ -7481,18 +7353,6 @@ f_val_quest:	dw	two_val_qst
 f_val_quest_xt:	local
 		mv	i,!dofval__xt		; The (FVAL) execution token
 		jr	!quest__
-;		mv	y,!base_address		; Compute the address
-;		add	y,ba			; code field routine
-;		mv	a,[y++]			; Test the nature of the word
-;		cmp	a,$02			; (is it a call to a dofval ?)
-;		jrnz	lbl2
-;		mv	ba,[y]			; Read the address of the code field routine
-;		mv	i,!dofval__xt		; Compare it with
-;		sub	ba,i			; the dofval execution token
-;lbl2:		mv	ba,0			; Set new TOS to FALSE
-;		jrnz	lbl1
-;		dec	ba			; Set new TOS to TRUE
-;lbl1:		jp	!cont__
 		endl
 ;-------------------------------------------------------------------------------
 to:		dw	f_val_quest
@@ -7586,8 +7446,8 @@ lbl5:			dw	!to_body_xt		;     >BODY
 			dw	!fetch_xt		;     @
 			dw	!if__xt			;     IF
 			dw	lbl7-lbl6		;                                      
-lbl6:				dw	!dolit__xt	;       ['] (D+2TO) \ POSTPONE (D+2TO)
-				dw	!dodplus2to__xt	;                                      
+lbl6:				dw	!dolit__xt	;       ['] (D+TO) \ POSTPONE (D+2TO)
+				dw	!dodplusto__xt	;                                      
 				dw	!compile_com_xt	;       COMPILE,
 				dw	!comma_xt	;       ,
 				dw	!doexit__xt	;       EXIT THEN
@@ -7601,13 +7461,15 @@ lbl8:		dw	!dolit__xt			;   -32
 ;-------------------------------------------------------------------------------
 undef_:		dw	plus_to
 		db	$07
-		db	'(UNDEF)'
+		db	'(UNDEF)'		; ( -- )
 undef__xt:	local
-		jp	!docol__xt		; : (UNDEF) ( -- )
-		dw	!dolit__xt		;   -256
-		dw	-256			;   \ Execution of an uninitialized deferred word
-		dw	!throw_xt		;   THROW
-		dw	!doret__xt		; ;
+		mv	il,0			; -256 = $ff00 + 0 exception thrown
+		jp	!throw__		; Execution of an uninitialized deferred word
+;		jp	!docol__xt		; : (UNDEF) ( -- )
+;		dw	!dolit__xt		;   -256
+;		dw	-256			;   \ Execution of an uninitialized deferred word
+;		dw	!throw_xt		;   THROW
+;		dw	!doret__xt		; ;
 		endl
 ;-------------------------------------------------------------------------------
 defer:		dw	undef_
@@ -7651,18 +7513,6 @@ defer_quest:	dw	defer_store
 defer_quest_xt:	local
 		mv	i,!dodefer__xt		; The (DEF) execution token
 		jp	!quest__
-;		mv	y,!base_address		; Compute the address of the
-;		add	y,ba			; address of the code field routine
-;		mv	a,[y++]			; Test the nature of the word
-;		cmp	a,$02			; (is it a call to a dodefer ?)
-;		jrnz	lbl2
-;		mv	ba,[y]			; Read the address of the code field routine
-;		mv	i,!dodefer__xt		; Compare it with
-;		sub	ba,i			; the (DEF) execution token
-;lbl2:		mv	ba,0			; Set new TOS to FALSE
-;		jrnz	lbl1
-;		dec	ba			; Set new TOS to TRUE
-;lbl1:		jp	!cont__
 		endl
 ;-------------------------------------------------------------------------------
 is:		dw	defer_quest
@@ -7725,18 +7575,6 @@ colon_quest:	dw	action_of
 colon_quest_xt:	local
 		mv	i,!docol__xt		; The (:) execution token
 		jp	!quest__
-;		mv	y,!base_address		; Compute the address of the
-;		add	y,ba			; address of the code field routine
-;		mv	a,[y++]			; Test the nature of the word
-;		cmp	a,$02			; (is it a call to a docol ?)
-;		jrnz	lbl2
-;		mv	ba,[y]			; Read the address of the code field routine
-;		mv	i,!docol__xt		; Compare it with
-;		sub	ba,i			; the DOCOL execution token
-;lbl2:		mv	ba,0			; Set new TOS to FALSE
-;		jrnz	lbl1
-;		dec	ba			; Set new TOS to TRUE
-;lbl1:		jp	!cont__
 		endl
 ;-------------------------------------------------------------------------------
 does_quest:	dw	colon_quest
@@ -7800,18 +7638,6 @@ marker_qust:	dw	marker
 marker_qust_xt:	local
 		mv	i,!marker_xt!marker_bhvr_xt	; The marker behavior execution token
 		jp	!quest__
-;		mv	y,!base_address
-;		add	y,ba
-;		mv	a,[y++]				; Is it a call to a jump?
-;		cmp	a,$02				;
-;		jrnz	lbl2
-;		mv	ba,[y]				; Compare the jump
-;		mv	i,!marker_xt!marker_bhvr_xt	; address to the address
-;		sub	i,ba				; of the behavior of a marker
-;lbl2:		mv	ba,0				; Set TOS to FALSE
-;		jrnz	lbl1
-;		dec	ba				; Set TOS to TRUE
-;lbl1:		jp	!cont__
 		endl
 ;-------------------------------------------------------------------------------
 anew:		dw	marker_qust
@@ -8241,7 +8067,20 @@ two_literal_xt:	local
 		dw	!doret__xt		; ; IMMEDIATE
 		endl
 ;-------------------------------------------------------------------------------
-s_literal:	dw	two_literal
+f_literal:	dw	two_literal
+		db	$88
+		db	'FLITERAL'
+f_literal_xt:	local
+		jp	!docol__xt		; : FLITERAL ( F: r -- )
+		dw	!quest_comp_xt		;   ?COMP
+		dw	!dolit__xt		;   ['] (FLIT)
+		dw	!doflit__xt		;
+		dw	!compile_com_xt		;   COMPILE,
+		dw	!f_comma_xt		;   F,
+		dw	!doret__xt		; ; IMMEDIATE
+		endl
+;-------------------------------------------------------------------------------
+s_literal:	dw	f_literal
 		db	$88
 		db	'SLITERAL'
 s_literal_xt:	local
@@ -8261,25 +8100,12 @@ s_literal_xt:	local
 		dw	!doret__xt		; ; IMMEDIATE
 		endl
 ;-------------------------------------------------------------------------------
-f_literal:	dw	s_literal
-		db	$88
-		db	'FLITERAL'
-f_literal_xt:	local
-		jp	!docol__xt		; : FLITERAL ( F: r -- )
-		dw	!quest_comp_xt		;   ?COMP
-		dw	!dolit__xt		;   ['] (FLIT)
-		dw	!doflit__xt		;
-		dw	!compile_com_xt		;   COMPILE,
-		dw	!f_comma_xt		;   F,
-		dw	!doret__xt		; ; IMMEDIATE
-		endl
-;-------------------------------------------------------------------------------
-dot_quote:	dw	f_literal
+dot_quote:	dw	s_literal
 		db	$82
 		db	'."'
 dot_quote_xt:	local
 		jp	!docol__xt		; : ." ( "ccc<quote>" -- )
-		dw	!quest_comp_xt		;   ?COMP
+		;dw	!quest_comp_xt		;   ?COMP \ this is already checked by SLITERAL
 		dw	!dolit__xt		;   '"
 		dw	$22			;   \ The value of the quote character
 		dw	!parse_xt		;   PARSE
@@ -8300,8 +8126,7 @@ s_bs_quote_xt:	local
 		dw	!fetch_xt		;   @
 		dw	!if__xt			;   IF
 		dw	lbl2-lbl1
-lbl1:			dw	!s_literal_xt	;     SLITERAL
-			dw	!doexit__xt	;     EXIT THEN
+lbl1:			dw	!s_literal_xt	;     SLITERAL THEN
 lbl2:		dw	!doret__xt		; ; IMMEDIATE
 		endl
 ;-------------------------------------------------------------------------------
@@ -8375,8 +8200,7 @@ tick_:		dw	c_quote
 		db	'('')'
 tick__xt:	local
 		jp	!docol__xt		; : (') ( "<spaces>name" -- 0 0 | xt 1 | xt -1 )
-		dw	!blnk_xt		;   BL
-		dw	!parse_word_xt		;   PARSE-WORD
+		dw	!parse_name_xt		;   PARSE-NAME
 		dw	!find_word_xt		;   FIND-WORD
 		dw	!doret__xt		; ;
 		endl
@@ -8492,8 +8316,7 @@ char:		dw	forget
 		db	'CHAR'
 char_xt:	local
 		jp	!docol__xt		; : CHAR ( "<spaces>name" -- char )
-		dw	!blnk_xt		;   BL
-		dw	!parse_word_xt		;   PARSE-WORD
+		dw	!parse_name_xt		;   PARSE-NAME
 		dw	!if__xt			;   IF
 		dw	lbl2-lbl1		;
 lbl1:			dw	!c_fetch_xt	;     C@
@@ -8519,49 +8342,67 @@ brkt_char_xt:	local
 ;		PICTURED NUMERIC OUTPUT
 ;
 ;-------------------------------------------------------------------------------
-hp:		dw	brkt_char
-		db	$02
-		db	'HP'
-hp_xt:		local
-		jp	!dovar__xt		; VARIABLE HP
-		dw	0
-		endl
+;hp:		dw	brkt_char
+;		db	$02
+;		db	'HP'
+;hp_xt:		local
+;		jp	!doval__xt		; 0 VALUE HP
+;		dw	0			; Hold pointer to the hold area
+;		endl
 ;-------------------------------------------------------------------------------
-less_nb_sgn:	dw	hp
+less_nb_sgn:	dw	brkt_char
 		db	$02
-		db	'<#'
+		db	'<#'			; ( -- )
 less_nb_sgn_xt:	local
-		jp	!docol__xt		; : <# ( -- )
-		dw	!here_xt		;   HERE
-		dw	!dolit__xt		;   #hold_size
-		dw	!hold_size		;   \ ENVIRONMENT? /HOLD size
-		dw	!plus_xt		;   +
-		dw	!hp_xt			;   HP
-		dw	!store_xt		;   !
-		dw	!doret__xt		; ;
+		pushu	ba			; Save TOS
+		mv	ba,(!wi)		; BA holds HERE
+		mv	il,!hold_size		;
+		add	ba,i			; BA holds HERE+hold_size
+		mv	[!hp_value],ba		; Save BA to HP
+		popu	ba			; Restore TOS
+		jp	!cont__
+;		jp	!docol__xt		; : <# ( -- )
+;		dw	!here_xt		;   HERE
+;		dw	!dolit__xt		;   #hold_size
+;		dw	!hold_size		;   \ ENVIRONMENT? /HOLD size
+;		dw	!plus_xt		;   +
+;		dw	!doto__xt		;   TO HP
+;		dw	!hp_xt+3		;
+;		dw	!doret__xt		; ;
 		endl
 ;-------------------------------------------------------------------------------
 hold:		dw	less_nb_sgn
 		db	$04
 		db	'HOLD'
 hold_xt:	local
-		jp	!docol__xt		; : HOLD ( char -- )
-		dw	!hp_xt			;   HP
-		dw	!fetch_xt		;   @
-		dw	!dup_xt			;   DUP
-		dw	!here_xt		;   HERE
-		dw	!u_less_than_xt		;   U<
-		dw	!if__xt			;   IF
-		dw	lbl2-lbl1		;
-lbl1:			dw	!dolit__xt	;     -17
-			dw	-17		;     \ pictured numeric output string overflow
-			dw	!throw_xt	;     THROW
-lbl2:		dw	!one_minus_xt		;   1-
-		dw	!dup_xt			;   DUP
-		dw	!hp_xt			;   HP
-		dw	!store_xt		;   !
-		dw	!c_store_xt		;   C!
-		dw	!doret__xt		; ;
+		pushu	a			; Save TOS low order 8 bits
+		mv	ba,[!hp_value]		; BA holds HP
+		cmpw	(!wi),ba		; Check if HP > HERE
+		mv	il,-17			; Pictured numeric output string overflow
+		jpnc	!throw__		;
+		dec	ba			; Decrement HP
+		mv	[!hp_value],ba		; Save new HP
+		mv	y,[!hp_value]		; Y holds the HP address
+		popu	a			;
+		mv	[y],a			; Store char at [HP]
+		popu	ba			; Set new TOS
+		jp	!cont__
+;		jp	!docol__xt		; : HOLD ( char -- )
+;		dw	!hp_xt			;   HP
+;		dw	!dup_xt			;   DUP
+;		dw	!here_xt		;   HERE
+;		dw	!u_less_than_xt		;   U<
+;		dw	!if__xt			;   IF
+;		dw	lbl2-lbl1		;
+;lbl1:			dw	!dolit__xt	;     -17
+;			dw	-17		;     \ pictured numeric output string overflow
+;			dw	!throw_xt	;     THROW
+;lbl2:		dw	!one_minus_xt		;   1-
+;		dw	!dup_xt			;   DUP
+;		dw	!doto__xt		;   TO HP
+;		dw	!hp_xt+3		;
+;		dw	!c_store_xt		;   C!
+;		dw	!doret__xt		; ;
 		endl
 ;-------------------------------------------------------------------------------
 holds:		dw	hold
@@ -8668,20 +8509,27 @@ nmbr_sign_s_xt:	local
 ;-------------------------------------------------------------------------------
 nb_sgn_grtr:	dw	nmbr_sign_s
 		db	$02
-		db	'#>'
+		db	'#>'			; ( xd -- c-addr u )
 nb_sgn_grtr_xt:	local
-		jp	!docol__xt		; : #> ( xd -- c-addr u )
-		dw	!two_drop_xt		;   2DROP
-		dw	!here_xt		;   HERE
-		dw	!dolit__xt		;   #hold_size
-		dw	!hold_size		;   \ ENVIRONMENT? /HOLD size
-		dw	!plus_xt		;   +
-		dw	!hp_xt			;   HP
-		dw	!fetch_xt		;   @
-		dw	!dup_xt			;   DUP
-		dw	!not_rot_xt		;   -ROT
-		dw	!minus_xt		;   -
-		dw	!doret__xt		; ;
+		popu	ba			; Discard TOS and 2OS
+		mv	ba,[!hp_value]		;
+		pushu	ba			; Set new 2OS to HP
+		mv	il,!hold_size		;
+		sub	i,ba			; I holds hold_size - HP
+		mv	ba,(!wi)		; BA holds HERE
+		add	ba,i			; Set new TOS to HERE + hold_size - HP
+		jp	!cont__
+;		jp	!docol__xt		; : #> ( xd -- c-addr u )
+;		dw	!two_drop_xt		;   2DROP
+;		dw	!here_xt		;   HERE
+;		dw	!dolit__xt		;   #hold_size
+;		dw	!hold_size		;   \ ENVIRONMENT? /HOLD size
+;		dw	!plus_xt		;   +
+;		dw	!hp_xt			;   HP
+;		dw	!dup_xt			;   DUP
+;		dw	!not_rot_xt		;   -ROT
+;		dw	!minus_xt		;   -
+;		dw	!doret__xt		; ;
 		endl
 ;-------------------------------------------------------------------------------
 ;
@@ -8926,7 +8774,7 @@ lbl2:		mv	[!dbl_xt+3],i		; Set DBL flag
 		mv	(!hl),a			; Reduce the number of digits to the buffer size
 		rc
 		shr	a			; Check if A is even
-		mv	il,a			; IL is half A -> number of BCD bytes
+		mv	i,ba			; IL is half A -> number of BCD bytes
 		mv	a,$50			; A holds $50
 		jrnc	lbl3			; A was even?
 		swap	a			; A holds $05
@@ -9967,7 +9815,7 @@ to_float_xt:	local
 		sbcl	(!fp),(!fp)
 		mvw	(!ex),$0000		; Set parsed exponent part (el) to zero and sign (eh) to positive
 		mvw	(!fx),$ff00		; Set parsed number of significant digits (fl) to zero
-		;;;				; and number of significant digits (fh) before the decimal point (-1 means no dp)
+		;				; and number of significant digits (fh) before the decimal point (-1 means no dp)
 		inc	ba
 		mv	i,ba			; I holds the TOS string length + 1
 		popu	ba
@@ -11122,7 +10970,10 @@ lbl2:		dw	!dup_xt			;   DUP
 		dw	lbl4-lbl3		;
 lbl3:			dw	!drop_xt	;     DROP
 			dw	!doexit__xt	;     EXIT THEN
-lbl4:		dw	!cr_xt			;   CR
+lbl4:		dw	!stdo_xt		;   STDO
+		dw	!doto__xt		;   TO TTY
+		dw	!tty_xt+3		;
+		dw	!cr_xt			;   CR
 		dw	!source_xt		;   SOURCE
 		dw	!to_in_xt		;   >IN
 		dw	!fetch_xt		;   @

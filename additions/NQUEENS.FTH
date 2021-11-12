@@ -1,3 +1,5 @@
+\ NQUEENS.FTH n-queens calculator benchmark
+
 ANEW _NQUEENS_
 
 8 CONSTANT RR
@@ -32,8 +34,6 @@ CREATE AA RR 1+ ALLOT
 ;
 
 : NQUEENS
-  ( STARTTIMER )
   NQCORE
   ." S=" SS .
-  ( DISPLAYTIMER ) CR
 ;
