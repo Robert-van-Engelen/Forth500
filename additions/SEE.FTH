@@ -8,24 +8,19 @@
 0 VALUE IMM
 
 \ display the name of an xt
-: NAME. ( xt -- )
-  ['] >NAME CATCH IF S" ???" ELSE NAME>STRING THEN TYPE ;
+: NAME.         ( xt -- ) ['] >NAME CATCH IF S" ???" ELSE NAME>STRING THEN TYPE ;
 
 \ display the name of an xt formatted as a colon definition
-: COLON. ( xt -- )
-  ['] >NAME CATCH IF S" :NONAME" ELSE ." : " NAME>STRING THEN TYPE ;
+: COLON.        ( xt -- ) ['] >NAME CATCH IF S" :NONAME" ELSE ." : " NAME>STRING THEN TYPE ;
 
 \ display TO name
-: TO. ( ip -- ip )
-  CELL+ DUP @ 3 - SPACE NAME. ;
+: TO.           ( ip -- ip ) CELL+ DUP @ 3 - SPACE NAME. ;
 
 \ display the jump distance of a jump word from the current ip and increment ip by 2
-: JUMP. ( ip -- ip )
-  CELL+ DUP @ OVER + CELL+ ."  ->" HEX. ;
+: JUMP.         ( ip -- ip ) CELL+ DUP @ OVER + CELL+ ."  ->" HEX. ;
 
 \ display a cell in decimal, hex and as a word if the value matches an execution token
-: CELL. ( x -- )
-  DUP . DUP '$ EMIT HEX. ['] >NAME CATCH IF DROP ELSE NAME>STRING TYPE THEN ;
+: CELL.         ( x -- ) DUP . DUP '$ EMIT HEX. ['] >NAME CATCH IF DROP ELSE NAME>STRING TYPE THEN ;
 
 \ display the words of a colon definition starting at address ip
 : SEE-DEF ( ip -- )

@@ -1059,17 +1059,17 @@ define a word to scale degrees and radians to the current unit before applying
 a trigonometric function:
 
     3.141592654e FCONSTANT PI
-    : ?>DBL     FP@ FLOAT+ C@ 1 AND FP@ C@ OR FP@ C! ;
-    : DEG>      90e F/ 0e ?>DBL FACOS F* ;
-    : RAD>      FDUP F+ PI F/ 0e ?>DBL FACOS F* ;
-    : >DEG      0e ?>DBL FACOS F/ 90e F* ;
-    : >RAD      0e ?>DBL FACOS FDUP F+ F/ PI F* ;
+    : ?>dbl     FP@ FLOAT+ C@ 1 AND FP@ C@ OR FP@ C! ;
+    : deg>      90e F/ 0e+0 ?>dbl FACOS F* ;
+    : rad>      FDUP F+ PI F/ 0e+0 ?>dbl FACOS F* ;
+    : >deg      0e+0 ?>dbl FACOS F/ 90e F* ;
+    : >rad      0e+0 ?>dbl FACOS FDUP F+ F/ PI F* ;
 
-For example, `30e DEG> FSIN` ("30 degree from sine") and `PI 6e F/ RAD> FSIN`
+For example, `30e deg> FSIN` ("30 degree from sine") and `PI 6e F/ rad> FSIN`
 both return 0.5e+0 on the floating point stack regardless of the current
-angular unit.  Likewise `0.5E FASIN >DEG` ("half arcsine to degree") returns
+angular unit.  Likewise `0.5E FASIN >deg` ("half arcsine to degree") returns
 30.0e+0 on the floating point stack regardless of the current angular unit.
-The `?>DBL` word promotes the FP TOS to a double if the FP 2OS is a double.
+The `?>dbl` word promotes the FP TOS to a double if the FP 2OS is a double.
 This word allows angular unit conversion words to support both single and
 double precision floating point values.  See [floating point
 cnostants](#floating-point-constants) for the internal floating point format.
@@ -1599,7 +1599,7 @@ mode to set, reset or reverse pixels:
 | --------- | ------------------------------ | ---------------------------------
 | `GMODE!`  | ( 0\|1\|2 -- )                 | pixels are set (0), reset (1) or reversed (2), stores in `VARIABLE` `GMODE`
 | `GPOINT`  | ( _n1_ _n2_ -- )               | draw a pixel at x=_n1_ and y=_n2_
-| `GPOINT?` | ( _n1_ _n2_ -- _flag_ )        | returns `TRUE` if a pixel is set at x=_n1_ and y=_n2_
+| `GPOINT?` | ( _n1_ _n2_ -- 0\|1\|-1 )      | returns 1 if a pixel is set at x=_n1_ and y=_n2_ or 0 if unset or -1 when outside of the screen
 | `GLINE`   | ( _n1_ _n2_ _n3_ _n4_ _u_ -- ) | draw a line from x=_n1_ and y=_n2_ to x=_n3_ and y=_n4_ with pattern _u_
 | `GBOX`    | ( _n1_ _n2_ _n3_ _n4_ _u_ -- ) | draw a filled box from x=_n1_ and y=_n2_ to x=_n3_ and y=_n4_ with pattern _u_
 | `GDOTS`   | ( _n1_ _n2_ _u_ -- )           | draw a row of 8 pixels _u_ at x=_n1_ and y=_n2_
@@ -2928,6 +2928,31 @@ To draw a randomized "starry night" on the 240x32 pixel screen:
 Note that Forth500 includes an `FRAND` floating point random number generator,
 see [floating point arithmetic](#floating-point-arithmetic).
 
+As an example application of `rand`, let's simulate a Galton board with 400
+balls and as much as 100 levels of pegs:
+
+    400 VALUE balls     \ number of balls to drop
+    100 VALUE levels    \ levels of pegs on the board
+    120 VALUE middle    \ starting point on the screen
+
+Dropping a ball in the board means going left or right at each peg on the
+board, performing a random walk:
+
+    : random-walk   ( n n -- n ) 0 DO rand 1 AND 2* 1- + LOOP ;
+
+Balls accumulate at the bottom on top of eachother:
+    
+    : accumulate    ( n -- ) 0 BEGIN 2DUP GPOINT? 0= WHILE 1+ REPEAT 1- GPOINT ;
+
+Each ball drops from the middle, makes a random walk, and accumulates making a
+click sound:
+    
+    : drop-ball     middle levels random-walk accumulate 100 10 BEEP ;
+
+The program repeats for all balls:
+    
+    : Galton        0 GMODE! PAGE balls 0 DO drop-ball LOOP S" done" PAUSE ;
+
 ### SQRT
 
 The square root of a number is approximated with Newton's method.  Forth500
@@ -3324,9 +3349,29 @@ strings and use compaction to keep the heap space efficiently used.
 ### Enums
 
 Enumerated values can be created with multiple `CONSTANT`, each for a new
-enumeration value.  Another approach is to use the unique address of a word as
-the enumeration value, assuming the actual value does not matter as long as it
-is unique.  Consider for example an enumeration of colors:
+enumeration value.  We can automate the constant value assignments as follows:
+
+    : begin-enum        ( -- n ) 0 ;
+    : enum              ( n "name" -- n ) DUP CONSTANT 1+ ;
+    : end-enum          ( -- n ) DROP ;
+
+Such that:
+
+    begin-enum
+      enum red
+      enum white
+      enum blue
+    end-enum
+
+will create the constants `red`, `white` and `blue` with values 0, 1 and 2,
+respectively.  In a similar way we can define a `bitmask` word using `1 OVER
+LSHIFT` to set the constants to 1, 2, 4, 8 and so on to perform bit operations
+with `AND`, `OR`, `XOR` and `INVERT`.
+
+If we don't care about the constants as long as they are unique, then another
+approach is to use the unique address of a word as the enumeration value,
+assuming the actual value does not matter as long as it is unique.  Consider
+for example an enumeration of colors:
 
     CREATE red
     CREATE white
