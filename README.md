@@ -20,7 +20,7 @@ The [n-queens benchmark](https://www.hpmuseum.org/cgi-sys/cgiwrap/hpmuseum/artic
 
 To use Forth500, first load the binary, then `CALL &B0000` (see [expanded E500](E500-expanded)) or `CALL &B9000` (see [unexpanded E500](E500-unexpanded)).  Forth500 starts immediately and can be exited with `BYE`.  Call again to continue using Forth500 where you left off.  Forth500 resides in protected memory and does not interfere with BASIC.
 
-Forth programs can be loaded into Forth500 via the serial interface or via a cassette interface with the [PocketTools](https://www.peil-partner.de/ifhe.de/sharp/).
+Forth programs can be loaded into Forth500 via the serial interface or cassette interface with [PocketTools](https://www.peil-partner.de/ifhe.de/sharp/).
 
 ## Batteries included...
 
