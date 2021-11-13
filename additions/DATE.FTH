@@ -69,7 +69,7 @@ ANEW _DATE_
 
 : ymd2day	( y m d -- day )
 	(ymd2day)		\ day year/4
-	OVER 1+ OVER gregorian. D< 0= IF
+	OVER 1+ OVER gregorian. D>= IF
 	25 /MOD SWAP 	S>D	\ day year/100 remainder_double
 	1461. D* ROT		\ day days_double1 year/100 
 	4 /MOD SWAP S>D 	\ day days_double1 year/400 remainder_double
