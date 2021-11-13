@@ -2,6 +2,7 @@
 \ convert day since 0-3-1 to ymd
 \ public domain
 \ forth-ev.de/wiki/examples:daymonthyear
+\ adapted to Forth500 by Klaus Overhage
 
 .( Loading DATE...)
 
