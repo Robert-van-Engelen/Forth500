@@ -16,7 +16,7 @@ ANEW _DATE_
 : D>=	D< INVERT ;
 
 
-: /mod3	( n1 n2 -- r q )
+: /mod3		( n1 n2 -- r q )
 	DUP >R /MOD DUP 4 = IF DROP R@ + 3 THEN R>DROP ;
 
 : D/mod3	( d1 d2 -- dr dq )
