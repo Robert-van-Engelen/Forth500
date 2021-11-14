@@ -1501,6 +1501,17 @@ The following words return key presses and control the key buffer:
 | `>KEY-BUFFER` | ( _c-addr_ _u_ -- )      | fill the key buffer with the string of characters at address _c-addr_ size _u_
 | `MS`          | ( _u_ -- )               | stops execution for _u_ milliseconds
 
+The `KEY` word returns a nonzero 7-bit ASCII code and ignores any special keys.
+
+The `EKEY` word returns a PC-E500(S) key event code as two bytes b1 and b2
+stored in a single 16 bit cell b1+256\*b2.  A 7-bit nonzero ASCII code is
+returned as b1 when b2 is zero.  If b1 is zero then b2 contains the PC-E500(S)
+second byte code assigned to special keys.  See BASIC `INPUT$` in the PC-E500
+manual page 268 for the corresponding key code table for byte 2.
+
+The `INKEY` word returns a value between 0 and 255.  See BASIC `INKEY$` in the
+PC-E500 manual page 265 for the corresponding key code table.
+
 ## Character output
 
 The following words display characters and text:
@@ -1876,7 +1887,7 @@ compiles the execution token of the most recent colon definition (i.e.  the
 word we are defining) into the compiled code:
 
     : RECURSE
-      ?COMP     \ error if we are not compiling
+      ?COMP     \ error -14 if we are not compiling
       LAST-XT   \ the execution token of the word being defined
       COMPILE,  \ compile it into code
     ; IMMEDIATE
@@ -2783,8 +2794,31 @@ Forth500 words:
 ## Environment queries
 
 The `ENVIRONMENT?` word takes a string to return system-specific information
-about this Forth implementation as required by [standard
+about the Forth500 implementation as required by [standard
 Forth](https://forth-standard.org/standard/usage#usage:env) `ENVIRONMENT?`.
+These queries return `TRUE` with a value of the indicated type:
+
+| query string         | type   | meaning
+| -------------------- | ------ | ----------------------------------------------
+| `/COUNTED-STRING`    | _n_    | maximum size of a counted string, in characters
+| `/HOLD`              | _n_    | size of the pictured numeric output string buffer, in characters
+| `/PAD`               | _n_    | size of the scratch area pointed to by PAD, in characters
+| `ADDRESS-UNIT-BITS`  | _n_    | size of one address unit, in bits
+| `FLOORED`            | _flag_ | true if floored division is the default
+| `MAX-CHAR`           | _u_    | maximum value of any character in the implementation-defined character set
+| `MAX-D`              | _d_    | largest usable signed double number
+| `MAX-N`              | _n_    | largest usable signed integer
+| `MAX-U`              | _u_    | largest usable unsigned integer
+| `MAX-UD`             | _ud_   | largest usable unsigned double number
+| `RETURN-STACK-CELLS` | _n_    | maximum size of the return stack, in cells
+| `STACK-CELLS`        | _n_    | maximum size of the data stack, in cells
+| `FLOATING-STACK`     | _n_    | maximum size of the floating point stack, in floats
+| `MAX-FLOAT`          | _r_    | largest usable floating point number
+
+For example, `S" MAX-N" ENVIRONMENT? . .` displays `-1` (true) and `32767`.
+
+Non-implemented and obsolescent queries (according to standard Forth) return
+`FALSE`.
 
 ## Dictionary structure
 
