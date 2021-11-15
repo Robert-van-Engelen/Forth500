@@ -339,7 +339,8 @@ For convenience, the words `ON` and `OFF` can be used:
     spanish ? ↲
     -1 OK[0]
 
-The `?` word is a shorthand for `@ .` to display the value of a variable:
+The `?` word used in the example above is a shorthand for `@ .` to display the
+value of a variable:
 
     : ? @ . ;
 
@@ -635,6 +636,7 @@ Return stack effects are prefixed with `R:`.  For example:
 
 The word `>R` ("to r") moves _x_ from the stack to the so-called "return
 stack".  The word `R>` ("r from") moves _x_ from the return stack to the stack.
+
 The return stack is used to keep return addresses of words executed and to
 store temporary values.  When using the return stack to store values
 temporarily in your code, it is very important to keep the return stack
@@ -1055,6 +1057,27 @@ the result of the operation is a double precision floating point value.  For
 example, `0d F+` promotes a single precision value to a double precision
 value by adding a double precision zero.
 
+`F**` returns _r1_ to the power _r2_.
+
+`FLOOR` returns _r_ truncated towards negative values, for example `-1.5e
+FLOOR` returns -2e+0.  `FTRUNC` returns _r_ truncated towrds zero, for example
+`-1.5e+0 FTRUNC` returns -1e+0.
+
+`FDMS` returns the degrees (or hours) dd with the minutes mm and seconds ss as
+a fraction.  `FDEG` performs the opposite.  For example, `36.09055e0 FDMS`
+returns 36.052598 or 36° 5' 25.98".  The `FDEG` and `FDMS` words are also
+useful for time conversions.
+
+`FRAND` returns a pseudo-random number in the open range _r2_ ∈ (0,1) if
+_r1_<1e and in the closed range _r2_ ∈ [1,_r1_] otherwise.  A double precision
+pseudo-random number is returned when _r1_ is a double precision floating point
+value.
+
+`F>D` throws an exception when the floating point value _r_ is too large for an
+unsigned 32 bit integer, i.e. when |_r_|>4294967295.  Likewise, `F>S` throws an
+exception when _r_ is too large for an unsigned 16 bit integer, i.e. when
+|_r_|>65535.
+
 Trigonometric functions are performed in the current angular unit (DEG, RAD or
 GRAD).  You can use the BASIC interpreter to set the desired angular unit or
 define a word to scale degrees and radians to the current unit before applying
@@ -1074,26 +1097,7 @@ angular unit.  Likewise `0.5E FASIN >deg` ("half arcsine to degree") returns
 The `?>dbl` word promotes the FP TOS to a double if the FP 2OS is a double.
 This word allows angular unit conversion words to support both single and
 double precision floating point values.  See [floating point
-cnostants](#floating-point-constants) for the internal floating point format.
-
-`F**` returns _r1_ to the power _r2_.
-
-`FLOOR` returns _r_ truncated towards negative values.
-
-`FDMS` returns the degrees (or hours) dd with the minutes mm and seconds ss as
-a fraction.  `FDEG` performs the opposite.  For example, `36.09055e0 FDMS`
-returns 36.052598 or 36° 5' 25.98".  The `FDEG` and `FDMS` words are also
-useful for time conversions.
-
-`FRAND` returns a pseudo-random number in the open range _r2_ ∈ (0,1) if
-_r1_<1e and in the closed range _r2_ ∈ [1,_r1_] otherwise.  A double precision
-pseudo-random number is returned when _r1_ is a double precision floating point
-value.
-
-`F>D` throws an exception when the floating point value _r_ is too large for an
-unsigned 32 bit integer, i.e. when |_r_|>4294967295.  Likewise, `F>S` throws an
-exception when _r_ is too large for an unsigned 16 bit integer, i.e. when
-|_r_|>65535.
+constants](#floating-point-constants) for the internal floating point format.
 
 The following additional floating point extended word set definitions are not
 built in Forth500 and defined in `FLOATEXT.FTH`.  These words apply to both
@@ -3245,7 +3249,7 @@ We can also accept user input into a string:
     : stredit   ( string len -- )
       >R DUP strmax R> \ -- string max len
       DUP              \ place cursor at the end (=len)
-      0                \ allow edits to the begin at position 0
+      0                \ allow edits to the begin at position 0 (no prompt)
       EDIT strupdate ;
 
 For example:
@@ -3364,7 +3368,7 @@ To create arrays of (uninitialized) strings:
     : sarray:   ( size max "name" -- ; index -- string len )
       CREATE
         DUP , 2+ * ALLOT \ save max and allocate space
-      DOES>
+      DOES>     ( array-addr index -- string len )
         SWAP OVER @  \ -- addr index max
         DUP>R        \ save max
         2+ * + CELL+ \ address in the array = (max+2)*index+addr+2
