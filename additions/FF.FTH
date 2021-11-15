@@ -1,4 +1,4 @@
-\ FF.FTH
+\ FF.FTH display floating point values as proper fractions
 
 .( Loading FF...)
 
@@ -23,7 +23,7 @@ ANEW _FF_
   0e+0 FDUP TO V TO Y
   1e+0 FDUP TO W TO Z
 
-  10E PRECISION 10 MIN NEGATE S>F F** TO P
+  10E PRECISION 10 UMIN NEGATE S>F F** TO P
 
   BEGIN
 
