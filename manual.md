@@ -2970,20 +2970,20 @@ Note that Forth500 includes an `FRAND` floating point random number generator,
 see [floating point arithmetic](#floating-point-arithmetic).
 
 As an example application of `rand`, let's simulate a Galton board with 400
-balls and as much as 100 levels of pegs:
+balls and as many as 100 levels (!) of pegs:
 
     400 VALUE balls     \ number of balls to drop
     100 VALUE levels    \ levels of pegs on the board
     120 VALUE middle    \ starting point on the screen
 
 Dropping a ball in the board means going left or right at each peg on the
-board, performing a random walk:
+board, performing a random walk on the x-axis as it falls down:
 
-    : random-walk   ( n n -- n ) 0 DO rand 1 AND 2* 1- + LOOP ;
+    : random-walk   ( xpos steps -- xpos ) 0 DO rand 1 AND 2* 1- + LOOP ;
 
 Balls accumulate at the bottom on top of eachother:
     
-    : accumulate    ( n -- ) 0 BEGIN 2DUP GPOINT? 0= WHILE 1+ REPEAT 1- GPOINT ;
+    : accumulate    ( xpos -- ) 0 BEGIN 2DUP GPOINT? 0= WHILE 1+ REPEAT 1- GPOINT ;
 
 Each ball drops from the middle, makes a random walk, and accumulates making a
 click sound:
