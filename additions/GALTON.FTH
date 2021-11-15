@@ -18,9 +18,9 @@ ANEW _GALTON_
 100 VALUE levels        \ levels of pegs on the board
 120 VALUE middle        \ starting point on the screen
 
-: random-walk   ( n n -- n ) 0 DO rand 1 AND 2* 1- + LOOP ;
+: random-walk   ( xpos steps -- xpos ) 0 DO rand 1 AND 2* 1- + LOOP ;
 
-: accumulate    ( n -- ) 0 BEGIN 2DUP GPOINT? 0= WHILE 1+ REPEAT 1- GPOINT ;
+: accumulate    ( xpos -- ) 0 BEGIN 2DUP GPOINT? 0= WHILE 1+ REPEAT 1- GPOINT ;
 
 : drop-ball     middle levels random-walk accumulate 100 10 BEEP ;
 
