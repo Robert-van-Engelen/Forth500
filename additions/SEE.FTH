@@ -2,7 +2,7 @@
 
 .( Loading SEE...)
 
-\ ANEW _SEE_
+ANEW _SEE_
 
 \ a value flag to indicate immediate words
 0 VALUE IMM

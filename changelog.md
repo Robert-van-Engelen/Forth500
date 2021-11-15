@@ -5,16 +5,16 @@ The following bug fixes and improvements were made to the original pceForth code
 - removed useless `rc` before `jp interp__`
 - replaced `jp interp__` by `jp cont__` to skip BREAK key test in code when control flow is not jumping backward and no IO (with a few exceptions)
 - `jp cont__` with fetch-exec loop cycle takes 15 CPU cycles, 7 cycles saved (i.e. BREAK key test adds 40% overhead), BREAK key interruption is fully working by testing BREAK key in `docol__xt`, when performing backward jumps and when performing IO
-- removed floating point words (float operations are not implemented in this version)
+- removed unused floating point words (float operations are not implemented in pceForth)
 - optimized code that returns `TRUE` (-1 or $ffff) or `FALSE` (0) by using `mv ba,$0000`, `jpnz cont__`, `dec ba`, `jp cont__` or by using `mv ba,$ffff`, `jpnz cont__`, `inc ba`, `jp cont__`
-- optimized `mv i,$00xx` to `mv il,$xx`
+- optimized `mv i,$00xx` to `mv il,$xx` since the latter short version sets the I register high byte to 0
 - fixed and optimized internal throws that removed the TOS
-- optimized internal throws by setting the 8-bits `il` register and jumping to `throw__`
+- optimized internal throws by setting the 8-bits `il` register and jumping to new `throw__` code
 - added `2VALUE` and `2VALUE?`, updated `TO` and `+TO` to set `VALUE` and `2VALUE` accordingly
 - replaced `(IS)` with standards-compliant `DEFER!`
-- replaced `BEHAVIOR` with standards-compliant `ACTION-OF` using `DEFER@`
+- replaced `BEHAVIOR` with standards-compliant `ACTION-OF` using new `DEFER@`
 - removed non-standard `MATCH?`
-- removed non-standard `RECURSIVE` (same as `REVEAL`)
+- removed non-standard `RECURSIVE` (same as `REVEAL`), not that `RECURSE` is preferred
 - replaced `M+` and `M-` with Forth code instead of assembly to reduce code size
 - added standards-compliant `PARSE-NAME`
 - fixed `2CONSTANT` lo/hi cell order swapped
@@ -26,21 +26,21 @@ The following bug fixes and improvements were made to the original pceForth code
 - optimized `STDI`, `STDO`, `STDL`, `R/O`, `W/O`, `R/W` with jump to `dolit0_xt`, `dolit1_xt`, `dolit2_xt`, `dolit3_xt`
 - fixed `DRIVE-NAME` to return current `DRIVE` string (E: by default) when drive is not specified
 - renamed internal `FILE-NAME` to `FILENAME` and `DRIVE-NAME` to `DRIVENAME`
-- changed internal `FNP` to `VALUE FNP` instead of `VARIABLE FNP`
+- changed internal `FNP` to `VALUE FNP` instead of `VARIABLE FNP` to reduce code size
 - added standards-compliant `BUFFER:`
-- added standards-compliant but dummy `SAVE-INPUT` and `RESTORE-INPUT`
+- added standards-compliant `SAVE-INPUT` and `RESTORE-INPUT`
 - added `K`
-- removed `ALLOCP`, unused
+- removed `ALLOCP` that is unused
 - added standards-compliant `S\"` implemented with new `\"-PARSE`
 - changed old graphics words `PSET`, `PRESET`, etc to new `GMODE` to set the mode (set, reset, flip), `GPOINT`, `GPOINT?`, `GLINE`, `GBOX`
 - added graphics words `GDOTS`, `GDOTS?`, `GDRAW`, `GBLIT!`, `GBLIT@`
 - replaced internal `POCKET#`, `POCKET0`, `POCKET1`, `WHICH-POCKET` with new `WHICH-POCKET` with internal storage
 - replaced internal `FILENAME#`, `FILENAME0`, `FILENAME1`, `WHICH-FILENAME` with new `WHICH-FILE` with internal storage
-- renamed `>FILENAME` to `>FILE`, this takes a fileid to return a file status address with 18+8 bytes and ior
+- renamed `>FILENAME` to `>FILE`, this takes a fileid to return a file status address (with 18 byte filename and 8 status bytes) and ior error code
 - renamed `FILENAME>STRING` to `FILE>STRING`
 - renamed `STRING>FILENAME` to `STRING>FILE`
-- removed non-standard `SKIP-CHARS`, same as relative file move with `( d fileid ) SEEK-CUR SEEK-FILE`
-- fixed `RESIZE-FILE` to enlarge a file (but cannot truncate a file)
+- removed non-standard `SKIP-CHARS`, which is the same as relative file move with `( d fileid ) SEEK-CUR SEEK-FILE`
+- fixed `RESIZE-FILE` to enlarge a file (but cannot truncate a file in Forth500)
 - fixed `FILE-STATUS` to comply with standard, returns file structure pointer `f-addr` with file info
 - removed `FILE-SET` to set a file's attribute, it does not appear to work and there is a danger of losing files
 - fixed `WRITE-LINE` to add CR LF instead of just LF
@@ -49,13 +49,13 @@ The following bug fixes and improvements were made to the original pceForth code
 - added `FILES` to list files on a drive, supports ? and * globbing
 - added `2TUCK` for consistency with `2NIP`
 - removed `VERIFY-FILE`, which is not usable
-- renamed internal `FORGET-LIMIT` to the more conventional `FENCE` and changed to a `VARIABLE`
+- renamed internal `FORGET-LIMIT` to the more conventional `FENCE` variable
 - renamed internal `CHECK-STACK` to the more conventional `?STACK`
 - optimized `(;CODE)` assembly
-- added standards-compliant `BEGIN-STRUCT`, `END-STRUCT`, `+FIELD`, `CFIELD:`, `FIELD:`, `2FIELD:`
+- added standards-compliant `BEGIN-STRUCTURE`, `END-STRUCTURE`, `+FIELD`, `CFIELD:`, `FIELD:`, `2FIELD:`
 - optimized `CASE OF` with new `(OF)` conditional jump that is faster and saves 6 bytes per `OF-ENDOF` pair
 - changed `DOUBLE-NUMBER` to `>DOUBLE` with optimized code to reduce code size
-- fixed `D+!` that was missing a `popu ba` to set new TOS
+- fixed `D+!` bug that was missing a `popu ba` to set new TOS
 - changed to case-insensitve Forth, words can be typed in upper/lower/mixed case
 - updated the filename-related words to automatically change the current drive letter (stored in `DRIVE`) when specified
 - fixed `2/` and `D2/` that removed the sign, should perform an arithmetic shift right, not a logical shift right
@@ -67,7 +67,7 @@ The following bug fixes and improvements were made to the original pceForth code
 - fixed `FORGET` memory leak (did not forget old link cell and old name)
 - added `INCLUDE`
 - added `VALUE TTY` to support redirecting `EMIT` and `TYPE` output (default is `STDO` for screen output, `STDL` to print)
-- added `PRINTER` to connect to printer and check printer status
+- added `PRINTER` to connect to a printer (e.g. CE-126P) and check printer status
 - optimized `?STACK` stack check in assembly
 - added stack overflow/underflow checks to all loop words
 - changed return address size from 3 bytes to 2 bytes (1 cell) for standard Forth compliance, support "caller cancelling" with `R>DROP` and "continuation passing"
@@ -80,18 +80,18 @@ The following bug fixes and improvements were made to the original pceForth code
 - replaced `WITHIN` Forth code by faster assembly code of the same size
 - reduced code of `(?DO)` by reusing `(DO)`
 - reduced code of `(+TO)` and `(D+2TO)` by reusing `+!` and `D+!`
-- reduced code of `EVALUATE` and `INCLUDE-FILE`, both use `SAVE-INPUT N>R` and `NR> RESTORE-INPUT`
+- reduced code of `EVALUATE` and `INCLUDE-FILE`, both now use `SAVE-INPUT N>R` and `NR> RESTORE-INPUT` which is more logical
 - changed `LAST` and `LASTXT` to `VALUE` instead of `VARIABLE`
 - changed `(COLON-SYS)`, `(ORIG)`, `(DEST)`, `(DO-SYS)` constants to CREATEed words without data that return a unique address
-- changed `SOURCE` to `2VALUE` and removed `(SOURCE)`
+- changed `SOURCE` definition to a `2VALUE` and removed `(SOURCE)`
 - removed `(REFILL)` and inlined its code into `(QUIT)`
 - optimized `FIND-WORD` dictionary search
-- added `PAUSE` to display text in reverse video and wait for a keypress
-- updated `WORDS` and `FILES` to break with BREAK and C/CE at the prompt
+- added `PAUSE` to display text in reverse video and wait for a keypress if `TTY` is the keyboard (redirecting to printer does not wait for a key)
+- updated `WORDS` and `FILES` to break with BREAK and C/CE at the (more) prompt
 - optimized `>NAME` to increase speed and reduce code size
 - added missing `REQUIRE` and `REQUIRED`
 - automatically close open `SOURCE-ID` file when an exception is raised, e.g. when `INCLUDE` fails
-- improved exception reporting, showing part of the input that caused the exception
+- improved exception reporting, showing the initial part of the input that caused the exception
 - replaced `>BINARY` with `>DIGIT` in assembly, shorter and faster
 - added Forth standard FLOAT (complete) and FLOAT-EXT (most) words
 - fixed `F/` double fp when divided by single fp returning garbage by the function driver syscall: make both arguments double fp if one is double fp
@@ -113,3 +113,11 @@ The following bug fixes and improvements were made to the original pceForth code
 - optimized assembly code of all filesystem-related words to reduce code size
 - added new `SEE.FTH`, `NQUEENS.FTH` and updated `DEBUGGER.FTH`
 - fixed a floating point exception -46 problem that caused the system to hang without progress
+- fixed `GPOINT?` returns 0, 1 or -1 (Sharp E500 technical manual does not mention that A=255 can be returned)
+- added `FLOATING-STACK` and `MAX-FLOAT` to `ENVIRONMENT?` queries (obsolescent `FLOATING` and `FLOATING-EXT` are not included)
+- optimized `[`, `]`, `DEPTH`, `HIDE`, `REVEAL`, `IMMEDIATE`, `ABORT`, `QUIT` in assembly code
+- fixed `TO` with floating point values, floating point stack imbalance
+- added new `FF.FTH` example with definition of `FF.` to display floating point values as fractions
+- slightly better optimized `D*`, `/MOD`, `D/MOD`, `UMD*`, `UM/MOD`, `M*/`
+- improved error reporting at multiple source locations when files are imported
+- optimized `D*`, `UMD*`, `M*/` to reduce code size

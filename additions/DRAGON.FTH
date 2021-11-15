@@ -36,6 +36,7 @@ table cosa d , 0 , -d , 0 ,	\ cosine table for 4 angles
 
 : dragon	( levels -- )
 	0 GMODE! PAGE
+	42 MIN				\ max 42 recursive levels
 	DUP 2/ 3 AND TO a		\ a = levels/2 mod 4
 	60 TO x				\ x = 60
 	22 OVER 1 AND RSHIFT TO y	\ y = 24 >> (n mod 2)
