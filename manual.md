@@ -291,7 +291,9 @@ Definitions can be deleted with everything defined after it by forgetting:
 Because we defined two `hello` words, we should forget `hello` twice to delete
 the new and the old `hello`.  Forgetting means that everything after the
 specified word is deleted from the dictionary, including our `greetings` and
-`hellos` definitions.
+`hellos` definitions.  Another way to delete definitions is to define a
+`MARKER` with `ANEW` for a section of code, see [markers](#markers).  Executing
+a marker deletes it and everything after it.
 
 To create a configurable `hello` word that displays alternative messages, we
 can use branching based on the value of a variable:
@@ -2092,10 +2094,11 @@ it deletes itself and all definitions after it.  For example:
     _program_ ↲
 
 This marks `_program_` as the start of our code indicated by the `...`.  This
-code is deleted by `_program_`.
+code is deleted by executing `_program_`.
 
 A source code file might start with the following code to delete its
-definitions when the file is parsed again:
+definitions when the file is parsed again to be replace the old definitions
+with updated definitions:
 
     [DEFINED] _program_ [IF] _program_ [THEN] ↲
     MARKER _program_ ↲
