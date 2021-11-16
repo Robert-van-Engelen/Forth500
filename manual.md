@@ -1664,6 +1664,24 @@ the upper left corner of the screen:
      X      X
       XXXXXX
 
+In addition to `S\"` escaped strings with hexadecimal codes, the 10 bytes can
+also be specified in binary with the sprite rotated sideways so that the top of
+the sprite is on the right:
+
+    : sprite    CREATE C, DOES> COUNT GDRAW ; ↲
+    10 sprite smiley ↲
+      %00111100 C, ↲
+      %01000010 C, ↲
+      %10010001 C, ↲
+      %10100101 C, ↲
+      %10100001 C, ↲
+      %10100001 C, ↲
+      %10100101 C, ↲
+      %10010001 C, ↲
+      %01000010 C, ↲
+      %00111100 C, ↲
+    0 GMODE! PAGE CR 0 0 smiley ↲
+
 Blitting moves screen data between buffers to update or restore the screen
 content.  The `GBLIT!` word stores a row of screen data in a buffer and
 `GPLIT@` fetches a row of screen data to restore the screen.  Each operation
