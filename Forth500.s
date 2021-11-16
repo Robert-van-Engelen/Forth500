@@ -10650,11 +10650,12 @@ lbl2:				dw	!dolit__xt		;     ['] INTERPRET
 				dw	lbl4-lbl3		;
 lbl3:					dw	!source_id_xt	;       SOURCE-ID
 					dw	!close_file_xt	;       CLOSE-FILE
-					dw	!dup_xt		;       DUP
+					dw	!drop_xt	;      	DROP
+					dw	!dup_xt		;      	DUP
 					dw	!error__xt	;       (ERROR)
 					dw	!n_r_from_xt	;       NR>
 					dw	!restr_input_xt	;       RESTORE-INPUT
-					dw	!two_drop_xt	;       2DROP
+					dw	!drop_xt	;      	DROP
 					dw	!throw_xt	;       THROW THEN
 lbl4:				dw	!again__xt		;   REPEAT
 				dw	lbl5-lbl1		;
