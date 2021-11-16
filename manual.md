@@ -785,6 +785,10 @@ The following words define common constants regardless of the current `BASE`:
 
 ### Floating point constants
 
+Floating point values are parsed in base 10.  Floating point values are not
+parsed if the `BASE` is anything other than `DECIMAL`.  Exception -13 will be
+thrown instead, when the unrecognized word is not found in the dictionary.
+
 Floating point values when parsed from the input are directly pushed on the
 floating point stack.  Floating point values must include a `E` or `D`
 exponent.  An `E` exponent marks a single precision floating point value (see
@@ -795,6 +799,7 @@ up to 20 significant digits.  The `E` and `D` exponent ranges from -99 to +99.
 | -------------------------- | ------------------------------------------------
 | `3.141592654e+0`           | single precision pi
 | `3.1415926535897932385d+0` | double precision pi
+| `3.1415926535897932385e+0` | double precision pi (exceeds 10 digits)
 | `9.9999999999999999999d99` | maximum double precision value
 | `-1.234e-10`               | single precision -0.0000000001234
 | `1e0`                      | single precision 1
@@ -809,10 +814,6 @@ point value may not start with a decimal point `.`.  The formal syntax is:
     <exponent>          := {E|e|D|d} [ <sign> ] [ <digit> ] [ <digit> ]
     <sign>              := {+|-}
     <digit>             := {0|1|2|3|4|5|6|7|8|9}
-
-Floating point values are parsed in base 10.  Floating point values are not
-parsed if the `BASE` is anything other than `DECIMAL`.  Exception -13 will be
-thrown instead, when the unrecognized word is not found in the dictionary.
 
 If the number of significant digits exceeds 10, then the floating point value
 is stored in double precision format even when marked with an `e`.  Digits are
@@ -830,8 +831,8 @@ of the operands is a double precision value.
 The `0e+0` word is predefined.  This word takes only 2 bytes of code space
 instead of the 14 bytes to store floating point literals in code (2 bytes code
 plus 12 bytes for the float).  To save memory, you can also use `S>F` and `D>F`
-to push small whole numbers on the floating point stack, which use only 6 bytes
-and 8 bytes of code space, respectively.
+to push small whole numbers on the floating point stack, which require only 6
+bytes and 8 bytes of code space, respectively.
 
 A floating point value requires 12 bytes of storage for the sign, exponent and
 the binary-coded decimal mantissa with 10 or 20 digits:
@@ -848,6 +849,11 @@ the binary-coded decimal mantissa with 10 or 20 digits:
 To view the internal format of a floating point value on the stack:
 
     FP@ 12 DUMP ↲
+
+All digits are stored, including the 2 or 3 guard digits of a single precision
+value.  Up to 10 significant digits of a single precision values are displayed.
+This means that comparisons for equality may fail even though the numbers
+displayed look equal.
 
 The maximum depth of the floating point stack in Forth500 is 96 bytes to hold
 up to 8 floating point values.
@@ -1057,6 +1063,11 @@ the result of the operation is a double precision floating point value.  For
 example, `0d F+` promotes a single precision value to a double precision
 value by adding a double precision zero.
 
+Floating point operations in single precision are performed with 12 or 13
+digits (10 + 2 or 3 guard digits).  All digits are stored and passed on to
+subsequent floating point operations.  However, only up to 10 significant
+digits of a single precision floating point value are displayed.
+
 `F**` returns _r1_ to the power _r2_.
 
 `FLOOR` returns _r_ truncated towards negative values, for example `-1.5e
@@ -1205,6 +1216,11 @@ floating point values on the floating point stack:
 | `F0>`  | ( F: _r_ -- ; -- _true_ ) if _r_>0e otherwise ( F: _r_ -- ; -- _false_ )
 | `F0=`  | ( F: _r_ -- ; -- _true_ ) if _r_=0e otherwise ( F: _r_ -- ; -- _false_ )
 | `F0<>` | ( F: _r_ -- ; -- _true_ ) if _r_<>0e otherwise ( F: _r_ -- ; -- _false_ )
+
+Floating point operations in single precision are performed with 12 or 13
+digits (10 + 2 or 3 guard digits).  All digits are stored, but only up to 10
+significant digits are displayed.  This means that comparisons for equality may
+fail even though the numbers displayed look equal.
 
 ## Numeric output
 
