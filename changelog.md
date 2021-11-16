@@ -121,3 +121,4 @@ The following bug fixes and improvements were made to the original pceForth code
 - slightly better optimized `D*`, `/MOD`, `D/MOD`, `UMD*`, `UM/MOD`, `M*/`
 - improved error reporting at multiple source locations when files are imported
 - optimized `D*`, `UMD*`, `M*/` to reduce code size
+- corrected `<error 0` message with `INCLUDE` when an exception occurred
