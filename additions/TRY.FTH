@@ -32,7 +32,7 @@ ANEW _TRY_
 
 \ tests
 
-1 [IF]
+0 [IF]
 : test1	( n -- )
   TRY
     1 SWAP / 2 + .
