@@ -6,11 +6,11 @@ The PC-E500 is a powerful pocket computer introduced in 1989 that saw a [PC-E500
 
 Sébastien Furic's original (incomplete) ANS Forth compiler is available from the great retro web site [Aldweb](https://www.aldweb.com/articles.php?lng=en&pg=9362).
 
-I've rewritten large parts of the code to optimize for speed, code size and compliance with standard Forth 2012, see the [changelog](changelog.md). The `docol` fetch-execute cycle is 40% more efficient.  Words are now case-insensitive and can be typed in upper/lower/mixed case.  All standard floating point words are now also included.  Included in this repo are the binaries for unexpanded 32KB machines and expanded >96KB machines.  Also included is the XASM assembler written by N. Kon for the SC62015 CPU with the documentation translated to English.  XASM is required to rebuild the Forth500 system from assembly.  The [Forth500.s](Forth500.s) source code is heavily documented and PC-E500 technical [resources](resources) are included.
+I've rewritten large parts of the code to optimize for speed, code size and compliance with the Forth Standard, see the [changelog](changelog.md). The `docol` fetch-execute cycle is 40% more efficient.  Words are now case-insensitive and can be typed in upper/lower/mixed case.  All standard floating point words are now also included.  Included in this repo are the binaries for unexpanded 32KB machines and expanded >96KB machines.  Also included is the XASM assembler written by N. Kon for the SC62015 CPU with the documentation translated to English.  XASM is required to rebuild the Forth500 system from assembly.  The [Forth500.s](Forth500.s) source code is heavily documented and PC-E500 technical [resources](resources) are included.
 
 ## Instruction manual
 
-See the [Forth500 User Guide](manual.md) with an introduction to standard Forth and a full description of the Forth500 system.
+See the [Forth500 User Guide](manual.md) with an introduction to Forth and a full description of the Forth500 system.
 
 ## How fast is it?
 
@@ -24,7 +24,7 @@ Forth programs can be loaded into Forth500 via the serial interface or cassette 
 
 ## Batteries included...
 
-Forth500 is [standard Forth](https://forth-standard.org) compliant and implements Forth CORE, CORE-EXT and most of the optional word sets:
+Forth500 is [Forth Standard](https://forth-standard.org) compliant and implements:
 - CORE: complete
 - CORE-EXT: complete
 - BLOCK: incomplete and removed to save space

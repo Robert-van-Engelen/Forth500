@@ -67,7 +67,7 @@ Author: Dr. Robert A. van Engelen, 2021
 
 ## Forth500
 
-Forth500 is a [standard Forth 2012](https://forth-standard.org/standard/intro)
+Forth500 is a [Forth Standard](https://forth-standard.org/standard/intro)
 system for the SHARP PC-E500(S) pocket computer.  This pocket computer sports a
 2.304MHz 8-bit CPU with a 20-bit address space of up to 1MB.  This pocket
 computer includes 256KB system ROM and 32KB to 256KB RAM.  The RAM card slot
@@ -1668,7 +1668,7 @@ In addition to `S\"` escaped strings with hexadecimal codes, the 10 bytes can
 also be specified in binary with the sprite rotated sideways so that the top of
 the sprite is on the right:
 
-    : sprite    CREATE C, DOES> COUNT GDRAW ; ↲
+    : sprite    CREATE C, DOES> ( x y addr -- ) COUNT GDRAW ; ↲
     10 sprite smiley ↲
       %00111100 C, ↲
       %01000010 C, ↲
@@ -2179,8 +2179,8 @@ The following words can be used to inspect words and dictionary contents:
 
 Words named `xxx>yyy` are pronounced "xxx to yyy", words named `>xxx` are
 pronounced "to xxx" and words named `xxx>` are pronounced "xxx from".
-See the [standard Forth word list](https://forth-standard.org/standard/alpha)
-with pronounciations of all standard words.
+See the [Forth word list](https://forth-standard.org/standard/alpha) with
+pronounciations of all standard words.
 
 See also the [dictionary structure](#dictionary-structure).
 
@@ -2858,8 +2858,8 @@ These queries return `TRUE` with a value of the indicated type:
 
 For example, `S" MAX-N" ENVIRONMENT? . .` displays `-1` (true) and `32767`.
 
-Non-implemented and obsolescent queries (according to standard Forth) return
-`FALSE`.
+Non-implemented and obsolescent queries (according to the Forth Standard)
+return `FALSE`.
 
 ## Dictionary structure
 
@@ -3594,6 +3594,6 @@ by J.V. Noble.
 [Thinking Forth](http://thinking-forth.sourceforge.net)
 by Leo Brodie.
 
-[Standard Forth alphabetic list of words](https://forth-standard.org/standard/alpha)
+[Forth Standard alphabetic list of words](https://forth-standard.org/standard/alpha)
 
 _This document is Copyright Robert A. van Engelen (c) 2021_
