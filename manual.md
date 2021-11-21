@@ -2539,16 +2539,26 @@ input:
 
 ## Files
 
+### Loading from files
+
+The following words are available to load Forth source code from files on the
+E: and F: drives and from the serial COM: port:
+
+| word              | stack effect ( _before_ -- _after_ )            | comment
+| ----------------- | ----------------------------------------------- | --------
+| `INCLUDE`         | ( "name" -- )                                   | load Forth source code file "name"
+| `INCLUDED`        | ( _c-addr_ _u_ -- )                             | load Forth source code file named by the string _c-addr_ _u_
+| `INCLUDE-FILE`    | ( _fileid_ -- )                                 | load Forth source code from _fileid_
+| `REQUIRE`         | ( "name" -- )                                   | load Forth source code file "name" if not already loaded
+| `REQUIRED`        | ( _c-addr_ _u_ -- )                             | load Forth source code file named by the string _c-addr_ _u_ if not already loaded
+
+### File and stream operations
+
 The following file-related words are available:
 
 | word              | stack effect ( _before_ -- _after_ )            | comment
 | ----------------- | ----------------------------------------------- | --------
 | `FILES`           | ( [ "glob" ] -- )                               | lists files matching optional "glob" with wildcards `*` and `?`
-| `REQUIRE`         | ( "name" -- )                                   | load Forth source code file "name" if not already loaded
-| `REQUIRED`        | ( _c-addr_ _u_ -- )                             | load Forth source code file named by the string _c-addr_ _u_ if not already loaded
-| `INCLUDE`         | ( "name" -- )                                   | load Forth source code file "name"
-| `INCLUDED`        | ( _c-addr_ _u_ -- )                             | load Forth source code file named by the string _c-addr_ _u_
-| `INCLUDE-FILE`    | ( _fileid_ -- )                                 | load Forth source code from _fileid_
 | `DELETE-FILE`     | ( _c-addr_ _u_ -- _ior_ )                       | delete file with name _c-addr1_ _u1_
 | `RENAME-FILE`     | ( _c-addr1_ _u1_ _c-addr2_ _u2_ -- _ior_ )      | rename file with name _c-addr1_ _u1_ to _c-addr2_ _u2_
 | `FILE-STATUS`     | ( _c-addr_ _u_ -- _s-addr_ _ior_ )              | if file with name _c-addr_ _u_ exists, return _ior_=0
@@ -2587,8 +2597,19 @@ The following file-related words are available:
 Low-level file I/O words return _ior_ to indicate success (zero) or failure
 with nonzero [file error](#file-errors) code.
 
+`FILE-INFO` returns current position _ud1_ file size _ud_ file attribute _u1_
+and device attribue _u2_.  See the PC-E500 technical manual for details on
+the attribute values.
+
+If an exception occurs before a file is closed, then the file cannot be opened
+again.  Doing so returns error _ior_=264.  The _fileid_ of open files start
+with 4, which means that the first file opened but not closed can be manually
+closed with `4 CLOSE-FILE .` displaying zero when successful.
+
+### Filename globbing
+
 Globs with wildcard `*` and `?` can be used to list files on the E: or F:
-drive, for example:
+drive with `FILES`, for example:
 
     FILES E:*.*       \ list all E: files and change the current drive to E:
     FILES             \ list all files on the current drive
@@ -2599,12 +2620,21 @@ drive, for example:
 Up to one `*` for the file name may be used and up to one `*` for the file
 extension may be used.  Press BREAK or C/CE to stop the `FILES` listing.
 
-Whenever a drive letter is used with a filename or glob pattern, the specified
+The `FILES` word repeatedly calls `FIND-FILE` that uses glob patterns to
+provide information about files:
+
+| word        | stack effect ( _before_ -- _after_ )                             | comment
+| ----------- | ---------------------------------------------------------------- | -------
+| `FIND-FILE` | ( _c-addr_ _u1_ _u2_ -- _c-addr_ _u1_ _u2_ _s-addr_ _u3_ _ior_ ) | returns the _s-addr_ of a file with directory index _u3_>=_u2_ that matches the string pattern _c-addr_ _u1_
+
+### Device drive names
+
+When a drive letter is used with a filename or glob pattern, the specified
 drive becomes the current drive.  To change the current drive letter:
 
     'F DRIVE C!
 
-The PC-E500 drive names associated with devices:
+The PC-E500 drive names associated with devices are:
 
 | drive name    | _fam_ | comment
 | ------------- | ----- | -------------------------------------------------------
@@ -2622,15 +2652,6 @@ The first three devices are always accessible with the `STDO`, `STDI` and
 `STDL` words that return the corresponding _fileid_.  `STDL` is usable after
 connecting and checking the status of the printer with `PRINTER`, see also
 [character output](#character-output).
-
-`FILE-INFO` returns current position _ud1_ file size _ud_ file attribute _u1_
-and device attribue _u2_.  See the PC-E500 technical manual for details on
-the attribute values.
-
-If an exception occurs before a file is closed, then the file cannot be opened
-again.  Doing so returns error _ior_=264.  The _fileid_ of open files start
-with 4, which means that the first file opened but not closed can be manually
-closed with `4 CLOSE-FILE .` displaying zero when successful.
 
 ### Loading from tape
 
