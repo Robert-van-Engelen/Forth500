@@ -2883,7 +2883,30 @@ These queries return `TRUE` with a value of the indicated type:
 For example, `S" MAX-N" ENVIRONMENT? . .` displays `-1` (true) and `32767`.
 
 Non-implemented and obsolescent queries (according to the Forth Standard)
-return `FALSE`.
+return `FALSE`.  Obsolescent queries that return `FALSE` but are in fact
+available in Forth500:
+
+| query string    | type   | comment
+| --------------- | ------ | ---------------------------------------------------
+| `CORE`          | _flag_ | available
+| `CORE-EXT`      | _flag_ | available
+| `DOUBLE`        | _flag_ | available
+| `DOUBLE-EXT`    | _flag_ | available
+| `EXCEPTION`     | _flag_ | available
+| `EXCEPTION-EXT` | _flag_ | available
+| `FACILITY`      | _flag_ | available
+| `FACILITY-EXT`  | _flag_ | partly available
+| `FILE`          | _flag_ | available
+| `FILE-EXT`      | _flag_ | available
+| `FLOATING`      | _flag_ | available
+| `FLOATING-EXT`  | _flag_ | `INCLUDE FLOATEXT.FTH` to complete
+| `STRING`        | _flag_ | available
+| `TOOLS`         | _flag_ | partly available
+| `TOOLS-EXT`     | _flag_ | partly available
+
+Some public Forth libraries still test these queries.  To use these libraries
+with Forth500, change the library Forth source code to successfully pass
+obsolescent queries.
 
 ## Dictionary structure
 
