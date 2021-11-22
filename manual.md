@@ -67,6 +67,7 @@ Author: Dr. Robert A. van Engelen, 2021
   - [Enums](#enums)
   - [Slurp](#slurp)
 - [Further reading](#further-reading)
+- [Links to additional resources](#links-to-additional-resources)
 
 ## Forth500
 
@@ -3642,5 +3643,9 @@ by J.V. Noble.
 by Leo Brodie.
 
 [Forth Standard alphabetic list of words](https://forth-standard.org/standard/alpha)
+
+## Links to additional resources
+
+[The Forth Scientific Library](https://www.taygeta.com/fsl/scilib.html)
 
 _This document is Copyright Robert A. van Engelen (c) 2021_
