@@ -122,3 +122,6 @@ The following bug fixes and improvements were made to the original pceForth code
 - improved error reporting at multiple source locations when files are imported
 - optimized `D*`, `UMD*`, `M*/` to reduce code size
 - corrected `<error 0` message with `INCLUDE` when an exception occurred
+- added stack overflow/underflow checks to `SP!` and `FP!`
+- increased floating point stack to 10 floats
+- added `COMPLEX.FTH` and updated `FLOATEXT.FTH`

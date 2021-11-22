@@ -1,6 +1,8 @@
 \ FLOATEXT.FTH floating point extended word set additions
 
-: FSINCOS   FDUP FSIN FCOS ;
+DECIMAL
+
+: FSINCOS   FDUP FSIN FSWAP FCOS ;
 : FALOG     10e FSWAP F** ;
 : FCOSH     FEXP FDUP 1e FSWAP F/ F+ 2e F/ ;
 : FSINH     FEXP FDUP 1e FSWAP F/ F- 2e F/ ;

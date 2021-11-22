@@ -183,8 +183,8 @@ ib_size:	equ	256			; TIB and FIB size
 hold_size:	equ	40			; ENVIRONMENT? /HOLD size in bytes
 r_size:		equ	256			; The return stack size in bytes (must be 256, see ?STACK)
 s_size:		equ	256			; The stack size in bytes (must be 256, see ?STACK)
-f_dmax:		equ	8			; The FP stack max depth
-f_size:		equ	96			; The FP stack size in number of bytes
+f_dmax:		equ	10			; The FP stack max depth
+f_size:		equ	120			; The FP stack size in number of bytes
 r_beginning:	equ	$bfc00			; The return stack's beginning
 r_limit:	equ	r_beginning-r_size	; The return stack's low limit ($bfb00 see ?STACK)
 s_beginning:	equ	r_limit			; The stack's beginning
@@ -402,7 +402,7 @@ fppush__:	mv	y,(!xi)			; Y holds the FP
 		mvl	[--y],(!fp+11)		; Copy (fp) to new FP TOS
 		mv	(!xi),y			; Update FP
 fppushcheck__:	inc	(!ll)			; Increment FP stack size
-		cmp	(!ll),!f_dmax+1		; Check FP stack size
+fpcheck__:	cmp	(!ll),!f_dmax+1		; Check FP stack size
 		jrc	!cont__
 		mv	il,-44			; Floating-point stack overflow
 		jr	!throw__
@@ -6140,7 +6140,7 @@ sp_store_xt:	local
 		add	u,ba
 		;pops	imr			; Enable interrupts (not needed for setting U)
 		popu	ba			; Set new TOS
-		jp	!cont__
+		jp	!quest_stack_xt		; Check stack overflow/underflow
 		endl
 ;-------------------------------------------------------------------------------
 sp_fetch:	dw	sp_store
@@ -6186,7 +6186,7 @@ lbl1:		inc	(!ll)			; Increment FP stack depth
 		sub	il,a			; Subtract 12 from IL
 		jrnc	lbl1			; Until IL<0
 		popu	ba			; Set new TOS
-		jp	!cont__
+		jp	!fpcheck__		; Check FP stack size
 		endl
 ;-------------------------------------------------------------------------------
 fp_fetch:	dw	fp_store
@@ -8390,13 +8390,16 @@ char:		dw	forget
 char_xt:	local
 		jp	!docol__xt		; : CHAR ( "<spaces>name" -- char )
 		dw	!parse_name_xt		;   PARSE-NAME
-		dw	!if__xt			;   IF
-		dw	lbl2-lbl1		;
-lbl1:			dw	!c_fetch_xt	;     C@
-			dw	!doexit__xt	;     EXIT THEN
-lbl2:		dw	!dolit__xt		;   -16
-		dw	-16			;   \ attempt to use zero-length string as a name
-		dw	!throw_xt		;   THROW
+		dw	!drop_xt		;   DROP
+		dw	!c_fetch_xt		;   C@
+; PARSE-NAME already checks for empty strings
+;		dw	!if__xt			;   IF
+;		dw	lbl2-lbl1		;
+;lbl1:			dw	!c_fetch_xt	;     C@
+;			dw	!doexit__xt	;     EXIT THEN
+;lbl2:		dw	!dolit__xt		;   -16
+;		dw	-16			;   \ attempt to use zero-length string as a name
+;		dw	!throw_xt		;   THROW
 		dw	!doret__xt		; ;
 		endl
 ;-------------------------------------------------------------------------------
@@ -11078,6 +11081,9 @@ lbl4:		dw	!stdo_xt		;   STDO
 		dw	!source_xt		;   SOURCE
 		dw	!to_in_xt		;   >IN
 		dw	!fetch_xt		;   @
+		dw	!two_dup_xt		;   2DUP
+		dw	!u_grtr_than_xt		;   U>
+		dw	!plus_xt		;   +
 		dw	!u_min_xt		;   UMIN
 		dw	!type_xt		;   TYPE
 		dw	!doslit__xt		;   S" <error "

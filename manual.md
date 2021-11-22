@@ -724,7 +724,7 @@ The following words manipulate values on the floating point stack:
 
 `FDEPTH` returns the current depth of the floating point stack, which is the
 number of floats on the stack.  The maximum floating point stack depth in
-Forth500 is 96 bytes or 8 floating point values.
+Forth500 is 120 bytes or 10 floating point values.
 
 ## Integer constants
 
@@ -858,8 +858,8 @@ value.  Up to 10 significant digits of a single precision values are displayed.
 This means that comparisons for equality may fail even though the numbers
 displayed look equal.
 
-The maximum depth of the floating point stack in Forth500 is 96 bytes to hold
-up to 8 floating point values.
+The maximum depth of the floating point stack in Forth500 is 120 bytes to hold
+up to 10 floating point values.
 
 ## Arithmetic
 
@@ -1118,7 +1118,7 @@ built in Forth500 and defined in `FLOATEXT.FTH`.  These words apply to both
 single and double floating point values.  For these definitions we do not need
 `?>DBL`:
 
-    : FSINCOS   FDUP FSIN FCOS ;
+    : FSINCOS   FDUP FSIN FSWAP FCOS ;
     : FALOG     10e FSWAP F** ;
     : FCOSH     FEXP FDUP 1e FSWAP F/ F+ 2e F/ ;
     : FSINH     FEXP FDUP 1e FSWAP F/ F- 2e F/ ;
@@ -2950,7 +2950,7 @@ The Forth500 dictionary is organized as follows:
          |         |
          |=========|<--- dictionary limit
          |         |
-         | float   |     stack of 96 bytes (8 floats)
+         | float   |     stack of 120 bytes (10 floats)
          | stack   |     grows toward lower addresses
          |         |<--- FP stack pointer
          |=========|
