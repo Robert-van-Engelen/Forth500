@@ -8,3 +8,4 @@
 - Forth500-v5: update with new TAPE and CLOAD words and general optimizations (20169 bytes binary executable)
 - Forth500-v6: update to fix exception -46 and reduced code size (19890 bytes binary executable)
 - Forth500-v7: update new features, usability enhancements and reduced code size (19810 bytes binary executable)
+- Forth500-v8: update to increase the FP stack to 10 floats, usability enhancements (19806 bytes binary executable)
