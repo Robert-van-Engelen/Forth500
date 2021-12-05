@@ -71,7 +71,7 @@ Author: Dr. Robert A. van Engelen, 2021
 
 ## Forth500
 
-Forth500 is a [Forth Standard](https://forth-standard.org/standard/intro)
+Forth500 is a [Standard Forth](https://forth-standard.org/standard/intro)
 system for the SHARP PC-E500(S) pocket computer.  This pocket computer sports a
 2.304MHz 8-bit CPU with a 20-bit address space of up to 1MB.  This pocket
 computer includes 256KB system ROM and 32KB to 256KB RAM.  The RAM card slot
@@ -211,7 +211,7 @@ arithmetic](#double-arithmetic) and [numeric output](#numeric-output).
 
 The use of `.` to mark double integers is unfortunate, because the number is
 not a floating point number!  The `.` is traditional in Forth and still part of
-the Forth standard.
+Standard Forth.
 
 Floating point numbers require an exponent `E` or `D` for double precision,
 even when the exponent is zero, as for example in `1.23e+0` (the `E` and `D`
@@ -564,8 +564,9 @@ source code file (e.g. `FLOATEXT.FTH`) as follows:
     $ bin2wav --pc=E500 --type=bin -dINV FLOATEXT.FTH
     $ afplay FLOATEXT.wav
 
-The `afplay` plays the wav file.  Use maximum volume or close to maximum to
-avoid distortion.  If `-dINV` does not transfer the file, then try `-dMAX`.
+The `afplay` command plays the wav file.  Use maximum volume to play the wav
+file or close to maximum to avoid distortion.  If `-dINV` does not transfer the
+file, then try `-dMAX`.
 
 To list files on the current drive:
 
@@ -1329,6 +1330,14 @@ Strings contain 8-bit characters, including special characters.
 The string constants created with `S"` and `S\"` are compiled to code when used
 in colon definitions.  Otherwise, the string is stored in a temporary internal
 256-byte string buffer returned by `WHICH-POCKET`.  Two buffers are recycled.
+
+For example, the following `"Forth500"` definition contains the constant string
+"Forth500" permanently stored in code, whereas the interactive `S" Forth500"`
+is temporarily stored in an internal buffer and is not persistent:
+
+    : "Forth500" S" Forth500" ; ↲
+    "Forth500" S" Forth500" S= . ↲
+    -1 OK[0]
 
 Note that most words require strings with a _c-addr_ _u_ pair of cells on the
 stack, such as `TYPE` to display a string.
@@ -2689,10 +2698,10 @@ interface:
     $ bin2wav --pc=E500 --type=bin -dINV sourcefile
     $ afplay sourcefile.wav
 
-Use maximum volume to play the file or close to maximum to avoid distortion.
-If `-dINV` does not transfer the file, then try `-dMAX`.  The `bin2wav` tool
-reports the "start address" and "end address", which are not relevant and can
-be ignored.
+Use maximum volume to play the wav file or close to maximum to avoid
+distortion.  If `-dINV` does not transfer the file, then try `-dMAX`.  The
+`bin2wav` tool reports the "start address" and "end address", which are not
+relevant and can be ignored.
 
 The following `tcopy` definition copies tape data to a new file on the E: or F:
 drive:
@@ -2791,7 +2800,7 @@ then re-throw the exception:
       close CR ;
     : test-more ( -- ) S" somefile.txt" ['] more CATCH ABORT" an error occurred" ;
 
-The following [standard Forth exception
+The following [Standard Forth exception
 codes](https://forth-standard.org/standard/exception) may be thrown by built-in
 Forth500 words:
 
@@ -2860,7 +2869,7 @@ Forth500 words:
 ## Environment queries
 
 The `ENVIRONMENT?` word takes a string to return system-specific information
-about the Forth500 implementation as required by [standard
+about the Forth500 implementation as required by [Standard
 Forth](https://forth-standard.org/standard/usage#usage:env) `ENVIRONMENT?`.
 These queries return `TRUE` with a value of the indicated type:
 
@@ -2883,7 +2892,7 @@ These queries return `TRUE` with a value of the indicated type:
 
 For example, `S" MAX-N" ENVIRONMENT? . .` displays `-1` (true) and `32767`.
 
-Non-implemented and obsolescent queries (according to the Forth Standard)
+Non-implemented and obsolescent queries (according to the Forth standard)
 return `FALSE`.  Obsolescent queries that return `FALSE` but are in fact
 available in Forth500:
 
@@ -3642,7 +3651,7 @@ by J.V. Noble.
 [Thinking Forth](http://thinking-forth.sourceforge.net)
 by Leo Brodie.
 
-[Forth Standard alphabetic list of words](https://forth-standard.org/standard/alpha)
+[Standard Forth alphabetic list of words](https://forth-standard.org/standard/alpha)
 
 ## Links to additional resources
 

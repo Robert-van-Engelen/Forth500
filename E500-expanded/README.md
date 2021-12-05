@@ -45,7 +45,21 @@ Mostly `-dINV` works best, but `-dMAX` should be used instead if loading fails.
 
 ## When using the serial interface
 
-Load UUDECODE.BAS into the PC-E500(S) and RUN the program:
+Connect a serial cable and initialize the COM: port on the PC-E500(S):
+
+    > OPEN "9600,N,8,1,A,L,&H1A,N,N": CLOSE
+
+Set the terminal program's serial settings to 9600 8N1 with hardware flow
+control enabled (RTS/CTS), no software flow control and append ^Z (hex 1A) to
+signal end of file.
+
+Transfer UUDECODE.BAS to the PC-E500(S) via serial:
+
+    > TEXT
+    < LOAD "COM:"
+    < BASIC
+
+RUN the program:
 
     UUENCODE SELF-DECODER 
     DATA_FILE = 'UUDECODE.MMM'

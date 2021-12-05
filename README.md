@@ -27,7 +27,7 @@ Forth programs can be loaded into Forth500 via the serial interface or cassette 
 Forth500 is [Forth Standard](https://forth-standard.org) compliant and implements:
 - CORE: complete
 - CORE-EXT: complete
-- BLOCK: incomplete and removed to save space
+- BLOCK: removed to save space, not practical on the PC-E500
 - DOUBLE: complete
 - DOUBLE-EXT: complete
 - EXCEPTION: complete

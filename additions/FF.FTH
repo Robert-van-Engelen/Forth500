@@ -1,4 +1,4 @@
-\ FF.FTH display floating point values as proper fractions
+\ FF.FTH display floating point values as fractions
 
 .( Loading FF...)
 
@@ -14,10 +14,9 @@ ANEW _FF_
 0e+0 FVALUE Y
 0e+0 FVALUE Z
 
-\ FF. displays floating point value as a fraction with the specified SET-PRECISION up to 1E-10
-: FF.	( F: r -- )
+: (FF)  ( F: r -- )
 
-  FDUP FDUP FLOOR F= IF F. EXIT THEN
+  FDUP FDUP FLOOR F= IF F. R>DROP EXIT THEN
 
        FDUP TO U TO X
   0e+0 FDUP TO V TO Y
@@ -43,6 +42,15 @@ ANEW _FF_
     1e+0 U F/   TO U
 
   REPEAT THEN
+;
 
-  Z F. ." / " Y F.
+\ FF. display floating point value as a fraction with the specified SET-PRECISION up to 1E-10
+: FF.	( F: r -- )
+  (FF) Z F. ." / " Y F.
+;
+
+\ PF. display floating point value as a proper fraction with the specified SET-PRECISION up to 1E-10
+: PF.	( F: r -- )
+  (FF) T FTRUNC FDUP F0= IF FDROP Z ELSE FDUP F. Y F* Z F- FABS THEN
+  F. ." / " Y F.
 ;

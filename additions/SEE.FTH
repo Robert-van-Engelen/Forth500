@@ -8,10 +8,10 @@ ANEW _SEE_
 0 VALUE IMM
 
 \ display the name of an xt
-: NAME.         ( xt -- ) ['] >NAME CATCH IF S" ???" ELSE NAME>STRING THEN TYPE ;
+: NAME.         ( xt -- ) ['] >NAME CATCH IF DROP S" ???" ELSE NAME>STRING THEN TYPE ;
 
 \ display the name of an xt formatted as a colon definition
-: COLON.        ( xt -- ) ['] >NAME CATCH IF S" :NONAME" ELSE ." : " NAME>STRING THEN TYPE ;
+: COLON.        ( xt -- ) ['] >NAME CATCH IF DROP S" :NONAME" ELSE ." : " NAME>STRING THEN TYPE ;
 
 \ display TO name
 : TO.           ( ip -- ip ) CELL+ DUP @ 3 - SPACE NAME. ;
