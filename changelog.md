@@ -125,3 +125,7 @@ The following bug fixes and improvements were made to the original pceForth code
 - added stack overflow/underflow checks to `SP!` and `FP!`
 - increased floating point stack to 10 floats
 - added `COMPLEX.FTH` and updated `FLOATEXT.FTH`
+- updated BREAK exception to display `Break` instead of `<Error -28`
+- updated `REPRESENT` to produce 12 or 13 non-rounded digits for single floating point results
+- updated double floating point computation results to round to 20 digits rather than ignoring the guard digits
+- fixed `EKEY?` issue

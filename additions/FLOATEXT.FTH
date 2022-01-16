@@ -1,4 +1,5 @@
 \ FLOATEXT.FTH floating point extended word set additions
+\ Author: Robert van Engelen
 
 DECIMAL
 

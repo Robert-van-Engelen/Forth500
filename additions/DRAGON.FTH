@@ -1,4 +1,5 @@
 \ DRAGON.FTH dragon curve fractal
+\ Author: Robert van Engelen
 
 .( Loading DRAGON...)
 

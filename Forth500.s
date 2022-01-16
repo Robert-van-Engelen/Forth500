@@ -1,14 +1,14 @@
 ;-------------------------------------------------------------------------------
 ;
-;         FFFFFFFF  OOOOOO  RRRRRRR  TTTTTTTT HH    HH  55555555   0000     0000
-;        FF       OO    OO RR    RR    TT    HH    HH  55        00  00   00  00
-;       FF       OO    OO RR    RR    TT    HH    HH  55       00    00 00    00
-;      FF       OO    OO RR    RR    TT    HH    HH  55       00    00 00    00
-;     FFFFFF   OO    OO RRRRRRR     TT    HHHHHHHH  5555555  00    00 00    00
-;    FF       OO    OO RR RR       TT    HH    HH        55 00    00 00    00
-;   FF       OO    OO RR  RR      TT    HH    HH        55 00    00 00    00
-;  FF       OO    OO RR   RR     TT    HH    HH  55    55  00  00   00  00 
-; FF        OOOOOO  RR    RR    TT    HH    HH   555555    0000     0000 
+;         FFFFFFFF  OOOOOO  RRRRRRR TTTTTTTT HH    HH  55555555   0000     0000
+;        FF       OO    OO RR    RR   TT    HH    HH  55        00  00   00  00
+;       FF       OO    OO RR    RR   TT    HH    HH  55       00    00 00    00
+;      FF       OO    OO RR    RR   TT    HH    HH  55       00    00 00    00
+;     FFFFFF   OO    OO RRRRRRR    TT    HHHHHHHH  5555555  00    00 00    00
+;    FF       OO    OO RR RR      TT    HH    HH        55 00    00 00    00
+;   FF       OO    OO RR  RR     TT    HH    HH        55 00    00 00    00
+;  FF       OO    OO RR   RR    TT    HH    HH  55    55  00  00   00  00 
+; FF        OOOOOO  RR    RR   TT    HH    HH   555555    0000     0000 
 ;
 ;
 ; Authors:
@@ -3164,7 +3164,20 @@ lbl1:		test	(!ll),$80
 		mvw	(!cx),$0009		; Function driver
 		mv	i,ba			; Function $41 to $7f
 		callf	!iocs			;
-		popu	y			; Restore FP
+		jrc	lbl3			; Error?
+;		ROUND DOUBLE PRECISION RESULT TO 20 DIGITS
+		test	(bp+0),1		; Check if result is double
+		jrz	lbl1a			; No
+		mv	a,$50			; Adding 5 to the 21st digit to round
+		mv	il,11			; Number of BCD bytes + 1 to round
+		dadl	(bp+13),a		; Add 5 to 21st digit of the result
+		jrnc	lbl1a			; No carry?
+		mv	il,10			; Number of BCD bytes
+		dsrl	(bp+3)			; Shift right BCD
+		or	(bp+3),$10		; Set upper BCD digit to 1
+		inc	(bp+1)			; Increment exponent, which could become larger than 99
+;		SAVE RESULT ON THE FP STACK
+lbl1a:		popu	y			; Restore FP
 		popu	x			; Restore IP
 		popu	a			; Restore A
 		mv	il,10
@@ -3172,7 +3185,6 @@ lbl1:		test	(!ll),$80
 		mvw	[--y],(bp+0)		; Copy float result at (bp) sign,exp pair
 		mv	($ec),!bp0		; Restore BP
 		pre_off
-		jrc	lbl3			; Error?
 		cmp	a,$47			; Is this a comparison operator ($41 to $46)?
 		jrc	lbl2
 		mv	(!xi),y			; Update FP
@@ -3186,7 +3198,10 @@ lbl2:		add	(!fp+15),$f8		; Check if float result in (Y) is negative (carry flag)
 		mv	b,a
 		jp	!cont__
 ;		ERROR
-lbl3:		mv	il,-46			; Floating-point invalid argument
+lbl3:		pre_on
+		mv	($ec),!bp0		; Restore BP
+		pre_off
+		mv	il,-46			; Floating-point invalid argument
 		cmp	a,$4a			; Division by zero?
 		jrnz	lbl4
 		mv	il,-42			; Floating-point divide by zero
@@ -4712,23 +4727,23 @@ read_char_xt:	local
 		mv	a,1			; 'File end is physical end of file'
 		callf	!fcs
 		pre_off
-		mv	i,ba			; Return character if successful (cf=0)
 		endl
 ;---------------
 eofcheck__:	jrc	eof__			; Error?
-		mv	a,b			; Test whether
-		shr	a			; a character was read when B=1
-		mv	a,$0c			; 'Processing of byte number has not been completed'
-		jrnc	eof__			; THERE IS A BUG IN THIS PRIMITIVE
+		;rc				; Assert (carry is unset)
+		ex	a,b			; Test whether
+		shr	a			; a character was read or is readable (when B=1) and generate carry
+		ex	a,b			; Set A to the character and B to zero
+		mv	i,ba			; I holds the character
+		jrnc	eof0ch__		; THERE IS A BUG IN THIS PRIMITIVE
 		;				; SO THAT THAT NEVER HAPPENS, HENCE THE ABOVE CODE
 		;				; TO TEST THE FILE POSITION
-		mv	ba,i			; Copy character or flag
-		mv	a,0			; Set new TOS low order 8 bits to zero
-		sub	i,ba			; Clear high 8 bits of I
-		mv	b,a			; Set new TOS to zero (no error)
+eofok__:	sub	ba,ba			; Set TOS to zero
 eofcheckdone__:	popu	x			; Restore IP
 		pushu	i			; Return character or flag
-		jp	!interp__
+		jp	interp__
+eof0ch__:	mv	a,$0c			; 'Processing of byte number has not been completed'
+;---------------
 eof__:		mv	il,0			; Set the value of the character or flag to zero
 		mv	b,a			; Set new TOS
 		mv	a,$01			; (an error
@@ -4747,13 +4762,12 @@ peek_char_xt:	local
 		mv	a,$81			; 'File end is physical end of file, with data'
 		callf	!fcs
 		pre_off
-		mv	i,ba			; Return character if successful (cf=0)
-		jr	!eofcheck__
+		jr	!eofcheck__		; Return character and ior=0 if successful (cf=0)
 		endl
 ;-------------------------------------------------------------------------------
 chr_rdy_qst:	dw	peek_char
 		db	$0b
-		db	'CHAR-READY?'		; ( fileid -- flag ior )
+		db	'CHAR-READY?'
 chr_rdy_qst_xt:	local
 		dec	ba			; Decrement it (because fileIDs start at index 1)
 		pushu	x			; Save IP
@@ -4763,8 +4777,12 @@ chr_rdy_qst_xt:	local
 		mv	a,$01			; 'File end is physical end of file, without data'
 		callf	!fcs
 		pre_off
-		mv	i,-1			; Return TRUE if successful (cf=0)
-		jr	!eofcheck__
+		jrc	!eof__			; Error?
+		mv	a,0			; Discard character
+		ex	a,b			; BA holds 0 (no character ready) or 1 (character ready)
+		mv	il,0			; Set I to the
+		sub	i,ba			; negative of BA (true or false)
+		jr	!eofok__
 		endl
 ;-------------------------------------------------------------------------------
 read_line:	dw	chr_rdy_qst
@@ -8837,11 +8855,13 @@ lbl1:		mv	(!fl),a			; Save adjusted low-order buffer size byte
 		mv	(!xi),y			; Update FP
 ;		DETERMINE NUMBER OF BCD BYTES AND DIGITS
 		;mv	il,0			; Assert (I is zero) DBL is false
-		mv	a,5			; Number of BCD bytes in single precision float is 5
+		mv	a,7			; Number of BCD bytes in single precision float + 2 BCD guard bytes
 		test	(!fp),1			; Check double/sign byte for single or double precision
 		jrz	lbl2			; Single precision?
+		;FIXME
 		;rc				; Assert (carry is unset)
-		shl	a			; Number of BCD bytes in double precision float is 10
+		;shl	a			; Number of BCD bytes in double precision float
+		mv	a,10			; Number of BCD bytes in double precision float
 		dec	i			; DBL is true
 lbl2:		mv	[!dbl_xt+3],i		; Set DBL flag
 		mv	(!gl),a			; Save the number of BCD bytes
@@ -11077,7 +11097,19 @@ lbl3:			dw	!drop_xt	;     DROP
 lbl4:		dw	!stdo_xt		;   STDO
 		dw	!doto__xt		;   TO TTY
 		dw	!tty_xt+3		;
-		dw	!cr_xt			;   CR
+		dw	!dup_xt			;   DUP
+		dw	!dolit__xt		;   -28
+		dw	-28			;
+		dw	!equals_xt		;   =
+		dw	!if__xt			;   IF
+		dw	lbl6-lbl5		;
+lbl5:			dw	!drop_xt	;     DROP
+			dw	!doslit__xt	;     S" Break"
+			dw	5		;
+			db	'Break'		;
+			dw	!rev_type_xt	;     REVERSE-TYPE
+			dw	!doexit__xt	;     EXIT THEN
+lbl6:		dw	!cr_xt			;   CR
 		dw	!source_xt		;   SOURCE
 		dw	!to_in_xt		;   >IN
 		dw	!fetch_xt		;   @
@@ -11086,9 +11118,9 @@ lbl4:		dw	!stdo_xt		;   STDO
 		dw	!plus_xt		;   +
 		dw	!u_min_xt		;   UMIN
 		dw	!type_xt		;   TYPE
-		dw	!doslit__xt		;   S" <error "
+		dw	!doslit__xt		;   S" <Error "
 		dw	7			;
-		db	'<error '		;
+		db	'<Error '		;
 		dw	!rev_type_xt		;   REVERSE-TYPE
 		dw	!s_to_d_xt		;   S>D
 		dw	!d_dot__xt		;   (D.)

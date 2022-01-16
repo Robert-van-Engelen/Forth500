@@ -1,4 +1,5 @@
 \ GALTON.FTH Galton board simulation
+\ Author: Robert van Engelen
 
 .( Loading Galton...)
 

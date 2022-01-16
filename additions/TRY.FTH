@@ -1,4 +1,5 @@
 \ TRY.FTH exception handling like gforth
+\ Author: Robert van Engelen
 \ TRY <code> IFERROR <handle-code> THEN <restore-code> ENDTRY
 \ TRY <code> RESTORE <restore-code> ENDTRY
 \ where <handle-code> and <restore-code> may inspect the TOS error code (not drop it)

@@ -1,4 +1,5 @@
 \ SEE.FTH SEE word - decompiles a word
+\ Author: Robert van Engelen
 
 .( Loading SEE...)
 

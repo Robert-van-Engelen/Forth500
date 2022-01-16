@@ -1,4 +1,5 @@
 \ FF.FTH display floating point values as fractions
+\ Author: Robert van Engelen
 
 .( Loading FF...)
 

@@ -1402,8 +1402,8 @@ The following words move and copy characters in and between string buffers:
 
 | word     | stack effect                   | comment
 | -------- | ------------------------------ | ----------------------------------
-| `CMOVE`  | ( _c-addr1_ _c-addr2_ _u_ -- ) | copy _u_ characters from _c-addr1_ to _c-addr2_, from lower addresses to higher addresses
-| `CMOVE>` | ( _c-addr1_ _c-addr2_ _u_ -- ) | copy _u_ characters from _c-addr1_ to _c-addr2_, from higher addresses to lower addresses
+| `CMOVE`  | ( _c-addr1_ _c-addr2_ _u_ -- ) | copy _u_ characters from _c-addr1_ to _c-addr2_
+| `CMOVE>` | ( _c-addr1_ _c-addr2_ _u_ -- ) | copy _u_ characters from _c-addr1_ to _c-addr2_
 | `MOVE`   | ( _c-addr1_ _c-addr2_ _u_ -- ) | copy _u_ characters from _c-addr1_ to _c-addr2_
 | `C!`     | ( _char_ _c-addr_ -- )         | store _char_ in _c-addr_
 | `C@`     | ( _c-addr_ -- _char_ )         | fetch _char_ from _c-addr_

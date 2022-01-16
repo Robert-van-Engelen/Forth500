@@ -1,4 +1,5 @@
 \ RAND.FTH C rand() generates pseudo-random numbers between 0 and 32767
+\ Author: Robert van Engelen
 
 .( Loading RAND...)
 

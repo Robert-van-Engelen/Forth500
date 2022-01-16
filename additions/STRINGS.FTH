@@ -1,4 +1,5 @@
 \ STRINGS.FTH defines string buffers of variable lengths
+\ Author: Robert van Engelen
 \ See the manual example "Strings" instructions
 
 .( Loading STRINGS...)
