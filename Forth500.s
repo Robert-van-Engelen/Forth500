@@ -2769,14 +2769,14 @@ m_star_sl_xt:	local
 		jpc	lbl18
 		jpz	lbl19
 		mv	il,0
-		mv	(!eh),il		; To keep track of the sign of the result
+		mv	(!lh),il		; To keep track of the sign of the result
 		mvw	(!ix),[u++]		; Save the second argument into internal memory
 		mv	(!hx),i			;
 		mvw	(!gx),[u++]		; Store the first argument
 		mvw	(!fx),[u++]		; using 3 cells
 		test	(!gh),$80		; Test the sign of the first argument
 		jrz	lbl1
-		mv	(!eh),$01		; The first argument is negative
+		inc	(!lh)   		; The first argument is negative (lh was zero)
 		mv	(!jx),i			; Negate
 		mv	(!kx),i			; the
 		mv	il,4			; first
@@ -2785,14 +2785,15 @@ m_star_sl_xt:	local
 		mvl	(!fx),(!jx)		;
 lbl1:		test	(!ih),$80		; Test the sign of the second argument
 		jrz	lbl2
-		xor	(!eh),$01		; The second argument is negative
-		mvw	(!jx),$0000		; Negate
+		inc	(!lh)   		; The second argument is negative: flip the first bit
+		;mv	il,0                    ; Assert (i=0)
+		mv	(!jx),i 		; Negate
 		mv	il,2			; the
 		sbcl	(!jx),(!ix)		; second
 		mvw	(!ix),(!jx)		; argument
 lbl2:		pushu	ba			; Save the third argument on the stack
 		mv	ba,(!ix)		; BA holds the absolute value of the second argument
-		mv	il,0
+		;mv	il,0                    ; Assert (i=0)
 		mv	(!ix),i			; Initialize
 		mv	(!jx),i			; the intermediate
 		mv	(!kx),i			; result
@@ -2829,7 +2830,7 @@ lbl4:		mv	il,6
 		mvw	[--u],(!ix)		; Save the 16 low-order bits of the dividend
 		cmpw	(!kx),(!fx)		; Test if the result overflows
 		jpnc	lbl20
-		mv	il,0
+		;mv	il,0                    ; Assert (i=0)
 		mv	(!gx),i			; Perform a division of the 32 high-order bits by the divisor first
 		mv	(!el),il
 		mv	il,4			; Restore
@@ -2869,7 +2870,7 @@ lbl11:		rc				; Right-shift
 		mvw	(!fx),[u++]		; Restore the divisor
 		mv	il,0
 		mv	(!gx),i			; as a 32 bit value
-		mv	(!el),il
+		;mv	(!el),il                ; Assert (el=0)
 		mv	il,4			; Restore
 		mvl	(!hx),(!fx)		; the divisor
 lbl12:		mv	il,4			; Left-shift
@@ -2904,7 +2905,7 @@ lbl16:		rc				; Right-shift
 		dec	(!el)			; Test if all the bits have been computed
 		jrnz	lbl14
 		mv	(!hx),ba		; Save the 16 low-order bits of the absolute value of the result
-		test	(!eh),$01		; Test he sign of the result
+		test	(!lh),$01		; Test he sign of the result
 		jrz	lbl17
 		mv	(!fx),ba		; Negate
 		mvw	(!gx),(!ix)		; the

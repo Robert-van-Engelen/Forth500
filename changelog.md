@@ -129,3 +129,4 @@ The following bug fixes and improvements were made to the original pceForth code
 - updated `REPRESENT` to produce 12 or 13 non-rounded digits for single floating point results
 - updated double floating point computation results to round to 20 digits rather than ignoring the guard digits
 - fixed `EKEY?` issue
+- fixed `M*/` regression issue
