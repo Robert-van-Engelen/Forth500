@@ -2599,8 +2599,8 @@ The following file-related words are available:
 | `SEEK-FILE`       | ( _d_ _fileid_ 0\|1\|2 -- _ior_ )               | seek file offset _d_ from the start, relative to the current position or from the end
 | `REPOSITION-FILE` | ( _ud_ _fileid_ -- _ior_ )                      | seek file offset _ud_ from the start
 | `RESIZE-FILE`     | ( _ud_ _fileid_ -- _ior_ )                      | resize _fileid_ to _ud_ bytes (cannot truncate files, only enlarge)
-| `DRIVE`           | ( -- _addr_ )                                   | returns address _addr_ of the current drive letter
-| `DSKF`            | ( _c-addr_ _u_ -- _du_ _ior_ )                  | returns the free capacity of the drive in string _c-addr_ _u_
+| `DRIVE`           | ( -- _c-addr_ )                                 | returns address _c-addr_ of the current drive letter
+| `DSKF`            | ( _c-addr_ _u_ -- _du_ _ior_ )                  | returns the free capacity of the drive specified in string _c-addr_ _u_
 | `STDO`            | ( -- 1 )                                        | returns _fileid_=1 for standard output to the screen
 | `STDI`            | ( -- 2 )                                        | returns _fileid_=2 for standard input from the keyboard
 | `STDL`            | ( -- 3 )                                        | returns _fileid_=3 for standard output to the line printer
@@ -2970,7 +2970,7 @@ The Forth500 dictionary is organized as follows:
          |         |<--- SP stack pointer
          |=========|
          |         |
-         | return  |     return stack of 256 bytes
+         | return  |     return stack of 256 bytes (128 cells/calls)
          | stack   |     grows toward lower addresses
          |         |<--- RP return stack pointer
          |---------|<--- $BFC00
@@ -3497,19 +3497,19 @@ Such that:
 
 will create the constants `red`, `white` and `blue` with values 0, 1 and 2,
 respectively.  In a similar way we can define a `bitmask` word using `1 OVER
-LSHIFT` to set the constants to 1, 2, 4, 8 and so on to perform bit operations
-with `AND`, `OR`, `XOR` and `INVERT`.
+LSHIFT` to set the constants to 1, 2, 4, 8 and so on.  Bitmasks can be
+manipulated with the bit operations `AND`, `OR`, `XOR` and `INVERT`.
 
 If we don't care about the constants as long as they are unique, then another
-approach is to use the unique address of a word as the enumeration value,
-assuming the actual value does not matter as long as it is unique.  Consider
-for example an enumeration of colors:
+approach is to use the unique dictionary address of a word as the enumeration
+value.  This always works when we never need the actual value of an
+enumeration.  Consider for example an enumeration of colors:
 
     CREATE red
     CREATE white
     CREATE blue
 
-Each color word returns its address of the definitions body, which contains no
+Each color word returns its address of the definition's body, which contains no
 data.  Because in Forth500 the body if a word is 3 bytes below the execution
 token, we can implement a word `enum.` to display the color name:
 
