@@ -66,6 +66,7 @@ Author: Dr. Robert A. van Engelen, 2021
   - [Strings](#strings)
   - [Enums](#enums)
   - [Slurp](#slurp)
+- [Troubleshooting](#troubleshooting)
 - [Further reading](#further-reading)
 - [Links to additional resources](#links-to-additional-resources)
 
@@ -3639,6 +3640,17 @@ this space.  We can make the following changes accordingly:
 where `size` assigns variable `fz` the file size, `gulp` reads the whole file
 at once and `data` returns the address and size of the file data (i.e. as
 _c-addr_ _u_) for convenience.
+
+## Troubleshooting
+
+### Problem: file won't open or cannot INCLUDE a file from COM: E: or F:
+
+When BREAK is pressed or an error occurs while files are still open, the file
+cannot be re-opened until it is closed.  Therefore, always close files in your
+program (which may require an exception handler).  On the other hand, you can
+close a file with `fileid FILE-CLOSE` where `fileid` is a positive integer
+between 4 and 15 (1 to 3 are associated with standard IO).  Therefore, you can
+try `4 FILE-CLOSE .` then `5 FILE-CLOSE .` up to 15 to close all files.
 
 ## Further reading
 
