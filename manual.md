@@ -3648,9 +3648,9 @@ _c-addr_ _u_) for convenience.
 When BREAK is pressed or an error occurs while files are still open, the file
 cannot be re-opened until it is closed.  Therefore, always close files in your
 program (which may require an exception handler).  On the other hand, you can
-close a file with `fileid FILE-CLOSE` where `fileid` is a positive integer
+close a file with `fileid CLOSE-FILE` where `fileid` is a positive integer
 between 4 and 15 (1 to 3 are associated with standard IO).  Therefore, you can
-try `4 FILE-CLOSE .` then `5 FILE-CLOSE .` up to 15 to close all files.
+try `4 CLOSE-FILE .` then `5 CLOSE-FILE .` up to 15 to close all files if open.
 
 ## Further reading
 
