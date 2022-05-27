@@ -1059,20 +1059,21 @@ stack (the F: stack effects):
 | `FDEG`    | ( F: _r1_ -- _r2_ ) where _r1_ is in dd.mmss format and _r2_ is degrees
 | `FDMS`    | ( F: _r1_ -- _r2_ ) where _r1_ is degrees and _r2_ is in dd.mmss format
 | `FRAND`   | ( F: _r1_ -- _r2_ ) where _r2_ is a pseudo-random number, see below
-| `F>D`     | ( F: _r_ -- ; -- _d_ ) or ( F: _r_ -- ; -- _ud_ ) with _r_ converted to _d_ or _ud_
-| `D>F`     | ( _d_ -- ; F: -- _r_ ) with _d_ converted to _r_
-| `F>S`     | ( F: _r_ -- ; -- _n_ ) or ( F: _r_ -- ; -- u ) with _r_ converted to _n_ or _u_
-| `S>F`     | ( _n_ -- ; F: -- _r_ ) with _n_ converted to _r_
+| `F>D`     | ( F: _r_ -- ; -- _d_ ) or ( F: _r_ -- ; -- _ud_ ) convert _r_ to _d_ or _ud_
+| `D>F`     | ( _d_ -- ; F: -- _r_ ) convert _d_ to _r_
+| `F>S`     | ( F: _r_ -- ; -- _n_ ) or ( F: _r_ -- ; -- _u_ ) convert _r_ to _n_ or _u_
+| `S>F`     | ( _n_ -- ; F: -- _r_ ) convert _n_ to _r_
 
 If any of the operands of an arithmetic operation are double precision, then
 the result of the operation is a double precision floating point value.  For
 example, `0d F+` promotes a single precision value to a double precision
 value by adding a double precision zero.
 
-Floating point operations in single precision are performed with 12 or 13
-digits (10 + 2 or 3 guard digits).  All digits are stored and passed on to
-subsequent floating point operations.  However, only up to 10 significant
-digits of a single precision floating point value are displayed.
+Floating point operations in single precision are performed with 12 to 14
+digits (10 + 2 to 4 guard digits).  All digits are stored and passed on to
+subsequent floating point operations.  The guard digits are not removed.  The
+final value of a single precision calculation should be displayed in 10 digits
+or should be rounded to 10 digits.
 
 `F**` returns _r1_ to the power _r2_.
 
@@ -1223,10 +1224,12 @@ floating point values on the floating point stack:
 | `F0=`  | ( F: _r_ -- ; -- _true_ ) if _r_=0e otherwise ( F: _r_ -- ; -- _false_ )
 | `F0<>` | ( F: _r_ -- ; -- _true_ ) if _r_<>0e otherwise ( F: _r_ -- ; -- _false_ )
 
-Floating point operations in single precision are performed with 12 or 13
-digits (10 + 2 or 3 guard digits).  All digits are stored, but only up to 10
-significant digits are displayed.  This means that comparisons for equality may
-fail even though the numbers displayed look equal.
+Floating point operations in single precision are performed with 12 to 14
+digits (10 + 2 to 4 guard digits).  All digits are stored, including the guard
+digits, but only up to 10 significant digits nay be displayed.  This means that
+comparisons for (in)equality may fail even though the numbers displayed look
+equal.  To compare for equality within a specified precision, use `F~`.  See
+[Floating point arithmetic](#floating-point-arithmetic)
 
 ## Numeric output
 
