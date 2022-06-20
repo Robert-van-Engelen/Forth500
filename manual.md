@@ -920,8 +920,13 @@ words `* /`, which would truncate an overflowing product to a single integer.
 For example, `radius 355 * 113 /` with 355/133 to approximate pi overflows
 when `radius` exceeds 92, but `radius 355 113 */` gives the correct result.
 
-A logical `NOT` word not available.  Either `INVERT` should be used to invert
-bits or `0=` should be used, which returns `TRUE` for `0` and `FALSE`.
+To perform unsigned `*`, `/` and `MOD` operations, the words `UM*` and `UM/MOD`
+can be used, see [mixed arithmetic](#mixed-arithmetic).  To perform unsigned
+`2*` and `2/`, `1 LSHIFT` and `1 RSHIFT` can be used.
+
+A logical `NOT` word is not available.  Either `INVERT` should be used to
+invert bits or `0=` should be used, which returns `TRUE` for `0` and `FALSE`
+otherwise.
 
 ### Double arithmetic
 
@@ -949,7 +954,7 @@ The `D>S` word converts a signed double to a signed single integer, throwing
 exception -11 "Result out of range" if the double value cannot be converted.
 
 To convert an unsigned single integer to an unsigned double integer, just push
-a `0` on the stack.
+a `0` on the stack after the unsigned single.
 
 Integer overflow and underflow does not throw exceptions.  In case of integer
 addition and subtraction, values simply wrap around.  For all other integer
@@ -961,17 +966,17 @@ The following words cover mixed single and double integer arithmetic
 operations.  Words involving division may throw exception -10 "Division by
 zero".
 
-| word     | stack effect ( _before_ -- _after_ )     | comment
-| -------- | ---------------------------------------- | ------------------------
-| `M+`     | ( _d_ _n_ -- (_d_+_n_) )                 | add signed single to signed double
-| `M-`     | ( _d_ _n_ -- (_d_-_n_) )                 | subtract signed single from signed double
-| `M*`     | ( _n1_ _n2_ -- (_n1_\*_n2_) )            | multiply signed singles to return signed double
-| `UM*`    | ( _u1_ _u2_ -- (_u1_\*_u2_) )            | multiply unsigned singles to return unsigned double
-| `UMD*`   | ( _ud_ _u_ -- (_ud_\*_u_) )              | multiply unsigned double and single to return unsigned double
-| `M*/`    | ( _d_ _n_ _+n_ -- (_d_\*_n_/_+n_) )      | multiply signed double with signed single then divide by positive single to return signed double
-| `UM/MOD` | ( _u1_ _u2_ -- (_u1_%_u2_) (_u1_/_u2_) ) | unsigned single remainder and quotient of unsigned single division
-| `FM/MOD` | ( _d_ _n_ -- (_d_%_n_) (_d_/_n_) )       | floored single remainder and single quotient of signed double and single division
-| `SM/REM` | ( _d_ _n_ -- (_d_%_n_) (_d_/_n_) )       | symmetric single remainder and single quotient of signed double and single division
+| word     | stack effect ( _before_ -- _after_ )  | comment
+| -------- | ------------------------------------- | ------------------------
+| `M+`     | ( _d_ _n_ -- (_d_+_n_) )              | add signed single to signed double
+| `M-`     | ( _d_ _n_ -- (_d_-_n_) )              | subtract signed single from signed double
+| `M*`     | ( _n1_ _n2_ -- (_n1_\*_n2_) )         | multiply signed singles to return signed double
+| `UM*`    | ( _u1_ _u2_ -- (_u1_\*_u2_) )         | multiply unsigned singles to return unsigned double
+| `UMD*`   | ( _ud_ _u_ -- (_ud_\*_u_) )           | multiply unsigned double and single to return unsigned double
+| `M*/`    | ( _d_ _n_ _+n_ -- (_d_\*_n_/_+n_) )   | multiply signed double with signed single then divide by positive single to return signed double
+| `UM/MOD` | ( _ud_ _u_ -- (_ud_%_u_) (_ud_/_u_) ) | single remainder and double quotient of unsigned double dividend and unsigned single divisor
+| `FM/MOD` | ( _d_ _n_ -- (_d_%_n_) (_d_/_n_) )    | floored single remainder and single quotient of signed double dividend and signed single divisor
+| `SM/REM` | ( _d_ _n_ -- (_d_%_n_) (_d_/_n_) )    | symmetric single remainder and single quotient of signed double dividend and signed single divisor
 
 The `UM/MOD`, `FM/MOD`, and `SM/REM` words return a remainder on the stack.  In
 all cases, the quotient _q_ and remainder _r_ satisfy _a_ = _b_ \* _q_ + _r_,
@@ -983,7 +988,7 @@ remainder 4 and quotient -2.
 In case of `SM/REM`, the quotient is a single signed integer rounded towards
 zero (hence symmetric) _q_ = _trunc_(_a_ / _b_). For example, `-10. 7 SM/REM`
 returns remainder -3 and quotient -1.  This behavior is identical to `/MOD`,
-but `/MOD` behavior may differ on other Forth systems.
+but `/MOD` behavior is not standardized and may differ on other Forth systems.
 
 ### Fixed point arithmetic
 
@@ -991,8 +996,8 @@ Fixed point offers an alternative to floating point if the range of values
 manipulated can be fixed to a few digits after the decimal point.  Scaling of
 values must be applied when appropriate.
 
-A classic example is pi to compute the circumference of a circle using a
-rational approximation of pi and a fixed point radius with a 2 digit fraction.
+A classic example is to compute the circumference of a circle using a rational
+approximation of pi and a fixed point radius with a 2 digit fraction.
 
     : pi*   355 113 M*/ ; ↲
     12.00 2VALUE radius ↲
