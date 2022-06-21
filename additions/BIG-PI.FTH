@@ -28,6 +28,7 @@ DECIMAL
 : f@    CELLS HERE + 40 + @ ;
 
 : big-pi    ( +n -- )
+  DUP 4 < ABORT" too small"
   \ c=7*n/2; c-=c%14
   7 UM* D2/ D>S DUP 14 MOD - TO c
   \ check for sufficient space to store array f
