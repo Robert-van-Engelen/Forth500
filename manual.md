@@ -2962,9 +2962,11 @@ The Forth500 dictionary is organized as follows:
          | my-word |     "my-word" word characters (7 bytes)
          |---------|
          | code    |<--- LAST-XT Forth code and/or data
-         |=========|<--- HERE pointer to free space
-         |         |     (and the 40 byte hold area for numerical output)
-         | free    |
+         |=========|<--- HERE pointer
+         | hold    |     hold area for numerical output (40 bytes)
+         |---------|
+         |         |
+         | free    |     unused dictionary space
          | space   |
          |         |
          |=========|<--- dictionary limit
@@ -3020,6 +3022,11 @@ are not searchable but are displayed by `WORDS`.
 `:NONAME` and `CREATE-NONAME` code has no dictionary entry.  The code is just
 part of the dictionary space as a block of code without link and name header.
 Both words return the execution token of the code.
+
+`UNUSED` gives the unused dictionary space size plus hold the area size.
+The hold area is used as a temoorary buffer for numerical output, such as `.`,
+`U.`, `D.`, `F.`, and `<#` ... `#>`,  Also the `OK[n]` prompt overwrites this
+area to display the stack depth `n`.  Otherwise, this space is unused.
 
 ## Examples
 
