@@ -133,15 +133,15 @@ To list the words stored in the Forth dictionary, type (↲ is ENTER):
 
     WORDS ↲
 
-Hit any key to continue or BREAK to stop.  BREAK generally terminates the
-execution of a Forth500 subroutine associated with a word.
+Hit any key to continue.  Hit C/CE or BREAK to stop.  BREAK generally
+terminates the execution of a Forth500 subroutine associated with a word.
 
 To list words that fully and partially match a given name, type:
 
     WORDS NAME ↲
 
 For example, `WORDS DUP` lists all words with names that contain the part `DUP`
-(the `WORDS` search is case sensitive).  Press BREAK or C/CE to stop listing
+(the `WORDS` search is case sensitive).  Press C/CE or BREAK to stop listing
 more words.
 
 Words like `DUP` operate on the stack.  `DUP` duplicates the top value,
@@ -156,8 +156,8 @@ to push them onto the stack:
 where `TRUE` pushes -1, `123` pushes 123, `DUP` duplicates the TOS and `.S`
 shows the stack values.  It helps to use `.S` to see what's currently on the
 stack when debugging.  `OK[3]` indicates that currently there are three values
-on the stack.  This may show as `OK[3 1]` when there is one floating point
-value on the floating point stack indicated by the second number.
+on the stack.  This may also show as `OK[3 1]` when there is one floating point
+value on the floating point stack, which is indicated by the second number.
 
 You can spread the code over multiple lines.  It does not matter if you hit
 ENTER at the end or if you hit ENTER to input more than one line.
@@ -176,8 +176,9 @@ To clear the stacks, type `CLEAR`:
     CLEAR ↲
     OK[0]
 
-Like traditional Forth systems, Forth500 integers are 16-bit signed or
-unsigned.  Decimal, hexadecimal and binary number systems are supported:
+Like traditional Forth systems, Forth500 integers are 16-bit (single) and
+32-bit (double) signed or unsigned integers.  Decimal, hexadecimal and binary
+number systems are supported:
 
 | input   | TOS | comment
 | ------- | --- | --------------------------------------------------------------
@@ -200,7 +201,7 @@ the sum.  The `.` ("dot") word can then be used to print the TOS:
 Two single stack integers can be combined to form a 32-bit signed or unsigned
 integer.  A double integer number is pushed (as two single integers) when the
 number is written with a `.` anywhere among the digits, but we prefer the `.`
-at the end:
+at the end for clarity:
 
     123. 456. D+ D. ↲
     579 OK[0] 
@@ -3024,7 +3025,7 @@ part of the dictionary space as a block of code without link and name header.
 Both words return the execution token of the code.
 
 `UNUSED` gives the unused dictionary space size plus hold the area size.
-The hold area is used as a temoorary buffer for numerical output, such as `.`,
+The hold area is used as a temporary buffer for numerical output, such as `.`,
 `U.`, `D.`, `F.`, and `<#` ... `#>`,  Also the `OK[n]` prompt overwrites this
 area to display the stack depth `n`.  Otherwise, this space is unused.
 
