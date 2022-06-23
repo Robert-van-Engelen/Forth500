@@ -1735,7 +1735,15 @@ The return stack is used to call colon definitions by saving the return address
 on the return stack.  The return stack is also used by do-loops to store the
 loop control values, see also [loops](#loops).
 
-The following words move cells between both stacks:
+The return stack may be used to temporarily store values by moving them from
+the stack to the return stack with `>R` ("to r") and back with `R>` ("r from").
+
+Care must be taken to prevent return stack imbalences when a colon definition
+exits.  The return stack pointer must be restored to the original state (when
+the colon definition started) before the colon definition exits.  For example,
+an `>R` must be followed by `R>` or `R>DROP`.
+
+The following words move cells between stacks:
 
 | word     | stack effect ( _before_ -- _after_ )              | comment
 | -------- | ------------------------------------------------- | ---------------
@@ -1764,10 +1772,6 @@ Other words related to the return stack:
 | ------- | ------------- | ----------------------------------------------------
 | `RP@`   | ( -- _addr_ ) | returns the return stack pointer, points the to return TOS
 | `RP!`   | ( _addr_ -- ) | assigns the return stack pointer (danger!)
-
-Care must be taken to prevent return stack imbalences when a colon definition
-exits.  The return stack pointer must be restored to the original state when
-the colon definition started before the colon definition exits.
 
 "Caller cancelling" is possible with `R>DROP` ("r from drop" or just "r drop")
 to remove a return address before exiting:
