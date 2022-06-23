@@ -1898,7 +1898,7 @@ Some Forth implementations use `DEFERS` to do the same.
 
 ### Noname definitions
 
-A nameless colon definition just stores code and cannot be referenced by name.
+A nameless colon definition just stores code that cannot be referenced by name.
 The `:NONAME` word compiles a definition and returns its execution token on the
 stack:
 
