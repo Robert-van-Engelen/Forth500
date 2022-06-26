@@ -9,9 +9,9 @@ ANEW _GALTON_
 
 2VARIABLE seed
 
-: srand ( x -- ) S>D seed 2! ;
-
 : rand  ( -- +n ) seed 2@ 1103515245. D* 12345. D+ TUCK seed 2! 32767 AND ;
+
+: srand ( x -- ) S>D seed 2! ;
 
 \ Galton board
 
