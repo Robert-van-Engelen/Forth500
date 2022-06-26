@@ -166,7 +166,7 @@ When an error occurred, an error message will be shown and a blinking cursor
 will appear:
 
     1 0 / 2 + . ↲
-    1 0 / <error -10
+    1 0 / <Error -10
 
 Press the left or right cursor key to edit the last line.  For a description
 of the standard Forth error codes, see [exceptions](#exceptions).
@@ -2085,8 +2085,9 @@ The following words define a structure and its fields:
 The `FIELD:` word is the same as `CELL +FIELD`, `CFIELD:` is the same as `1
 CHARS +FIELD` and `2FIELD` is the same as `2 CELLS +FIELD`.
 
-Fields behave like variables and can be assigned with `!`, `ON` and `OFF` and
-fetched with `@`.  For example:
+Space for structures can be allocated with `BUFFER:`.  Fields behave like
+variables and can be assigned with `!`, `ON` and `OFF` and fetched with `@`.
+For example:
 
     BEGIN-STRUCTURE pair ↲
       FIELD: pair.first ↲
@@ -2148,6 +2149,26 @@ example using `{` and `}` to demarcate the array index expression as follows:
 
 By making `{` immediate, it won't compile to a useless call to the `{` excution
 token.  This array implementation has no array index bound checking.
+
+An array of structures is created in the same way as before, using the
+structure as the size parameter for `array:`:
+
+    BEGIN-STRUCTURE pair ↲
+      FIELD: pair.first ↲
+      FIELD: pair.second ↲
+    END-STRUCTURE ↲
+    : pair.init DUP pair.first OFF pair.second OFF ; ↲
+    10 pair array: }pairs ↲
+    10 0 DO I pair * pair.init LOOP ↲
+
+This created an array of 10 pairs and initialized them.  To store the value 1
+in array location 3 for `pair.first`:
+
+    1 { 3 }pairs pair.first ! ↲
+
+To store the value 1 in array location 3 for `pair.second`:
+
+    2 { 3 }pairs pair.second ! ↲
 
 ### Markers
 
@@ -3663,7 +3684,7 @@ _c-addr_ _u_) for convenience.
 
 ## Troubleshooting
 
-### Problem: file won't open or cannot INCLUDE a file from COM: E: or F:
+**Problem: file won't open or cannot INCLUDE a file from COM: E: or F:**
 
 When BREAK is pressed or an error occurs while files are still open, the file
 cannot be re-opened until it is closed.  Therefore, always close files in your
