@@ -101,19 +101,19 @@ END-STRUCTURE
     #LINES 0 DO
       v1 +TO x1
       x1 fix>   1 < IF v1 NEGATE TO v1 ELSE
-      x1 fix> 239 > IF v1 NEGATE TO v1 THEN
+      x1 fix> 238 > IF v1 NEGATE TO v1 THEN
       THEN
       u1 +TO y1
       y1 fix>   1 < IF u1 NEGATE TO u1 ELSE
-      y1 fix>  31 > IF u1 NEGATE TO u1 THEN
+      y1 fix>  30 > IF u1 NEGATE TO u1 THEN
       THEN
       v2 +TO x2
       x2 fix>   1 < IF v2 NEGATE TO v2 ELSE
-      x2 fix> 239 > IF v2 NEGATE TO v2 THEN
+      x2 fix> 238 > IF v2 NEGATE TO v2 THEN
       THEN
       u2 +TO y2
       y2 fix>   1 < IF u2 NEGATE TO u2 ELSE
-      y2 fix>  31 > IF u2 NEGATE TO u2 THEN
+      y2 fix>  30 > IF u2 NEGATE TO u2 THEN
       THEN
       I line-array line.erase
       x1 fix> y1 fix> x2 fix> y2 fix> I line-array line!
