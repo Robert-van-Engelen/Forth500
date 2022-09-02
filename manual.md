@@ -275,10 +275,10 @@ limit on the stack as an argument to `hellos`.  Therefore, we can refactor
 *It is good practice to define words with short definitions!*  It makes your
 programs much easier to understand, maintain and reuse.  Because words operate
 on the stack, pretty much any sequence of words can be moved from a definition
-into a new word to replace the sequence with a single word.  This keeps
-definitions short and understandable.
+into a new word to replace the sequence with a single descriptive word.  This
+keeps definitions short and understandable.
 
-But what if we want to change the message of `hellos`?  Forth allows you to
+What if we want to change the message of `hellos`?  Forth allows you to
 redefine words at any time, but this does not change the behavior of any
 previously defined words that are used by other previously defined words:
 
@@ -290,7 +290,8 @@ previously defined words that are used by other previously defined words:
 Only new words that we add after this will use our new `hello` definition.
 Basically, the Forth dictionary is searched from the most recently defined
 word to the oldest defined word.  A definition of a word is no longer
-searchable when a word with the same name is defined.
+searchable when a word with the same name is defined.  There is a way around
+this by deferring words, as we will see later.
 
 Definitions can be deleted with everything defined after it by forgetting:
 
