@@ -236,7 +236,9 @@ a `;` ("semicolon"):
 
 This defines the word `hello` that displays the obligatory "Hello, World!"
 message.  Separating the word with its definition using tab spacing visually
-assists to identify word definitions more easily.
+assists to identify word definitions more easily.  After all, a Forth program
+is stored in a *dictionary* of *words* with their *definitions*.  A clean
+visual presentation helps a lot when perusing Forth programs.
 
 The `."` word parses a sequence of character until `"`.  These characters are
 displayed on screen.  Note that `."` is a normal word and must therefore be
@@ -270,11 +272,11 @@ limit on the stack as an argument to `hellos`.  Therefore, we can refactor
 
     : greetings     10 hellos ; ↲
 
-It is good practice to define words with short definitions.  It makes programs
-much easier to understand, maintain and reuse.  Because words operate on the
-stack, pretty much any sequence of words can be moved from a definition into a
-new word to replace the sequence with a single word.  This keeps definitions
-short and understandable.
+*It is good practice to define words with short definitions!*  It makes your
+programs much easier to understand, maintain and reuse.  Because words operate
+on the stack, pretty much any sequence of words can be moved from a definition
+into a new word to replace the sequence with a single word.  This keeps
+definitions short and understandable.
 
 But what if we want to change the message of `hellos`?  Forth allows you to
 redefine words at any time, but this does not change the behavior of any
@@ -527,9 +529,9 @@ code, `( a comment goes here )` and `\ a comment until the end of the line`:
       DUP 10 < INVERT UNTIL \ until counter >= 10 ↲
       DROP ;                \ drop counter ↲
 
-Word definitions are typically annotated with their stack effect, in this case
-there is no effect `( -- )`, see the next section on how this notation is used
-in practice.
+Word definitions are typically annotated with their stack effects.  In this
+case there is no effect `( -- )`, see the next section on how this notation is
+used in practice.
 
 Forth source code is loaded from a file with `INCLUDE` or with `INCLUDED`:
 
