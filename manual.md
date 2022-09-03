@@ -88,8 +88,28 @@ beginners and experienced programmers alike.
 It is perhaps best to think of Forth as a language positioned between assembly
 coding and C in terms of power and complexity.  Like assembly and C, you have a
 lot of freedom and power at your fingertips.  But this comes with a healthy
-dose of responsibility to do things right:  errors can lead to system crashes.
-Fortunately, the PC-E500(S) easily recovers from a system crash with a reset.
+dose of responsibility to do things right:  errors can lead to crashes.
+
+Fortunately, Forth500 protects its data and floating point stacks against
+under- and overflows.  It also guards against dictionary overflow.  Accidental
+infinite loops can be terminated by pressing BREAK to abort execution, which is
+checked in loops and when calling secondaries (Forth subroutines).
+
+If necessary, the PC-E500(S) recovers from a crash with a soft reset.  You can
+recover your work after you saved the Forth500 program state to the E: or F:
+RAM disk from BASIC:
+
+    > SAVEM "F:FORTH500.BIN",&Bx000,&Byyyy
+
+and load it back into memory later with:
+
+    > LOADM "F:FORTH500.BIN",&Bx000
+
+where Forth500 starts at `&Bx000` (`&B0000` on an expanded machine and `&B9000`
+on an unexpanded machine) and `yyyy` is the value returned by executing in
+Forth500 `UNUSED HEX.`.  Note that a hard reset requires allocating memory for
+Forth500 before you can load it back into memory, see the installation
+instructions.
 
 ## Quick Forth tutorial
 
