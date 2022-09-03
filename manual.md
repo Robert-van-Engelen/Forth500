@@ -93,7 +93,7 @@ dose of responsibility to do things right:  errors can lead to crashes.
 Fortunately, Forth500 protects its data and floating point stacks against
 under- and overflows.  It also guards against dictionary overflow.  Accidental
 infinite loops can be terminated by pressing BREAK to abort execution, which is
-checked in loops and when calling secondaries (Forth subroutines).
+also checked in loops and when calling secondaries (Forth subroutines).
 
 If necessary, the PC-E500(S) recovers from a crash with a soft reset.  You can
 recover your work after you saved the Forth500 program state to the E: or F:
@@ -1809,7 +1809,9 @@ where `R>DROP` removes the return address to `foo`.  Therefore:
 
 The maximum depth of the return stack in Forth500 is 256 bytes to hold up to
 128 cells or 128 calls to secondaries (colon definitions of words constructed
-from existing Forth words).
+from existing Forth words).  Return stack under- and overflow is not checked
+by Forth500.  Recursing too deep will overwrite the data stack and may
+eventually lead to a crash.
 
 ## Defining new words
 
@@ -2868,11 +2870,11 @@ Forth500 words:
 | -2   | `ABORT"`
 | -3   | stack overflow
 | -4   | stack underflow
-| -5   | return stack overflow
-| -6   | return stack underflow
-| -7   | do-loops nested too deeply during execution
+| -5   | return stack overflow (not checked by Forth500)
+| -6   | return stack underflow (not checked by Forth500)
+| -7   | do-loops nested too deeply during execution (not checked by Forth500)
 | -8   | dictionary overflow
-| -9   | invalid memory address
+| -9   | invalid memory address (N/A in Forth500)
 | -10  | division by zero
 | -11  | result out of range
 | -12  | argument type mismatch
@@ -2883,42 +2885,42 @@ Forth500 words:
 | -17  | pictured numeric output string overflow
 | -18  | parsed string overflow
 | -19  | definition name too long
-| -20  | write to a read-only location
-| -21  | unsupported operation
+| -20  | write to a read-only location (N/A in Forth500)
+| -21  | unsupported operation (N/A in Forth500)
 | -22  | control structure mismatch
-| -23  | address alignment exception
+| -23  | address alignment exception (N/A in Forth500)
 | -24  | invalid numeric argument
-| -25  | return stack imbalance
-| -26  | loop parameters unavailable
-| -27  | invalid recursion
-| -28  | user interrupt
-| -29  | compiler nesting
-| -30  | obsolescent feature
-| -31  | `>BODY` used on non-CREATEd definition
+| -25  | return stack imbalance (not checked in Forth500)
+| -26  | loop parameters unavailable (not checked in Forth500)
+| -27  | invalid recursion (not checked in Forth500)
+| -28  | user interrupt (BREAK was pressed)
+| -29  | compiler nesting (N/A in Forth500)
+| -30  | obsolescent feature (N/A in Forth500)
+| -31  | `>BODY` used on non-CREATEd definition (not checked in Forth500)
 | -32  | invalid name argument (invalid `TO` name)
-| -33  | block read exception
-| -34  | block write exception
-| -35  | invalid block number
-| -36  | invalid file position
-| -37  | file I/O exception
-| -38  | non-existent file
-| -39  | unexpected end of file
-| -40  | invalid BASE for floating point conversion
-| -41  | loss of precision
+| -33  | block read exception (not supported in Forth500)
+| -34  | block write exception (not supported in Forth500)
+| -35  | invalid block number (not supported in Forth500)
+| -36  | invalid file position (not thrown by Forth500, but throws [File errors](#file-errors))
+| -37  | file I/O exception (not thrown by Forth500, but throws [File errors](#file-errors))
+| -38  | non-existent file (not thrown by Forth500, but throws [File errors](#file-errors))
+| -39  | unexpected end of file (not thrown by Forth500, but throws [File errors](#file-errors))
+| -40  | invalid BASE for floating point conversion (not checked in Forth500)
+| -41  | loss of precision (not checked in Forth500)
 | -42  | floating-point divide by zero
 | -43  | floating-point result out of range
 | -44  | floating-point stack overflow
 | -45  | floating-point stack underflow
 | -46  | floating-point invalid argument
-| -47  | compilation word list deleted
-| -48  | invalid `POSTPONE`
-| -49  | search-order overflow
-| -50  | search-order underflow
-| -51  | compilation word list changed
-| -52  | control-flow stack overflow
-| -53  | exception stack overflow
-| -54  | floating-point underflow
-| -55  | floating-point unidentified fault
+| -47  | compilation word list deleted (N/A in Forth500)
+| -48  | invalid `POSTPONE` (not checked in Forth500)
+| -49  | search-order overflow (N/A in Forth500)
+| -50  | search-order underflow (N/A in Forth500)
+| -51  | compilation word list changed (N/A in Forth500)
+| -52  | control-flow stack overflow (N/A in Forth500)
+| -53  | exception stack overflow (N/A in Forth500)
+| -54  | floating-point underflow (N/A in Forth500)
+| -55  | floating-point unidentified fault (N/A in Forth500)
 | -56  | `QUIT`
 | -57  | exception in sending or receiving a character
 | -58  | `[IF]`, `[ELSE]`, or `[THEN]` exception
