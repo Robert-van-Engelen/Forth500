@@ -1,6 +1,8 @@
 # CHANGELOG
 
-The following bug fixes and improvements were made to the original pceForth code.
+The following bug fixes and additions were made to the original pceForth code.
+
+## Forth500 v1.0
 
 - removed useless `rc` before `jp interp__`
 - replaced `jp interp__` by `jp cont__` to skip BREAK key test in code when control flow is not jumping backward and no IO (with a few exceptions)
@@ -81,7 +83,7 @@ The following bug fixes and improvements were made to the original pceForth code
 - reduced code of `(?DO)` by reusing `(DO)`
 - reduced code of `(+TO)` and `(D+2TO)` by reusing `+!` and `D+!`
 - reduced code of `EVALUATE` and `INCLUDE-FILE`, both now use `SAVE-INPUT N>R` and `NR> RESTORE-INPUT` which is more logical
-- changed `LAST` and `LASTXT` to `VALUE` instead of `VARIABLE`
+- changed `LAST` and `LAST-XT` to `VALUE` instead of `VARIABLE`
 - changed `(COLON-SYS)`, `(ORIG)`, `(DEST)`, `(DO-SYS)` constants to CREATEed words without data that return a unique address
 - changed `SOURCE` definition to a `2VALUE` and removed `(SOURCE)`
 - removed `(REFILL)` and inlined its code into `(QUIT)`
@@ -130,3 +132,14 @@ The following bug fixes and improvements were made to the original pceForth code
 - updated double floating point computation results to round to 20 digits rather than ignoring the guard digits
 - fixed `EKEY?` issue
 - fixed `M*/` regression issue
+
+## Forth500 v2.0
+
+- increased colon call-return execution speed by 20%, using `yi` and `zi` 20 bit address registers with a fixed 11th segment: this optimizes all 16 to 20 bit address conversions by moving a 16 bit address through `yi` or `zi` to obtain a 20 bit address
+- increased execution speed of single and double integer literals, variables, values, constants, single and double integer store and fetch, single integer arithmetic involving addition and subtraction, and single and double integer stack operations
+- fixed `MOVE` when source and destination address are equal
+- added RUN and PRO display annunciators: RUN lights up when interpreting and PRO lights up when compiling from the prompt
+- changed `WORDS` to no longer display inaccessible smudged (hidden) words (e.g. when their definition failed to compile)
+- changed `FENCE` to a value instead of a variable
+- added `FORTH`, `VOCABULARY`, `DEFINITIONS`, `CURRENT` and `CONTEXT` words
+- corrected minor errors and omissions in the manual

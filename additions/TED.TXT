@@ -1,0 +1,60 @@
+TED - a Text EDitor
+===================
+
+TED is a small text editor for Forth500.
+
+    TED             edit the last file edited
+    TED FILE.FTH    edit FILE.FTH
+    TEDI            edit the last file edited, then read it into Forth500
+    TEDI FILE.FTH   edit FILE.FTH, then read it into Forth500
+
+The TEDI command uses INCLUDE (or INCLUDED) to read the saved file.
+
+You can specify a drive letter, such as E: with the specified file to edit.
+
+The default last file edited is WORKFILE.FTH when TED was loaded.
+
+If a binary file is edited, then all control characters in the range $00 to $1f
+except CR ($0d) and LF ($0a) are replaced by a space.  A lone CR is replaced by
+LF.  LF and CRLF in the file are kept unchanged.
+
+When the PC-E500(S) is turned off you can press [ON] again to continue editing.
+
+Never press [ON] while editing, since this will quit TED and break to the Forth
+prompt.  If that happens, type TED-RESUME or TEDI-RESUME to continue editing
+the file.  When breaking to the Forth prompt the file edited is not yet saved.
+Executing TED again will revert all changes and load an old version.
+
+Key assignments
+---------------
+
+[SPACE]         insert new line before the current line, then start editing
+[ENTER]         insert new line after the current line, then start editing
+[DEL]           cut line and save it in the buffer
+[STO]           copy line to the buffer
+[ANS]/[RCL]     paste line from the buffer
+[UP]/[DN]       scroll up/down to view lines
+[LFT]/[RGT]     edit the top line from the end or the start
+[MENU]          menu
+[CCE]           exit and save the file
+[OFF]           power off and continue later where you left off with [ON]
+
+When editing a line, you can use the cursor keys to freely navigate the line
+but not beyond the line.  [INS] switches to insertion mode and back to replace
+mode.  [DEL] and [BS] delete characters and [CCE] clears the line.  [ENTER]
+returns to the file editor and the cursor disappears.
+
+[MENU] displays the filename, the file size in bytes, and an overview of the
+keys.  You can edit the file name with [LFT]/[RGT] then press [ENTER] to return
+to the editor or press [CCE] to exit and save the file.
+
+Hints
+-----
+
+To start your Forth definitions use ANEW _marker_ with a marker of your choice.
+This will automatically remove the old definitions with the new definitions
+when you reload the file from disk, for example with TEDI.
+
+To list .FTH files: FILES *.FTH
+
+To rename a file: S" FILE1.FTH" S" FILE2.FTH" RENAME-FILE THROW

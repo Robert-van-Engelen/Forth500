@@ -14,13 +14,37 @@ See the [Forth500 User Guide](manual.md) with an introduction to Forth and a ful
 
 ## How fast is it?
 
-The [n-queens benchmark](https://www.hpmuseum.org/cgi-sys/cgiwrap/hpmuseum/articles.cgi?read=700) is solved in 4.15 seconds, the fastest Forth system in this benchmark and faster than the compiled n-queens C program on a Sharp PC-G850VS that runs at 8.0MHz compared to the 2.3MHz PC-E500(S).
+The [n-queens benchmark](https://www.hpmuseum.org/cgi-sys/cgiwrap/hpmuseum/articles.cgi?read=700) is solved in 3.47 seconds, the fastest Forth system in this benchmark and faster than the compiled n-queens C program on a Sharp PC-G850VS that runs at 8.0MHz compared to the 2.3MHz PC-E500(S).
 
 ## Load Forth500 via serial or cassette interface
 
 To use Forth500, first load the binary, then `CALL &B0000` (see [expanded E500](E500-expanded)) or `CALL &B9000` (see [unexpanded E500](E500-unexpanded)).  Forth500 starts immediately and can be exited with `BYE`.  Call again to continue using Forth500 where you left off.  Forth500 resides in protected memory and does not interfere with BASIC.
 
 Forth programs can be loaded into Forth500 via the serial interface or cassette interface with [PocketTools](https://www.peil-partner.de/ifhe.de/sharp/).
+
+## Editing Forth source files
+
+[TED](additions/TED.FTH) is a small text editor for Forth500:
+
+    TED             edit the last file edited
+    TED FILE.FTH    edit FILE.FTH
+    TEDI            edit the last file edited, then read it into Forth500
+    TEDI FILE.FTH   edit FILE.FTH, then read it into Forth500
+
+The `TEDI` command uses `INCLUDE` (or `INCLUDED`) to read the saved file.
+
+See also [TED.TXT](additions/TED.TXT).
+
+## Saving a Forth500 image to a file
+
+[SAVE](additions/SAVE.FTH) saves the entire Forth500 image, including all user-defined definitions, to a binary file from Forth500:
+
+    SAVE F:MYFORTH.BIN
+
+In BASIC execute (assuming memory for Forth500 is still allocated):
+
+    LOADM "F:MYFORTH.BIN"
+    CALL &B0000 (or CALL &B9000 on an unexpanded machine)
 
 ## Batteries included...
 
@@ -40,7 +64,9 @@ Forth500 is [Forth Standard](https://forth-standard.org) compliant and implement
 - FLOATING-EXT: complete except hyperbolics and `FE.`, `F~` to save space, see the manual for [the definitions](manual.md#floating-point-arithmetic) of these
 - STRING: complete
 - TOOLS: `.S`, `?`, `DUMP`, `WORDS`
-- TOOLS-EXT: `AHEAD`, `BYE`, `CS-PICK`, `CS-ROLL`, `FORGET`, `STATE`, `N>R`, `NR>`, `[DEFINED]`, `[ELSE]`, `[IF]`, `[THEN]`, `[UNDEFINED]`
+- TOOLS-EXT: `AHEAD`, `BYE`, `CS-ROLL`, `FORGET`, `STATE`, `N>R`, `NR>`, `[DEFINED]`, `[ELSE]`, `[IF]`, `[THEN]`, `[UNDEFINED]`
+- SEARCH: `DEFINITIONS`, `FIND`
+- SEARCH-EXT: `FORTH`
 
 Additional built-in words:
 - introspection: `COLON?`, `DOES>?`, `MARKER?`, `DEFER?`, `VALUE?`, `2VALUE?`, `FVALUE?`
@@ -51,20 +77,17 @@ Additional built-in words:
 - stack: `-ROT`, `2NIP`, `2TUCK`, `DUP>R`, `R>DROP`, `CLEAR`
 - loops: `K`, `?LEAVE`
 - strings: `NEXT-CHAR`, `S=`, `-CHARS`, `EDIT`, `>DOUBLE`
-- display: `REVERSE-TYPE`, `BASE.`, `BIN.`, `DEC.`, `HEX.`, `N.S`, `TTY`
+- display: `REVERSE-TYPE`, `PAUSE`, `BASE.`, `BIN.`, `DEC.`, `HEX.`, `N.S`, `TTY`
 - printing: `STDL`, `PRINTER`
 - tape: `TAPE`, `CLOAD`
 - LCD: `SET-SYMBOLS`, `BUSY-ON`, `BUSY-OFF`, `CURSOR`, `SET-CURSOR`, `X@`, `X!`, `Y@`, `Y!`, `XMAX@`, `XMAX!`, `YMAX@`, `YMAX!`
 - graphics: `GMODE!`, `GPOINT`, `GPOINT?`, `GLINE`, `GBOX`, `GDOTS`, `GDOTS?`, `GDRAW`, `GBLIT!`, `GBLIT@`
 - sound: `BEEP`
-- dictionary: `LAST`, `LAST-XT`, `HIDE`, `REVEAL`, `L>NAME`, `>NAME`, `NAME>`, `FIND-WORD`, `CREATE-NONAME`
+- vocabulary: `VOCABULARY`, `CURRENT`, `CONTEXT`
+- dictionary: `LAST-XT`, `HIDE`, `REVEAL`, `L>NAME`, `>NAME`, `NAME>`, `FIND-WORD`, `CREATE-NONAME`
 - files: `FILES`, `DSKF`, `DRIVE`, `STDO`, `STDI`, `STDL`, `STRING>FILE`, `FILE>STRING`, `FIND-FILE`, `FILE-INFO`, `FILE-END?`, `WRITE-CHAR`, `READ-CHAR`, `PEEK-CHAR`, `CHAR-READY?`, `SEEK-FILE` (with `SEEK-SET`, `SEEK-CUR`, `SEEK-END`), `>FILE`
 - keyboard: `>KEY-BUFFER`, `KEY-CLEAR`, `INKEY`
 - parsing: `\"-PARSE`
 - marking: `ANEW`
 - power: `POWER-OFF`
 - misc: `CELL`, `NOOP`
-
-## Work in progress
-
-- A separate file editor to edit Forth source code (a command line editor is included)

@@ -16,6 +16,8 @@ The value 90 shows that memory was allocated from &B9000 up.
 
 ## When using a cassette interface, such as CE-126P or CE-124
 
+First allocate memory as described in the first part of this README.
+
 Play the Forth500.wav file and load Forth500 on the PC-E500(S) with `CLOADM`:
 
     > CLOADM
@@ -45,6 +47,8 @@ Mostly `-dINV` works best, but `-dMAX` should be used instead if loading fails.
 
 ## When using the serial interface
 
+First allocate memory as described in the first part of this README.
+
 See the HP forum thread "FORTH for the SHARP PC-E500(S)"
 <https://www.hpmuseum.org/forum/thread-17440-post-153815.html#pid153815>
 
@@ -67,7 +71,7 @@ drive on the PC-E500(S), either the E: or F: drive:
 where `xxxx` is the address returned by `HERE HEX.` minus 1.  If you just
 loaded Forth500 without changing it, then you can save the image with:
 
-    > SAVEM "F:FORTH500.BIN",&B9000,&BDD88
+    > SAVEM "F:FORTH500.BIN",&B9000,&BDD99
 
 This makes it possible to instantly reload Forth500, e.g. after a fatal error
 or crash that damaged the Forth500 dictionary:

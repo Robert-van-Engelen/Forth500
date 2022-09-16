@@ -58,6 +58,7 @@ Author: Dr. Robert A. van Engelen, 2021
 - [Exceptions](#exceptions)
 - [Environmental queries](#environmental-queries)
 - [Dictionary structure](#dictionary-structure)
+- [Vocabulary structure](#vocabulary-structure)
 - [Examples](#examples)
   - [CHDIR](#chdir)
   - [GCD](#gcd)
@@ -97,18 +98,18 @@ also checked in loops and when calling secondaries (Forth subroutines).
 
 If necessary, the PC-E500(S) recovers from a crash with a soft reset.  You can
 recover your work after you saved the Forth500 program state to the E: or F:
-RAM disk from BASIC:
+RAM disk with the `SAVE` word (see the ["SAVE"](#save) example to define):
 
-    > SAVEM "F:FORTH500.BIN",&Bx000,&Byyyy
+    SAVE F:FORTH500.BIN
 
-and load it back into memory later with:
+Then load it back into memory later from BASIC in RUN mode:
 
-    > LOADM "F:FORTH500.BIN",&Bx000
+    > LOADM "F:FORTH500.BIN"
+    > CALL &Bx000
 
 where Forth500 starts at `&Bx000` (`&B0000` on an expanded machine and `&B9000`
-on an unexpanded machine) and `yyyy` is the value returned by executing in
-Forth500 `UNUSED HEX.`.  Note that a hard reset requires allocating memory for
-Forth500 before you can load it back into memory, see the installation
+on an unexpanded machine).  Note that a hard reset requires allocating memory
+for Forth500 before you can load it back into memory, see the installation
 instructions.
 
 ## Quick Forth tutorial
@@ -140,6 +141,11 @@ long:
 | LEFT/RIGHT  | before typing input "replays" the last line of input to edit
 | CURSOR KEYS | move cursor up/down/left/right on the line
 | C/CE        | clears the line
+
+The BUSY annunciator lights up during the execution of a Forth word or program.
+The RUN annunciator lights up (BUSY turns off) to accept your input to execute.
+The PRO annunciator lights up to accept your input to compile, for example when
+entering a colon definition.
 
 To exit Forth500 and return to BASIC, enter `bye`.  This saves the Forth500
 state in memory.  To reenter Forth500 from BASIC, `CALL &Bxx00` again where
@@ -296,7 +302,9 @@ limit on the stack as an argument to `hellos`.  Therefore, we can refactor
 programs much easier to understand, maintain and reuse.  Because words operate
 on the stack, pretty much any sequence of words can be moved from a definition
 into a new word to replace the sequence with a single descriptive word.  This
-keeps definitions short and understandable.
+keeps definitions short and understandable.  Also testing words by executing
+them from the prompt is a good way to verify their definitions to find
+potential problems before running a new program.
 
 What if we want to change the message of `hellos`?  Forth allows you to
 redefine words at any time, but this does not change the behavior of any
@@ -561,10 +569,11 @@ Forth source code is loaded from a file with `INCLUDE` or with `INCLUDED`:
 
 where `S" FLOATEXT.FTH"` specifies a string constant with the file name.  A
 drive letter such as F: can be specified to load from a specific drive, which
-becomes the current drive (the default drive is E:).
+becomes the current drive (the default drive is E:).  Forth500 source files
+must have LF or CRLF line endings.
 
-To compile a Forth source code file transmitted to the PC-E500 via the serial
-interface:
+To compile a Forth source code file transmitted to the PC-E500(S) via the
+serial interface:
 
     INCLUDE COM: ↲
 
@@ -584,14 +593,15 @@ interface to the PC-E500:
 
 The wav file transmitted from the host computer, such as a PC, should be
 created with [PocketTools](https://www.peil-partner.de/ifhe.de/sharp/) from the
-source code file (e.g. `FLOATEXT.FTH`) as follows:
+source file (e.g. `FLOATEXT.FTH`) as follows:
 
     $ bin2wav --pc=E500 --type=bin -dINV FLOATEXT.FTH
     $ afplay FLOATEXT.wav
 
 The `afplay` command plays the wav file.  Use maximum volume to play the wav
 file or close to maximum to avoid distortion.  If `-dINV` does not transfer the
-file, then try `-dMAX`.
+file, then try `-dMAX`.  Again, Forth500 source files must have LF or CRLF line
+endings.
 
 To list files on the current drive:
 
@@ -601,10 +611,30 @@ You can also specify a drive with a glob pattern to list matching `FILES`:
 
     FILES F:*.FTH ↲
 
-This lists all Forth .FTH source code files on the F: drive and makes the F:
-drive the current drive.  Forth source files commonly use extension FTH or FS.
-File names and extensions are case sensitive on the PC-E500(S), but drive names
-are not.
+This lists all Forth .FTH source files on the F: drive and makes the F: drive
+the current drive.  Forth source files commonly use extension FTH or FS.  File
+names and extensions are case sensitive on the PC-E500(S).  Drive names are
+not.
+
+To send `FILES` to a printer CE-126P, first check if a printer is connected
+with `PRINTER .` which displays the number of characters per line supported by
+the printer or zero if no printer is connected.  Execute  STDL TO TTY FILES`.
+
+Redirecting `TTY` to devices connected to the COM: serial port requires opening
+the port first, then setting `TTY` to the port _fileid_.  Don't forget to
+close the port _fileid_ afterwards.
+
+Forth500 includes a small text editor `TED` in a separate Forth file as an
+addition.  With the text editor you can write scripts and source files and read
+them immediately to execute the commands and definitions:
+
+    TEDI MYWORK.FTH ↲
+    ↲                           \ start editing (press enter)
+    .( TEDI is great!) ↲        \ a line of Forth (press enter to save)
+    [CCE]                       \ end editing and read MYWORK.FTH
+    TEDI is great!
+
+See TED.TXT for the TED manual.
 
 This ends our introduction of the basics of Forth.
 
@@ -1184,7 +1214,7 @@ To check if a floating point value is a double precision value, define:
 
 `DBL?` returns true if the value is double precision.
 
-To promote a single to a double on the floating point stack, just add `0d` or
+To promote a single to a double on the floating point stack, just do `0d F+` or
 define:
 
     : E>D       FP@ C@ 1 OR FP@ C! ;
@@ -1442,10 +1472,11 @@ The following words move and copy characters in and between string buffers:
 | `C@`     | ( _c-addr_ -- _char_ )         | fetch _char_ from _c-addr_
 
 A problem may arise when the source and target address ranges overlap, for
-example when moving string contents in place.  In this case, `CMOVE` ("c move")
-correctly copies characters when _c-addr1_>_c-addr2_ and `CMOVE>` ("c move up")
-correctly copies characters when _c-addr1_<_c-addr2_.  The `MOVE` word always
-correctly copies characters.
+example when copying string contents in place.  In this case, `CMOVE` ("c move")
+correctly copies characters to lower memory _c-addr1_>_c-addr2_ and `CMOVE>`
+("c move up") correctly copies characters to higher memory _c-addr1_<_c-addr2_.
+The `MOVE` word always correctly copies characters either way.  Also, `MOVE`
+does nothing if _c-addr1_=_c-addr2_.
 
 For example, to insert `name=` before the string in the `name` buffer by
 shifting the string to make room and copying the prefix into the buffer:
@@ -1475,12 +1506,12 @@ Note that `-TRAILING` ("not trailing") is the same as `BL -CHARS`.  For
 example, to remove trailing spaces from `name` to update `name-len`, then
 display the name without the `name=` prefix:
 
-    name name-len @ -TRAILING name-len ! ↲
+    name name-len @ -TRAILING name-len ! DROP ↲
     name name-len @ 5 /STRING TYPE ↲
 
-Beware that `/STRING` ("slash string") does not perform any checking on the
-length of the string and the size of the adjustment _n_ that may be negative,
-e.g. to add slashed characters back.
+Beware that `/STRING` ("slash string") does not check the length of the string
+and the size of the adjustment _n_ that may become negative, e.g. it can also
+be used to undo slashed strings.
 
 The following words compare and search two strings:
 
@@ -1571,11 +1602,11 @@ The following words return key presses and control the key buffer:
 
 The `KEY` word returns a nonzero 7-bit ASCII code and ignores any special keys.
 
-The `EKEY` word returns a PC-E500(S) key event code as two bytes b1 and b2
-stored in a single 16 bit cell b1+256\*b2.  A 7-bit nonzero ASCII code is
-returned as b1 when b2 is zero.  If b1 is zero then b2 contains the PC-E500(S)
-second byte code assigned to special keys.  See BASIC `INPUT$` in the PC-E500
-manual page 268 for the corresponding key code table for byte 2.
+The `EKEY` word returns a PC-E500(S) key event code.  A positive 7-bit ASCII
+code is returned or a negative code for special keys.  A negative value
+corresponds to the PC-E500(S) second byte code but negated.  See BASIC `INPUT$`
+in the PC-E500 manual page 268 for the corresponding key code tables.  For example,
+the ANS key code is `$90` returned by `EKEY` as `$-90` (or `$FF70`).
 
 The `INKEY` word returns a value between 0 and 255.  See BASIC `INKEY$` in the
 PC-E500 manual page 265 for the corresponding key code table.
@@ -1613,7 +1644,9 @@ Normally `TTY` is `STDO` for screen output.  The output can be redirected by
 setting the `TTY` value to a _fileid_ of an open file with `fileid TO TTY`.
 When an exception occurs, including `ABORT`, `TTY` is set back to `STDO`.
 
-For example, to print "This is printed":
+## Printing
+
+To print "This is printed" on a CE-126P:
 
     PRINTER . ↲
     24 OK[0]
@@ -1622,10 +1655,10 @@ For example, to print "This is printed":
     Printer: This is printed           
 
 Note that a final `CR` may be needed to print the last line on the printer.
-The `.(` output includes a final `CR`.
+Note that the `.(` output includes a final `CR`.
 
-To make this easier, you can define two words to redirect all character output
-to a printer:
+To make printing easier, you can define two words to redirect all character
+output to a printer:
 
     : print-on  PRINTER IF STDL TO TTY THEN ;
     : print-off STDO TO TTY ;
@@ -1633,6 +1666,34 @@ to a printer:
 For example:
 
     print-on FILES F:*.* print-off ↲
+
+## Serial port IO
+
+Communicating with devices connected to the COM: serial port requires opening
+the port and closing it afterwards.  The appropriate COM: settings should be
+specified once and for all in BASIC beforehand.  To do so, connect a serial
+cable and initialize the COM: port on the PC-E500(S):
+
+    > OPEN "9600,N,8,1,A,L,&H1A,N,N": CLOSE
+
+Then return to Forth500 with `CALL &B0000` or `CALL &B9000` on an unexpanded
+PC-E500(S).
+
+To make COM: port sending and receiving easier, you can define a `COM` value
+to hold the open COM: _fileid_ or zero when it is closed.  For example:
+
+    0 VALUE COM
+    : open-com  S" COM:" R/W OPEN-FILE THROW TO COM ;
+    : close-com COM ?DUP IF CLOSE-FILE DROP 0 TO COM THEN ;
+
+Then `OPEN-COM` and `COM TO TTY` sends TTY output to the COM: port.  Execute
+`STDO TO TTY` to set `TTY` back to `STDO`.  For example:
+
+    : serial-on  COM 0= IF open-com THEN COM TO TTY ;
+    ; serial-off STDO TO TTY ;
+
+Don't forget to close the COM: port when no longer in use.  Otherwise the port
+cannot be opened in BASIC.
 
 ## Screen and cursor operations
 
@@ -1645,17 +1706,17 @@ The following words control the screen and cursor position:
 | `AT-CLR`     | ( _n1_ _n2_ _n3_ -- )         | clear _n3_ characters at column _n1_ and row _n2_
 | `PAGE`       | ( -- )                        | clear the screen
 | `SCROLL`     | ( _n_ -- )                    | scroll the screen _n_ lines up when _n_>0 or down when _n_<0
-| `X@`         | ( -- _n_ )                    | returns current cursor column position
+| `X@`         | ( -- _n_ )                    | returns current cursor column position 0 to 39
 | `X!`         | ( _n_ -- )                    | set cursor column position
-| `Y@`         | ( -- _n_ )                    | returns current cursor row position
+| `Y@`         | ( -- _n_ )                    | returns current cursor row position 0 to 3, or 4 when the cursor passed the bottom of the window
 | `Y!`         | ( _n_ -- )                    | set cursor row position
-| `XMAX@`      | ( -- _n_ )                    | returns cursor max column position
-| `XMAX!`      | ( _n_ -- )                    | set cursor max column position, restricts viewing window
-| `YMAX@`      | ( -- _n_ )                    | returns cursor max row position
-| `YMAX!`      | ( _n_ -- )                    | set cursor max column position, restricts viewing window
+| `XMAX@`      | ( -- _n_ )                    | returns cursor max columns 1 to 40
+| `XMAX!`      | ( _n_ -- )                    | set max columns, restricts the display viewing window
+| `YMAX@`      | ( -- _n_ )                    | returns cursor max rows 1 to 4
+| `YMAX!`      | ( _n_ -- )                    | set max columns, restricts the display viewing window
 | `BUSY-ON`    | ( -- )                        | turn on the busy annunciator
-| `BUSY-OFF`   | ( -- )                        | turn off the busy annunciator
-| `SET-CURSOR` | ( _u_ -- )                    | set cursor shape bit 5=on, bit 3=blink, bis 0 to 2=underline, 
+| `BUSY-OFF`   | ( -- )                        | turn off the busy annunciator, turn on RUN or PRO
+| `SET-CURSOR` | ( _u_ -- )                    | set cursor: bit 5 = on, bit 3 = blink, bit 0 to 2 = shape
 
 The `SET-CURSOR` argument is an 8-bit pattern formed by `OR`-ing `$20` to turn
 the cursor on, `OR`-ing with `$8` to blink the cursor, and `OR`-ing with one of
@@ -1668,6 +1729,10 @@ the following five possible cursor shapes:
 | `$02` | solid box
 | `$03` | space (to display a cursor "box" on reverse video text)
 | `$04` | triangle
+
+To temporarily hide the cursor without turning it off, for example to avoid
+showing a cursor with `KEY` and `EKEY`, use `0 4 AT-XY` to move the cursor to
+the fourth invisible display row.
 
 ## Graphics
 
@@ -1778,7 +1843,7 @@ The following words move cells between stacks:
 | `R'@`    | ( R: _x1_ _x2_ -- _x1_ _x2_ ; -- _x1_ )           | copy the return stack 2OS to the stack
 | `R"@`    | ( R: _x1_ _x2_ _x3_ -- _x1_ _x2_ _x3_ ; -- _x1_ ) | copy the return stack 3OS to the stack
 | `R>`     | ( R: _x_ -- ; -- _x_ )                            | move the TOS from the return stack to the stack
-| `R>DROP` | ( R: _x_ -- ; -- )                                | drop the return stack TOS
+| `R>DROP` | ( R: _x_ -- ; -- )                                | drop the return stack TOS (`RDROP` in some other Forth)
 | `2R>`    | ( R: _xd_ -- ; -- _xd_ )                          | move the double TOS from the return stack to the stack
 | `N>R`    | ( _n_\*_x_ _+n_ -- ; R: -- _n_\*_x_ _+n_ )        | move _n_ cells to the return stack
 | `NR>`    | ( -- _n_\*_x_ _+n_ ; R: _n_\*_x_ _+n_ -- )        | move _n_ cells from the return stack
@@ -2195,6 +2260,47 @@ To store the value 1 in array location 3 for `pair.second`:
 
     2 { 3 }pairs pair.second ! ↲
 
+### Vocabularies
+
+A vocabulary defines a dictionary of words.  The default vocabulary is `FORTH`.
+A new vocabulary is defined with `VOCABULARY`.  A new vocabulary inherits the
+current vocabulary as the parent vocabulary.  When a word is not found in the
+dictionary of a vocabulary then its parent is searched, the parent of the
+parent is searched and so on, lastly the pater familias `FORTH` vocabulary.
+
+For example, we can define a `GAME` vocabulary with game-related words:
+
+    VOCABULARY GAME
+
+The `GAME` vocabulary is activated when the `GAME` word is executed.  This sets
+the dictionary search order to find `GAME` words first, then the words in its
+parent vocabulary, in this case the `FORTH` words.  To define new `GAME` words,
+we use `DEFINITIONS` after switching to the `GAME` vocabulary:
+
+    GAME DEFINITIONS
+    ; score ... ;
+    : play ... score ... ;
+
+The `score` and `play` words are defined in the `GAME` vocabulary and are not
+visible to the outside.  When we switch back to the `FORTH` vocabulary we will
+not be able to see the `score` and `play` words.  However, we can define a
+`play-game` word that calls `play` in the `GAME` vocabulary as follows:
+
+    FORTH DEFINITIONS
+    : play-game [ GAME ] play [ FORTH ] ;
+
+Note that `[ GAME ]` executes `GAME` immediately to switch the dictionary
+search order to the `GAME` vocabulary before compiling `PLAY`.  Bracketed words
+are interpreted, see [The [ and ] brackets](#the--and--brackets)
+
+The `VOCABULARY` word is legacy Forth.  It is obsoleted by wordlists in
+Standard Forth.  The `CURRENT` and `CONTEXT` words that are used by
+`VOCABULARY` and `DEFINITIONS` are values in Forth500, not variables as in
+legacy Forth.  See also [vocabulary structure](#vocabulary-structure).
+
+**WARNING:** exercise caution when using `FORGET` and `MARKER` with
+vocabularies.  For details, please read the next two sections.
+
 ### Markers
 
 A so-called "marker word" is created with `MARKER`.  When the word is executed,
@@ -2218,13 +2324,60 @@ with updated definitions:
 
     ANEW _program_ ↲
 
+**WARNING:** do not use `DEFINITIONS` after `MARKER` or after `ANEW`, except
+when defining a new `VOCABULARY` with `DEFINITIONS` that will be removed by the
+marker.  Beware that extending a previous vocabulary with `DEFINITIONS` can
+lead to a crash later when the marker is executed to delete all definitions:
+
+    FORTH DEFINITIONS
+    ANEW _game_
+    VOCABULARY GAME
+    GAME DEFINITIONS
+    ...                 \ definitions added to GAME
+    FORTH DEFINITIONS   \ problem
+    : music ... ;       \ definition added to FORTH
+    _game_              \ problem
+
+Executing `_game_` or reloading the source code with `ANEW _game_` deletes both
+`GAME` and the `music` word, but the `FORTH` vocabulary is corrupted afterwards
+because `music` is still considered part of `FORTH`.
+
+This is correct:
+
+    FORTH DEFINITIONS
+    ANEW _game_
+    : music ... ;       \ definition added to FORTH
+    VOCABULARY GAME
+    GAME DEFINITIONS
+    ...                 \ definitions added to GAME
+    _game_
+
 ### Deleting words
 
 Besides [markers](#markers), `FORGET name` can be used to remove `name` and all
 words defined thereafter.  To protect the dictionary, forgetting is not
-permitted past the address returned by `FENCE`.  `FENCE` is a variable that can
-be assigned a new boundary in the dictionary to protect from `FORGET`.  For
-example, `HERE FENCE !` protects all previously defined words.
+permitted past the address returned by `FENCE`.  `FENCE` is a value that can be
+assigned a new boundary in the dictionary to protect from `FORGET`.  For
+example, `HERE TO FENCE` protects all previously defined words.
+
+**WARNING:** exercise caution with `FORGET` and vocabularies.  Typical usage
+should not pose any problems.  However, extending a previous vocabulary with
+additional `DEFINITIONS` after a new vocabulary is defined can lead to a crash
+when `FORGET` is used to delete words from the new vocabulary:
+
+    VOCABULARY GAME
+    GAME DEFINITIONS
+    ...                 \ definitions added to GAME
+    FORTH DEFINITIONS   \ problem
+    : music ... ;       \ definition added to FORTH
+    GAME FORGET GAME    \ problem
+
+This deletes both `GAME` and `music`, but the `FORTH` vocabulary is corrupted
+afterwards, because `music` is still considered part of `FORTH`.  The `music`
+word is dangling and will be overwritten with noisy data, leading to a crash.
+
+Instead, we should say `FORTH FORGET GAME`.  This deletes both `GAME` and
+`music` from the `FORTH` vocabulary, which was our goal.
 
 ### Introspection
 
@@ -2245,15 +2398,17 @@ The following words can be used to inspect words and dictionary contents:
 | `>NAME`       | ( _xt_ -- _nt_ )         | return the name token _nt_ of the name of execution token _xt_
 | `NAME>STRING` | ( _nt_ -- _c-addr_ _u_ ) | return the string _c-addr_ of size _u_ of the name token _nt_
 | `NAME>`       | ( _nt_ -- _xt_ )         | return the execution token of the name token _nt_
-| `LAST`        | ( -- _addr_ )            | return the dictionary entry of the last defined word (the entry is a link to the previous entry)
 | `L>NAME`      | ( _addr_ -- _nt_ )       | return the name token of the dictionary entry at _addr_ 
 | `LAST-XT`     | ( -- _xt_ )              | return the execution token of the last defined word
-| `WORDS`       | ( [ "name" ] -- )        | displays all words in the dictionary matching (part of) the optional "name" 
+| `WORDS`       | ( [ "name" ] -- )        | displays words in the dictionary, optionally matching part of "name" (case sensitive), when specified
 
 Words named `xxx>yyy` are pronounced "xxx to yyy", words named `>xxx` are
 pronounced "to xxx" and words named `xxx>` are pronounced "xxx from".
-See the [Forth word list](https://forth-standard.org/standard/alpha) with
-pronounciations of all standard words.
+See the [Standard Forth word list](https://forth-standard.org/standard/alpha)
+with pronounciations of all standard words.
+
+To send `WORDS` to a printer, check if a printer is connected with `PRINTER .`
+then  STDL TO TTY WORDS`.
 
 See also the [dictionary structure](#dictionary-structure).
 
@@ -2339,10 +2494,6 @@ not iterate when `start` equals `limit`.  The `+LOOP` word increments the
 internal loop counter by `step`.  The `step` size may be negative.  The `+LOOP`
 terminates if the updated counter equals or crosses the limit.
 
-The internal loop counter value can be used in the loop as `I`.  Likewise, the
-second outer loop counter of a loop nest is `J` and the third outer loop
-counter is `K`.  These return undefined values when not used within do-loops.
-
 A do-loop body is exited prematurely with `LEAVE` and `?LEAVE`.  The `?LEAVE`
 word pops the TOS and when nonzero leaves the do-loop, which is a shorthand for
 `IF LEAVE THEN`.
@@ -2351,10 +2502,17 @@ When exiting from the current colon definition with `EXIT` inside a do-loop,
 first the `UNLOOP` word must be used to remove the loop control values from the
 return stack: `UNLOOP EXIT`.
 
-Return stack operations `>R`, `R@` and `R>` cannot be used to pass values on
-the returns stack from outside a do-loop to the inside, because the do-loop
-stores the loop counter and limit value on the return stack.  For example, `>R
-DO ... R@ ... LOOP R>` produces undefined values.
+The internal loop counter value can be used in the loop as `I`.  Likewise, the
+second outer loop counter of a loop nest is `J` and the third outer loop
+counter is `K`.  These return undefined values when not used within do-loops.
+
+**WARNING:** Loop control data is placed on the return stack.  Therefore, any
+values placed on the return stack with `>R` invalidates `I`, `J` and `K`.
+
+**WARNING:** Return stack operations `>R`, `R@` and `R>` cannot be used to pass
+values on the returns stack from outside a do-loop to the inside, because the
+do-loop places control data on the return stack.  For example, `>R DO ... R@
+ ... LOOP R>` produces undefined values for `R@`.
 
 The words `BEGIN` and `AGAIN` form a loop that never ends:
 
@@ -2625,6 +2783,8 @@ E: and F: drives and from the serial COM: port:
 | `REQUIRE`         | ( "name" -- )                                   | load Forth source code file "name" if not already loaded
 | `REQUIRED`        | ( _c-addr_ _u_ -- )                             | load Forth source code file named by the string _c-addr_ _u_ if not already loaded
 
+Forth500 source files must have LF or CRLF line endings.
+
 ### File and stream operations
 
 The following file-related words are available:
@@ -2643,9 +2803,9 @@ The following file-related words are available:
 | `OPEN-FILE`       | ( _c-addr_ _u_ _fam_ -- _fileid_ _ior_ )        | open existing file named _c-addr_ _u_ with mode _fam_, returns _fileid_ and _ior_
 | `CLOSE-FILE`      | ( _fileid_ -- _ior_ )                           | close file _fileid_
 | `READ-FILE`       | ( _c-addr_ _u1_ _fileid_ -- _u2_ _ior_ )        | read buffer _c-addr_ of size _u1_ from _fileid_, returning number of bytes _u2_ read and _ior_
-| `READ-LINE`       | ( _c-addr_ _u1_ _fileid_ -- _u2_ _flag_ _ior_ ) | read a line into buffer _c-addr_ of size _u1_ from _fileid_, returning number of bytes _u2_ read and a _flag_ indicating when EOF is reached
-| `READ-CHAR`       | ( _fileid_ -- _char_ _ior_ )                    | returns _char_ read from _fileid_
-| `PEEK-CHAR`       | ( _fileid_ -- _char_ _ior_ )                    | returns the next _char_ from _fileid_ without reading it
+| `READ-LINE`       | ( _c-addr_ _u1_ _fileid_ -- _u2_ _flag_ _ior_ ) | read a line into buffer _c-addr_ of size _u1_ from _fileid_, returning number of bytes _u2_ read and a _flag_ = `TRUE` when EOF is reached
+| `READ-CHAR`       | ( _fileid_ -- _char_ _ior_ )                    | returns _char_ read from _fileid_, _ior_ = 257 when EOF is reached
+| `PEEK-CHAR`       | ( _fileid_ -- _char_ _ior_ )                    | returns the next _char_ from _fileid_ without reading it, _ior_ = 257 when EOF is reached
 | `WRITE-FILE`      | ( _c-addr_ _u_ _fileid_ -- _ior_ )              | write buffer _c-addr_ of size _u_ to _fileid_
 | `WRITE-LINE`      | ( _c-addr_ _u_ _fileid_ -- _ior_ )              | write string _c-addr_ of size _u_ and CR LF to _fileid_
 | `WRITE-CHAR`      | ( _char_ _fileid_ -- _ior_ )                    | write _char_ to _fileid_
@@ -2714,17 +2874,17 @@ The PC-E500 drive names associated with devices are:
 | STDO: / SCRN: | `W/O` | LCD display
 | STDI: / KYBD: | `R/O` | keyboard
 | STDL: / PRN:  | `W/O` | printer
-| COM:          | `R/W` | SIO
+| COM:          | `R/W` | serial IO (SIO)
 | CAS:          | `R/W` | tape
 | E:            | `R/W` | internal RAM disk
 | F:            | `R/W` | external RAM disk
-| G:            | `R/O` | ROM disk
-| X:            | `R/W` | FDD
+| G:            | `R/O` | internal ROM disk
+| X:            | `R/W` | external FDD
 
 The first three devices are always accessible with the `STDO`, `STDI` and
 `STDL` words that return the corresponding _fileid_.  `STDL` is usable after
 connecting and checking the status of the printer with `PRINTER`, see also
-[character output](#character-output).
+[printing](#printing).
 
 ### Loading from tape
 
@@ -2735,7 +2895,7 @@ a CE-124 cassette interface:
 | word    | stack effect            | comment
 | ------- | ----------------------- | ------------------------------------------
 | `TAPE`  | ( -- _addr_ _u_ _ior_ ) | load data (binary or text) from tape into free dictionary space, returning data _addr_ of size _u_
-| `CLOAD` | ( -- )                  | load and compile Forth source code from tape
+| `CLOAD` | ( -- )                  | read Forth source from tape
 
 `TAPE` stores the raw tape data in free space located directly below the
 floating point stack.  When data was successfully loaded, zero is returned with
@@ -2755,8 +2915,8 @@ file of the data or Forth source code should be created with the popular
 the audio output to transmit the file to the PC-E500(S) via a cassette
 interface:
 
-    $ bin2wav --pc=E500 --type=bin -dINV sourcefile
-    $ afplay sourcefile.wav
+    $ bin2wav --pc=E500 --type=bin -dINV FILE.FTH
+    $ afplay FILE.wav
 
 Use maximum volume to play the wav file or close to maximum to avoid
 distortion.  If `-dINV` does not transfer the file, then try `-dMAX`.  The
@@ -2773,8 +2933,8 @@ drive:
       ROT WRITE-FILE ?ior
       CLOSE-FILE DROP ;
 
-Executing `tcopy FLOATEXT.FTH` copies the Forth source code transmitted from
-tape to the new file `FLOATEXT.FTH` on the current drive.
+Executing `tcopy FLOATEXT.FTH` copies the Forth source transmitted from tape to
+the new file `FLOATEXT.FTH` on the current drive.
 
 ### File errors
 
@@ -2787,7 +2947,7 @@ File I/O _ior_ error codes returned by file operations, _ior_=0 means no error:
 | 258  | the specified file does not exist ($02)
 | 259  | the specified pass code does not exist ($03)
 | 260  | the number of files to be opened exceeds the limit ($04)
-| 261  | the file whose processing is not permitted ($05)
+| 261  | file processing is not permitted ($05)
 | 262  | ineffective file handle was attempted (invalid _fileid_ argument) ($06)
 | 263  | processing is not specified by open statement ($07)
 | 264  | the file is already open ($08)
@@ -2984,11 +3144,11 @@ The Forth500 dictionary is organized as follows:
 
          low address in the 11th segment $Bxxxx
           _________
-    +--->| $0000   |     last entry link is zero (2 bytes)
+    +--->| $0000   |     last link is zero (2 bytes)
     ^    |---------|
-    |    | 7       |     length of "(DOCOL)" (1 byte)
+    |    | 3       |     length of "(:)" (1 byte)
     |    |---------|
-    |    | (DOCOL) |     "(DOCOL)" word characters (7 bytes)
+    |    | (:)     |     "(:)" word characters (3 bytes)
     |    |---------|
     |    | code    |     machine code
     |    |=========|
@@ -3006,7 +3166,7 @@ The Forth500 dictionary is organized as follows:
     |    |---------|
     |    | code    |     Forth code and/or data
     |    |=========|
-    +<---| link    |<--- LAST link to previous entry (2 bytes)
+    +<---| link    |<--- last link to previous entry (2 bytes)
          |---------|
          | 7       |     length of "my-word" (1 byte)
          |---------|
@@ -3035,15 +3195,12 @@ The Forth500 dictionary is organized as follows:
          | return  |     return stack of 256 bytes (128 cells/calls)
          | stack   |     grows toward lower addresses
          |         |<--- RP return stack pointer
-         |---------|<--- $BFC00
+         |_________|<--- $BFC00
 
          high address
 
 A link field points to the previous link field.  The last link field at the
 lowest address of the dictionary is zero.
-
-`LAST` returns the address of the last entry in the dictionary.  This is where
-the search for dictionary words starts.
 
 `LAST-XT` returns the execution token of the last definition, which is the
 location where the machine code of the last word starts.
@@ -3068,7 +3225,7 @@ There are two words to search the dictionary:
 
 `FIND` takes a counted string _c-addr_ whereas `FIND-WORD` takes a string
 _c-addr_ of size _u_ to search.  The search is case insensitive.  Hidden words
-are not searchable but are displayed by `WORDS`.
+are marked "smudged" and not searchable.
 
 `:NONAME` and `CREATE-NONAME` code has no dictionary entry.  The code is just
 part of the dictionary space as a block of code without link and name header.
@@ -3078,6 +3235,85 @@ Both words return the execution token of the code.
 The hold area is used as a temporary buffer for numerical output, such as `.`,
 `U.`, `D.`, `F.`, and `<#` ... `#>`,  Also the `OK[n]` prompt overwrites this
 area to display the stack depth `n`.  Otherwise, this space is unused.
+
+## Vocabulary structure
+
+Forth500 adopts the Fig Forth vocabulary implementation.  The `CURRENT` and
+`CONTEXT` values point to the link cell of a `VOCABULARY` word.  The `CURRENT`
+pointer is used to define new words in the dictionary of a vocabulary.  The
+`CONTEXT` pointer is used to search words in the dictionary of a vocabulary.  A
+colon definition sets `CONTEXT` to `CURRENT`.  The `DEFINITIONS` word sets
+`CURRENT` to `CONTEXT`.
+
+Assuming the following vocabularies and words are defined:
+
+    FORTH DEFINITIONS
+    VOCABULARY VOCAB-1
+    VOCAB-1 DEFINITIONS
+    : ABC ... ;
+    VOCAB-2 DEFINITIONS
+    : XYZ ... ;
+
+then the resulting vocabulary tree structure is constructed in the dictionary
+structure as follows:
+
+          _________
+         | $0000   |     last link is zero (2 bytes)
+         |---------|
+         | (:)     |     3 + "(:)" word length + name defined in FORTH
+         |---------|
+         | ...     |     code
+         |=========|
+         :         :
+         :         :     words with code defined in FORTH
+         :         :
+         |=========|
+    (1)  |         |     link to previous entry in FORTH
+         |---------|
+         | FORTH   |     5 + "FORTH" word length + name defined in FORTH
+         |---------|
+    (2)  | (4)     |<--- CURRENT or CONTEXT = (2) to entry (4) in FORTH
+         |---------|
+         | $2041   |     Fig Forth kludge (hidden blank name)
+         |=========|
+    (3)  | (1)     |     link to entry (1)
+         |---------|
+         | ...     |     word with code defined in FORTH
+         |=========|
+    (4)  | (3)     |     link to entry (3)
+         |---------|
+         | VOCAB-1 |     7 + "VOCAB-1" word length + name defined in FORTH
+         |---------|
+    (5)  | (7)     |<--- CURRENT or CONTEXT = (5) to entry (7) in VOCAB-1
+         |---------|
+         | $2041   |     Fig Forth kludge (hidden blank name)
+         |=========|
+    (6)  | (2)     |     link to entry (2)
+         |---------|
+         | ABC     |     3 + "ABC" word length + name defined in VOCAB-1
+         |---------|
+         | ...     |     code
+         |=========|
+    (7)  | (6)     |     link to entry (6)
+         |---------|
+         | VOCAB-2 |     7 + "VOCAB-1" word length + name defined in VOCAB-1
+         |---------|
+    (8)  | (9)     |<--- CURRENT or CONTEXT = (8) to entry (9) in VOCAB-2
+         |---------|
+         | $2041   |     Fig Forth kludge (hidden blank name)
+         |=========|
+    (9)  | (5)     |     link to entry (5)
+         |---------|
+         | XYZ     |     3 + "XYZ" word length + name defined in VOCAB-2
+         |---------|
+         | ...     |     code
+         |=========|
+         :         :
+         :         :
+
+For example, when the `CONTEXT` is `(8)`, a search for `ABC` starts by
+searching entry `(9)` in the `VOCAB-2` dictionary, then entry `(5)`, entry
+`(7)`, and entry `(6)` where `ABC` is found as defined in `VOCAB-1`.
 
 ## Examples
 
@@ -3096,6 +3332,44 @@ For example:
 
     CHDIR F
     FILES
+
+### SAVE
+
+The `SAVE` word saves the Forth500 image to a file.  You can reload the image
+later with LOADM from BASIC.
+
+    : SAVE          ( "name" -- )
+      PARSE-NAME W/O CREATE-FILE THROW >R
+      \ determine Forth500 start address and length up to HERE
+      ['] (:) $ff00 AND HERE OVER -
+      \ create file header using HERE as a temporary buffer
+      HERE 16 ERASE
+      \ 255 0 6 1 16 SizeLow SizeHigh 0 StartLow StartHigh Segment 255 255 255 0 15
+      -1   HERE      C!
+      262  HERE  2+  !
+      16   HERE  4 + C!
+      DUP  HERE  5 + !
+      OVER HERE  8 + !
+      $b   HERE 10 + C!
+      -1   HERE 11 + !
+      -1   HERE 13 + C!
+      15   HERE 15 + C!
+      \ write 16 byte header
+      HERE 16 R@ WRITE-FILE THROW
+      \ write Forth500 image from base address up to HERE
+      R@ WRITE-FILE THROW
+      \ close the file
+      R> CLOSE-FILE THROW
+    ;
+
+In Forth500 execute:
+
+    SAVE F:MYFORTH.BIN
+
+In BASIC RUN mode execute (assuming memory for Forth500 is still allocated):
+
+    > LOADM "F:MYFORTH.BIN"
+    > CALL &B0000    ' or CALL &B9000 on an unexpanded machine
 
 ### GCD
 
@@ -3714,8 +3988,8 @@ _c-addr_ _u_) for convenience.
 When BREAK is pressed or an error occurs while files are still open, the file
 cannot be re-opened until it is closed.  Therefore, always close files in your
 program (which may require an exception handler).  On the other hand, you can
-close a file with `fileid CLOSE-FILE` where `fileid` is a positive integer
-between 4 and 16 (1 to 3 are associated with `STDO`, `STDI` and `STDL`,
+manually close a file with `fileid CLOSE-FILE` where `fileid` is a positive
+integer between 4 and 16 (1 to 3 are associated with `STDO`, `STDI` and `STDL`,
 respectively).  Therefore, you can try `4 CLOSE-FILE .` then `5 CLOSE-FILE .`
 up to 16 to close all files if open.
 

@@ -38,7 +38,7 @@ ANEW _LINES_
 
 : >fix          ( n -- n ) 7 LSHIFT ;
 
-: fix>          ( n -- n ) 128 / ;
+: fix>          ( n -- n ) 128 / ; \ arithmetic right shift by 7 bits (RSHIFT is logical)
 
 \ Line object
 
