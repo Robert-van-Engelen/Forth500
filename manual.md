@@ -23,6 +23,8 @@ Author: Dr. Robert A. van Engelen, 2021
 - [String constants](#string-constants)
 - [String operations](#string-operations)
 - [Keyboard input](#keyboard-input)
+- [Printing](#printing)
+- [Serial port IO](#Serial-port-IO)
 - [Screen and cursor operations](#screen-and-cursor-operations)
 - [Graphics](#graphics)
 - [Sound](#sound)
