@@ -49,28 +49,22 @@ In BASIC execute (assuming memory for Forth500 is still allocated):
 ## Batteries included...
 
 Forth500 is [Forth Standard](https://forth-standard.org) compliant and implements:
-- CORE: complete
-- CORE-EXT: complete
+- CORE and CORE-EXT complete: `ABORT`, `ABORT"`, `ABS`, `ACCEPT`, `ACTION-OF`, `AGAIN`, `ALIGN`, `ALIGNED`, `ALLOT`, `AND`, `BASE`, `BEGIN`, `BL`, `BUFFER:`, `[`, `[CHAR]`, `[COMPILE]`, `[']`, `CASE`, `C,`, `CELL+`, `CELLS`, `C@`, `CHAR`, `CHAR+`, `CHARS`, `COMPILE,`, `CONSTANT`, `COUNT`, `CR`, `CREATE`, `C!`, `:`, `:NONAME`, `,`, `C"`, `DECIMAL`, `DEFER`, `DEFER@`, `DEFER!`, `DEPTH`, `DO`, `DOES>`, `DROP`, `DUP`, `/`, `/MOD`, `.R`, `.(`, `."`, `ELSE`, `EMIT`, `ENDCASE`, `ENDOF`, `ENVIRONMENT?`, `ERASE`, `EVALUATE`, `EXECUTE`, `EXIT`, `=`, `FALSE`, `FILL`, `FIND`, `FM/MOD`, `@`, `HERE`, `HEX`, `HOLD`, `HOLDS`, `I`, `IF`, `IMMEDIATE`, `INVERT`, `IS`, `J`, `KEY`, `LEAVE`, `LITERAL`, `LOOP`, `LSHIFT`, `MARKER`, `MAX`, `MIN`, `MOD`, `MOVE`, `M*`, `-`, `NEGATE`, `NIP`, `OF`, `OR`, `OVER`, `1-`, `1+`, `PAD`, `PARSE-NAME`, `PARSE`, `PICK`, `POSTPONE`, `+`, `+LOOP`, `+!`, `QUIT`, `RECURSE`, `REFILL`, `REPEAT`, `RESTORE-INPUT`, `R@`, `ROLL`, `ROT`, `RSHIFT`, `R>`, `SAVE-INPUT`, `SIGN`, `SM/REM`, `SOURCE-ID`, `SOURCE`, `SPACE`, `SPACES`, `STATE`, `SWAP`, `;`, `S\"`, `S"`, `S>D`, `!`, `THEN`, `TO`, `TRUE`, `TUCK`, `TYPE`, `'`, `*`, `*/`, `*/MOD`, `2DROP`, `2DUP`, `2/`, `2@`, `2OVER`, `2R@`, `2R>`, `2SWAP`, `2!`, `2*`, `2>R`, `U.R`, `UM/MOD`, `UM*`, `UNLOOP`, `UNTIL`, `UNUSED`, `U.`, `U<`, `U>`, `VALUE`, `VARIABLE`, `WHILE`, `WITHIN`, `WORD`, `XOR`, `0=`, `0<`, `0>`, `0<>`, `\`, `.`, `<`, `>`, `<>`, `#>`, `<#`, `#`, `#S`, `(`, `?DO`, `?DUP`, `>BODY`, `>IN`, `>NUMBER`, `>R`
 - BLOCK: removed to save space, not practical on the PC-E500
-- DOUBLE: complete
-- DOUBLE-EXT: complete
-- EXCEPTION: complete
-- EXCEPTION-EXT: complete
-- FACILITY: complete
-- FACILITY-EXT: `EKEY`, `EKEY>CHAR`, `EKEY?`, `MS`, `BEGIN-STRUCTURE`, `END-STRUCTURE`, `+FIELD`, `CFIELD:`, `FIELD:`, `2FIELD:`
-- FILE: complete
-- FILE-EXT: complete
-- FLOATING: complete
-- FLOATING-EXT: complete except hyperbolics and `FE.`, `F~` to save space, see the manual for [the definitions](manual.md#floating-point-arithmetic) of these
-- STRING: complete
-- TOOLS: `.S`, `?`, `DUMP`, `WORDS`
-- TOOLS-EXT: `AHEAD`, `BYE`, `CS-ROLL`, `FORGET`, `STATE`, `N>R`, `NR>`, `[DEFINED]`, `[ELSE]`, `[IF]`, `[THEN]`, `[UNDEFINED]`
-- SEARCH: `DEFINITIONS`, `FIND`
-- SEARCH-EXT: `FORTH`
+- DOUBLE and DOUBLE-EXT complete: `DABS`, `D.R`, `D=`, `DMAX`, `DMIN`, `D-`, `DNEGATE`, `D+`, `D2/`, `D2*`, `DU<`, `D0=`, `D0<`, `D.`, `D<`, `D>S`, `M+`, `M*/`, `2CONSTANT`, `2LITERAL`, `2ROT`, `2VALUE`, `2VARIABLE`
+- EXCEPTION and EXCEPTION complete: `ABORT`, `ABORT"`, `CATCH`, `THROW`
+- FACILITY complete: `AT-XY`, `KEY?`, `PAGE`
+- FACILITY-EXT partly: `BEGIN-STRUCTURE`, `CFIELD:`, `EKEY`, `EKEY?`, `EKEY>CHAR`, `END-STRUCTURE`, `FIELD:`, `2FIELD:`, `+FIELD`, `MS`
+- FILE and FILE-EXT complete:
+- FLOATING complete: `DFALIGN`, `DFALIGNED`, `DFFIELD:`, `DF@`, `DFLOAT+`, `DFLOATS`, `DF!`, `D>F`, `FABS`, `FACOS`, `FACOSH`, `FALIGN`, `FALIGNED`, `FALOG`, `FASIN`, `FASINH`, `FATAN`, `FATANH`, `FATAN2`, `FCONSTANT`, `FCOS`, `FCOSH`, `FDEPTH`, `FDROP`, `FDUP`, `F/`, `FEXP`, `FEXPM1`, `FE.`, `FFIELD:`, `F@`, `FLITERAL`, `FLN`, `FLNP1`, `FLOAT+`, `FLOATS`, `FLOG`, `FLOOR`, `FMAX`, `FMIN`, `F-`, `FNEGATE`, `FOVER`, `F+`, `FROT`, `FROUND`, `FSIN`, `FSINCOS`, `FSINH`, `FSQRT`, `FSWAP`, `FS.`, `F!`, `FTAN`, `FTANH`, `FTRUNC`, `F*`, `F**`, `FVALUE`, `FVARIABLE`, `F0=`, `F0<`, `F.`, `F<`, `F~`, `F>D`, `F>S`, `PRECISION`, `REPRESENT`, `SET-PRECISION`, `SFALIGN`, `SFALIGNED`, `SFFIELD:`, `SF@`, `SFLOAT+`, `SFLOATS`, `SF!`, `S>F`, `>FLOAT`, where the hyperbolics and `FE.` and `F~` are defined in `FLOATEXT.FTH` to save space
+- STRING complete: `BLANK`, `CMOVE`, `CMOVE>`, `COMPARE`, `/STRING`, `-TRAILING`, `SEARCH`, `SLITERAL`
+- STRING-EXT: none
+- TOOLS and TOOLS-EXT partly: `.S`, `?`, `AHEAD`, `BYE`, `CS-ROLL`, `DUMP`, `FORGET`, `STATE`, `N>R`, `NR>`, `WORDS`, `[DEFINED]`, `[ELSE]`, `[IF]`, `[THEN]`, `[UNDEFINED]`
+- SEARCH and SEARCH EXT partly: `DEFINITIONS`, `FIND`, `FORTH`
 
 Additional built-in words:
 - introspection: `COLON?`, `DOES>?`, `MARKER?`, `DEFER?`, `VALUE?`, `2VALUE?`, `FVALUE?`
-- values: `+TO`
+- values: `2TO`, `+TO`, `D+TO`
 - variables: `D+!`, `ON`, `OFF`
 - arithmetic: `UMAX`, `UMIN`, `2+`, `2-`, `M-`, `D/MOD`, `DMOD`, `UMD*`, `FDEG`, `FDMS`, `FRAND`, `FSIGN`
 - logic: `D<>`, `D>`, `D0<>`, `D0>`, `F<>`, `F>`, `F0<>`, `F0>`
