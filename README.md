@@ -48,7 +48,7 @@ In BASIC execute (assuming memory for Forth500 is still allocated):
 
 ## Batteries included...
 
-Forth500 is [Forth Standard](https://forth-standard.org) compliant and implements:
+Forth500 is [Forth Standard](https://forth-standard.org) compliant and includes the following words built in:
 - [CORE and CORE-EXT](https://forth-standard.org/standard/core) complete: `ABORT`, `ABORT"`, `ABS`, `ACCEPT`, `ACTION-OF`, `AGAIN`, `ALIGN`, `ALIGNED`, `ALLOT`, `AND`, `BASE`, `BEGIN`, `BL`, `BUFFER:`, `[`, `[CHAR]`, `[COMPILE]`, `[']`, `CASE`, `C,`, `CELL+`, `CELLS`, `C@`, `CHAR`, `CHAR+`, `CHARS`, `COMPILE,`, `CONSTANT`, `COUNT`, `CR`, `CREATE`, `C!`, `:`, `:NONAME`, `,`, `C"`, `DECIMAL`, `DEFER`, `DEFER@`, `DEFER!`, `DEPTH`, `DO`, `DOES>`, `DROP`, `DUP`, `/`, `/MOD`, `.R`, `.(`, `."`, `ELSE`, `EMIT`, `ENDCASE`, `ENDOF`, `ENVIRONMENT?`, `ERASE`, `EVALUATE`, `EXECUTE`, `EXIT`, `=`, `FALSE`, `FILL`, `FIND`, `FM/MOD`, `@`, `HERE`, `HEX`, `HOLD`, `HOLDS`, `I`, `IF`, `IMMEDIATE`, `INVERT`, `IS`, `J`, `KEY`, `LEAVE`, `LITERAL`, `LOOP`, `LSHIFT`, `MARKER`, `MAX`, `MIN`, `MOD`, `MOVE`, `M*`, `-`, `NEGATE`, `NIP`, `OF`, `OR`, `OVER`, `1-`, `1+`, `PAD`, `PARSE-NAME`, `PARSE`, `PICK`, `POSTPONE`, `+`, `+LOOP`, `+!`, `QUIT`, `RECURSE`, `REFILL`, `REPEAT`, `RESTORE-INPUT`, `R@`, `ROLL`, `ROT`, `RSHIFT`, `R>`, `SAVE-INPUT`, `SIGN`, `SM/REM`, `SOURCE-ID`, `SOURCE`, `SPACE`, `SPACES`, `STATE`, `SWAP`, `;`, `S\"`, `S"`, `S>D`, `!`, `THEN`, `TO`, `TRUE`, `TUCK`, `TYPE`, `'`, `*`, `*/`, `*/MOD`, `2DROP`, `2DUP`, `2/`, `2@`, `2OVER`, `2R@`, `2R>`, `2SWAP`, `2!`, `2*`, `2>R`, `U.R`, `UM/MOD`, `UM*`, `UNLOOP`, `UNTIL`, `UNUSED`, `U.`, `U<`, `U>`, `VALUE`, `VARIABLE`, `WHILE`, `WITHIN`, `WORD`, `XOR`, `0=`, `0<`, `0>`, `0<>`, `\`, `.`, `<`, `>`, `<>`, `#>`, `<#`, `#`, `#S`, `(`, `?DO`, `?DUP`, `>BODY`, `>IN`, `>NUMBER`, `>R`
 - [BLOCK](https://forth-standard.org/standard/block) removed to save space, not practical on the PC-E500
 - [DOUBLE and DOUBLE-EXT](https://forth-standard.org/standard/double) complete: `DABS`, `D.R`, `D=`, `DMAX`, `DMIN`, `D-`, `DNEGATE`, `D+`, `D2/`, `D2*`, `DU<`, `D0=`, `D0<`, `D.`, `D<`, `D>S`, `M+`, `M*/`, `2CONSTANT`, `2LITERAL`, `2ROT`, `2VALUE`, `2VARIABLE`
@@ -61,7 +61,7 @@ Forth500 is [Forth Standard](https://forth-standard.org) compliant and implement
 - [TOOLS and TOOLS-EXT](https://forth-standard.org/standard/tools) partly: `.S`, `?`, `AHEAD`, `BYE`, `CS-ROLL`, `DUMP`, `FORGET`, `STATE`, `N>R`, `NR>`, `WORDS`, `[DEFINED]`, `[ELSE]`, `[IF]`, `[THEN]`, `[UNDEFINED]`
 - [SEARCH and SEARCH EXT](https://forth-standard.org/standard/search) partly: `DEFINITIONS`, `FIND`, `FORTH`
 
-Additional built-in words:
+Additional built-in Forth500 words:
 - introspection: `COLON?`, `DOES>?`, `MARKER?`, `DEFER?`, `VALUE?`, `2VALUE?`, `FVALUE?`
 - values: `2TO`, `+TO`, `D+TO`
 - variables: `D+!`, `ON`, `OFF`
