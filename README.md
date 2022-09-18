@@ -64,7 +64,7 @@ Forth500 is [Forth Standard](https://forth-standard.org) compliant and includes 
 
 Additional built-in Forth500 words:
 - introspection: `COLON?`, `DOES>?`, `MARKER?`, `DEFER?`, `VALUE?`, `2VALUE?`, `FVALUE?`
-- values: `2TO`, `+TO`, `D+TO`
+- values: `+TO` (single and double cell, not float)
 - variables: `D+!`, `ON`, `OFF`
 - arithmetic: `UMAX`, `UMIN`, `2+`, `2-`, `M-`, `D/MOD`, `DMOD`, `UMD*`, `FDEG`, `FDMS`, `FRAND`, `FSIGN`
 - logic: `D<>`, `D>`, `D0<>`, `D0>`, `F<>`, `F>`, `F0<>`, `F0>`
