@@ -3207,10 +3207,10 @@ lowest address of the dictionary is zero.
 `LAST-XT` returns the execution token of the last definition, which is the
 location where the machine code of the last word starts.
 
-Code is either machine code or starts with a jump or call machine code
-instruction of 3 bytes, followed by Forth code (a sequence of execution tokens
-in a colon definition) or data (constants, variables, values and other words
-created with `CREATE`).
+Forth500 is a Direct Threaded Code Forth implementation.  Code is either
+machine code or starts with a jump or call machine code instruction of 3 bytes,
+followed by Forth code (a sequence of execution tokens in a colon definition)
+or data (constants, variables, values and other words created with `CREATE`).
 
 Immediate words are marked with the length byte high bit 7 set ($80).  Hidden
 words have the "smudge" bit 6 ($40) set.  A word is hidden until successfully
@@ -3998,17 +3998,25 @@ up to 16 to close all files if open.
 ## Further reading
 
 [And so Forth...](https://thebeez.home.xs4all.nl/ForthPrimer/Forth_primer.html)
-by Hans Bezemer.
+by Hans Bezemer
 
 [A Beginner's Guide to Forth](http://galileo.phys.virginia.edu/classes/551.jvn.fall01/primer.htm)
-by J.V. Noble.
+by J.V. Noble
 
 [Thinking Forth](http://thinking-forth.sourceforge.net)
-by Leo Brodie.
+by Leo Brodie
 
 [Standard Forth alphabetic list of words](https://forth-standard.org/standard/alpha)
 
 ## Links to additional resources
+
+[Forth Interest Group](http://www.forth.org)
+
+[Moving Forth](https://www.bradrodriguez.com/papers/moving1.htm)
+by Brad Rodriguez
+
+[Forth Systems Comparisons](http://www.forth.org/fd/FD-V13N6.pdf)
+by Guy M. Kelly
 
 [The Forth Scientific Library](https://www.taygeta.com/fsl/scilib.html)
 
