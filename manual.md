@@ -849,7 +849,7 @@ The following words define common constants regardless of the current `BASE`:
 
 Floating point values are parsed in base 10.  Floating point values are not
 parsed if the `BASE` is anything other than `DECIMAL`.  Exception -13 will be
-thrown instead, when the unrecognized word is not found in the dictionary.
+thrown instead, because the unrecognized word is not found in the dictionary.
 
 Floating point values when parsed from the input are directly pushed on the
 floating point stack.  Floating point values must include a `E` or `D`
@@ -905,17 +905,15 @@ the binary-coded decimal mantissa with 10 or 20 digits:
 - the (sign) byte bit 3 is set to mark negative values
 - the (exp) byte is a 2s-complement integer in the range [-99,99]
 - a single precision floating point value uses (BCD0) to (BCD4) and may use
-  (BCD5) and (BCD6) to store so-called guard digits that are not displayed.  A
-  double precision floating point value uses (BCD0) to (BCD9)
+  (BCD5) and (BCD6) to store so-called guard digits.  A double precision
+  floating point value uses (BCD0) to (BCD9) to store 20 significant digits
 
 To view the internal format of a floating point value on the stack:
 
     FP@ 12 DUMP ↲
 
-All digits are stored, including the 2 or 3 guard digits of a single precision
-value.  Up to 10 significant digits of a single precision values are displayed.
-This means that comparisons for equality may fail even though the numbers
-displayed look equal.
+All digits are stored, including the 2 to 4 guard digits of a single precision
+value, and passed on to subsequent floating point operations.
 
 The maximum depth of the floating point stack in Forth500 is 120 bytes to hold
 up to 10 floating point values.
@@ -1132,9 +1130,7 @@ value by adding a double precision zero.
 
 Floating point operations in single precision are performed with 12 to 14
 digits (10 + 2 to 4 guard digits).  All digits are stored and passed on to
-subsequent floating point operations.  The guard digits are not removed.  The
-final value of a single precision calculation should be displayed in 10 digits
-or should be rounded to 10 digits.
+subsequent floating point operations.  The guard digits are not removed.
 
 `F**` returns _r1_ to the power _r2_.
 
@@ -1287,9 +1283,10 @@ floating point values on the floating point stack:
 
 Floating point operations in single precision are performed with 12 to 14
 digits (10 + 2 to 4 guard digits).  All digits are stored, including the guard
-digits, but only up to 10 significant digits nay be displayed.  This means that
-comparisons for (in)equality may fail even though the numbers displayed look
-equal.  To compare for equality within a specified precision, use `F~`.  See
+digits.  Beware that comparisons for equality and inequality may fail even
+though the numbers displayed look equal when fewer than 20 significant digits
+are displayed when `PRECISION` is less than 20 (see below).  To compare for
+equality within a specified precision, use `F~`.  See
 [Floating point arithmetic](#floating-point-arithmetic)
 
 ## Numeric output
