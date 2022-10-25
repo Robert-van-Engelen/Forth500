@@ -1,4 +1,4 @@
-# Binary Forth500.bin for unexpanded PC-E500 with 32KB
+# Binary Forth500.bin for unexpanded PC-E500(S) with 32KB
 
 On the PC-E500(S) execute:
 

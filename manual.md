@@ -109,10 +109,10 @@ Then load it back into memory later from BASIC in RUN mode:
     > LOADM "F:FORTH500.BIN"
     > CALL &Bx000
 
-where Forth500 starts at `&Bx000` (`&B0000` on an expanded machine and `&B9000`
-on an unexpanded machine).  Note that a hard reset requires allocating memory
-for Forth500 before you can load it back into memory, see the installation
-instructions.
+where Forth500 starts at `&Bx000` (`&B0000` on an expanded machine with 128KB
+memory or more and `&B9000` on an unexpanded 32KB machine).  Note that a hard
+reset requires allocating memory again for Forth500 before you can load it back
+into memory, see the Forth500 installation instructions.
 
 ## Quick Forth tutorial
 
@@ -966,7 +966,7 @@ The `MOD`, `/MOD`, and `*/MOD` words return a remainder on the stack.  The
 quotient _q_ and remainder _r_ satisfy _q_ = _floor_(_a_ / _b_) such that
 _a_ = _b_ \* _q_ + _r_ , where _floor_ rounds towards zero.  The `MOD` is
 symmetric, i.e. `10 7 MOD` and `-10 7 MOD` return 3 and -3, respectively.  See
-also `FM/MOD` and `SM/MOD` [mixed arithmetic](#mixed-arithmetic).
+also `FM/MOD` and `SM/REM` [mixed arithmetic](#mixed-arithmetic).
 
 The `*/` and `*/MOD` words produce an intermediate double integer product to
 avoid intermediate overflow.  Therefore, `*/` is not a shorthand for the two
@@ -1004,11 +1004,12 @@ involving division and modulo may throw exception -10 "Division by zero":
 | `S>D`     | ( _n_ -- _d_ )
 | `D>S`     | ( _d_ -- _n_ )
 
+The `S>D` word converts a signed single to a double integer.  To convert an
+unsigned single to an unsigned double integer, push a `0` on the stack.
+
 The `D>S` word converts a signed double to a signed single integer, throwing
 exception -11 "Result out of range" if the double value cannot be converted.
-
-To convert an unsigned single integer to an unsigned double integer, just push
-a `0` on the stack after the unsigned single.
+A double in the range -32768 to 65535 can be converted to a single.
 
 Integer overflow and underflow does not throw exceptions.  In case of integer
 addition and subtraction, values simply wrap around.  For all other integer
@@ -1028,7 +1029,7 @@ zero".
 | `UM*`    | ( _u1_ _u2_ -- (_u1_\*_u2_) )         | multiply unsigned singles to return unsigned double
 | `UMD*`   | ( _ud_ _u_ -- (_ud_\*_u_) )           | multiply unsigned double and single to return unsigned double
 | `M*/`    | ( _d_ _n_ _+n_ -- (_d_\*_n_/_+n_) )   | multiply signed double with signed single then divide by positive single to return signed double
-| `UM/MOD` | ( _ud_ _u_ -- (_ud_%_u_) (_ud_/_u_) ) | single remainder and double quotient of unsigned double dividend and unsigned single divisor
+| `UM/MOD` | ( _ud_ _u_ -- (_ud_%_u_) (_ud_/_u_) ) | single remainder and single quotient of unsigned double dividend and unsigned single divisor
 | `FM/MOD` | ( _d_ _n_ -- (_d_%_n_) (_d_/_n_) )    | floored single remainder and single quotient of signed double dividend and signed single divisor
 | `SM/REM` | ( _d_ _n_ -- (_d_%_n_) (_d_/_n_) )    | symmetric single remainder and single quotient of signed double dividend and signed single divisor
 
@@ -1518,7 +1519,7 @@ The following words compare and search two strings:
 | --------- | ---------------------------------------------------------- | -----
 | `S=`      | ( _c-addr1_ _u1_ _c-addr2_ _u2_ -- flag )                  | returns `TRUE` if the two strings are equal
 | `COMPARE` | ( _c-addr1_ _u1_ _c-addr2_ _u2_ -- -1\|0\|1 )              | returns -1\|0\|1 (less, equal, greater) comparison of the two strings
-| `SEARCH`  | ( _c-addr1_ _u1_ _c-addr2_ _u2_ -- _c-addr3_ _u3_ _flag_ ) | returns `TRUE` if the second string was found in the first string at _c-addr3_ with _u3_=_u2_, otherwise `FALSE` and _c-addr3_=_c-addr1_, _u3_=_u1_
+| `SEARCH`  | ( _c-addr1_ _u1_ _c-addr2_ _u2_ -- _c-addr3_ _u3_ _flag_ ) | returns `TRUE` if the second string was found in the first string at _c-addr3_ with _u3_ remaining chars, otherwise `FALSE` and _c-addr3_=_c-addr1_, _u3_=_u1_
 
 To convert a string to a number:
 

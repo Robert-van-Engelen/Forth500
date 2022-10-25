@@ -1,4 +1,7 @@
-# Forth500 for expanded PC-E500 with over >64KB
+# Forth500 for expanded PC-E500(S) with over 64KB
+
+An expanded PC-E500(S) should have 128KB or more internal memory or a 64KB or
+greater RAM card installed with `MEM$="B"`.  A 32KB RAM card does not suffice.
 
 On the PC-E500(S) execute:
 
