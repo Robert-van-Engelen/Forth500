@@ -1,4 +1,4 @@
-# A Complete Forth System for the SHARP PC-E500(S)
+
 
 ![PC-E500S](PC-E500S.jpeg)
 
@@ -8,13 +8,15 @@ Sébastien Furic's original (incomplete) ANS Forth compiler is available from th
 
 I've rewritten large parts of the code to optimize for speed, code size and compliance with the Forth Standard, see the [changelog](changelog.md). The `docol` fetch-execute cycle is 40% more efficient.  Words are now case-insensitive and can be typed in upper/lower/mixed case.  All standard floating point words are now also included.  Included in this repo are the binaries for unexpanded 32KB machines and expanded >96KB machines.  Also included is the XASM assembler written by N. Kon for the SC62015 CPU.  I translated the XASM documentation to English and I made a minor change to the XASM source code to be able to compile XASM with FreePascal (see XASM/PASCAL.txt).  XASM is required to rebuild the Forth500 system from assembly.  The [Forth500.s](Forth500.s) source code is heavily documented and PC-E500 technical [resources](resources) are included.
 
+Discuss: [HP Forum](https://www.hpmuseum.org/forum/thread-17440.html) and [reddit](https://www.reddit.com/r/Forth/comments/sgav1q/forth_for_the_sharp_pce500s_pocket_computer)
+
 ## Instruction manual
 
 See the [Forth500 User Guide](manual.md) with an introduction to Forth and a full description of the Forth500 system.
 
 ## How fast is it?
 
-The [n-queens benchmark](https://www.hpmuseum.org/cgi-sys/cgiwrap/hpmuseum/articles.cgi?read=700) is solved in 3.47 seconds, the fastest Forth system in this benchmark and faster than the compiled n-queens C program on a Sharp PC-G850VS that runs at 8.0MHz compared to the 2.3MHz PC-E500(S).
+The [n-queens benchmark](https://www.hpmuseum.org/cgi-sys/cgiwrap/hpmuseum/articles.cgi?read=700) is solved in 3.47 seconds, faster than the compiled n-queens C program on a Sharp PC-G850VS that runs at 8.0MHz compared to the 2.3MHz PC-E500(S).
 
 ## Load Forth500 via serial or cassette interface
 
@@ -59,16 +61,16 @@ Forth500 is [Forth Standard](https://forth-standard.org) compliant and includes 
 - [FLOATING and FLOATING-EXT](https://forth-standard.org/standard/float) complete: `DFALIGN`, `DFALIGNED`, `DFFIELD:`, `DF@`, `DFLOAT+`, `DFLOATS`, `DF!`, `D>F`, `FABS`, `FACOS`, `FACOSH`, `FALIGN`, `FALIGNED`, `FALOG`, `FASIN`, `FASINH`, `FATAN`, `FATANH`, `FATAN2`, `FCONSTANT`, `FCOS`, `FCOSH`, `FDEPTH`, `FDROP`, `FDUP`, `F/`, `FEXP`, `FEXPM1`, `FE.`, `FFIELD:`, `F@`, `FLITERAL`, `FLN`, `FLNP1`, `FLOAT+`, `FLOATS`, `FLOG`, `FLOOR`, `FMAX`, `FMIN`, `F-`, `FNEGATE`, `FOVER`, `F+`, `FROT`, `FROUND`, `FSIN`, `FSINCOS`, `FSINH`, `FSQRT`, `FSWAP`, `FS.`, `F!`, `FTAN`, `FTANH`, `FTRUNC`, `F*`, `F**`, `FVALUE`, `FVARIABLE`, `F0=`, `F0<`, `F.`, `F<`, `F~`, `F>D`, `F>S`, `PRECISION`, `REPRESENT`, `SET-PRECISION`, `SFALIGN`, `SFALIGNED`, `SFFIELD:`, `SF@`, `SFLOAT+`, `SFLOATS`, `SF!`, `S>F`, `>FLOAT`, where the hyperbolics and `FE.` and `F~` are defined in [FLOATEXT.FTH](https://github.com/Robert-van-Engelen/Forth500/blob/main/additions/FLOATEXT.FTH) to load separately to save memory
 - [STRING](https://forth-standard.org/standard/string) complete: `BLANK`, `CMOVE`, `CMOVE>`, `COMPARE`, `/STRING`, `-TRAILING`, `SEARCH`, `SLITERAL`
 - [STRING-EXT](https://forth-standard.org/standard/string) three words not implemented
-- [TOOLS and TOOLS-EXT](https://forth-standard.org/standard/tools) mostly complete: `.S`, `?`, `AHEAD`, `BYE`, `CS-ROLL`, `DUMP`, `FORGET`, `STATE`, `N>R`, `NR>`, `WORDS`, `[DEFINED]`, `[ELSE]`, `[IF]`, `[THEN]`, `[UNDEFINED]`
+- [TOOLS and TOOLS-EXT](https://forth-standard.org/standard/tools) mostly complete: `.S`, `?`, `AHEAD`, `BYE`, `DUMP`, `FORGET`, `STATE`, `N>R`, `NR>`, `WORDS`, `[DEFINED]`, `[ELSE]`, `[IF]`, `[THEN]`, `[UNDEFINED]`
 - [SEARCH and SEARCH EXT](https://forth-standard.org/standard/search) partly complete: `DEFINITIONS`, `FIND`, `FORTH`
 
 Additional built-in Forth500 words:
 - introspection: `COLON?`, `DOES>?`, `MARKER?`, `DEFER?`, `VALUE?`, `2VALUE?`, `FVALUE?`
 - values: `+TO` (single and double cell, not float)
 - variables: `D+!`, `ON`, `OFF`
-- arithmetic: `UMAX`, `UMIN`, `2+`, `2-`, `M-`, `D/MOD`, `DMOD`, `UMD*`, `FDEG`, `FDMS`, `FRAND`, `FSIGN`
+- arithmetic: `UMAX`, `UMIN`, `2+`, `2-`, `M-`, `D*`, `UMD*`, `D/MOD`, `D/`, `DMOD`, `FDEG`, `FDMS`, `FRAND`, `FSIGN`
 - logic: `D<>`, `D>`, `D0<>`, `D0>`, `F<>`, `F>`, `F0<>`, `F0>`
-- stack: `-ROT`, `2NIP`, `2TUCK`, `DUP>R`, `R>DROP`, `CLEAR`
+- stack: `-ROT`, `2NIP`, `2TUCK`, `DUP>R`, `RDROP`/`R>DROP`, `CLEAR`
 - loops: `K`, `?LEAVE`
 - strings: `NEXT-CHAR`, `S=`, `-CHARS`, `EDIT`, `>DOUBLE`
 - display: `REVERSE-TYPE`, `PAUSE`, `BASE.`, `BIN.`, `DEC.`, `HEX.`, `N.S`, `TTY`
