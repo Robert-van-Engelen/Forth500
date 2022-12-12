@@ -143,3 +143,9 @@ The following bug fixes and additions were made to the original pceForth code.
 - changed `FENCE` to a value instead of a variable
 - added `FORTH`, `VOCABULARY`, `DEFINITIONS`, `CURRENT` and `CONTEXT` words
 - corrected minor errors and omissions in the manual
+
+## Forth500 v2.1
+
+- removed unused `CS-ROLL`
+- added `RDROP` (same as `R>DROP`)
+- improved manual

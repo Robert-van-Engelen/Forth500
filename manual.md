@@ -1,6 +1,6 @@
 # Forth500 User Guide
 
-Author: Dr. Robert A. van Engelen, 2021
+_Dr. Robert A. van Engelen, Copyright 2021_
 
 ## Table of contents
 
@@ -66,6 +66,8 @@ Author: Dr. Robert A. van Engelen, 2021
   - [GCD](#gcd)
   - [RAND](#rand)
   - [SQRT](#sqrt)
+  - [Primes](#primes)
+  - [Numerical integration](#numerical-integration)
   - [Strings](#strings)
   - [Enums](#enums)
   - [Slurp](#slurp)
@@ -735,7 +737,11 @@ Note that `0 PICK` is the same as `DUP`, `1 PICK` is the same as `OVER`, `1
 ROLL` is the same as `SWAP`, `2 ROLL` is the same as `ROT` and `0 ROLL` does
 nothing.
 
-Note: `PICK` and `ROLL` take _k_ _mod_ 128 cells max as a precaution.
+`PICK` and `ROLL` take _k_ _mod_ 128 cells max as a precaution.
+
+Note that some legacy Forth systems define `PICK` and `ROLL` arguments starting
+at 1 instead of at 0.  Forth500 `PICK` and `ROLL` follow the standard.  Please
+take note when porting legacy Forth programs to Forth500.
 
 The following words operate on two cells on the stack at once (a pair of single
 integers or one double integer):
@@ -1829,7 +1835,7 @@ the stack to the return stack with `>R` ("to r") and back with `R>` ("r from").
 Care must be taken to prevent return stack imbalences when a colon definition
 exits.  The return stack pointer must be restored to the original state (when
 the colon definition started) before the colon definition exits.  For example,
-an `>R` must be followed by `R>` or `R>DROP`.
+an `>R` must be followed by `R>` or `RDROP` (or `R>DROP`).
 
 The following words move cells between stacks:
 
@@ -1843,10 +1849,12 @@ The following words move cells between stacks:
 | `R'@`    | ( R: _x1_ _x2_ -- _x1_ _x2_ ; -- _x1_ )           | copy the return stack 2OS to the stack
 | `R"@`    | ( R: _x1_ _x2_ _x3_ -- _x1_ _x2_ _x3_ ; -- _x1_ ) | copy the return stack 3OS to the stack
 | `R>`     | ( R: _x_ -- ; -- _x_ )                            | move the TOS from the return stack to the stack
-| `R>DROP` | ( R: _x_ -- ; -- )                                | drop the return stack TOS (`RDROP` in some other Forth)
+| `RDROP`  | ( R: _x_ -- ; -- )                                | drop the return stack TOS
 | `2R>`    | ( R: _xd_ -- ; -- _xd_ )                          | move the double TOS from the return stack to the stack
 | `N>R`    | ( _n_\*_x_ _+n_ -- ; R: -- _n_\*_x_ _+n_ )        | move _n_ cells to the return stack
 | `NR>`    | ( -- _n_\*_x_ _+n_ ; R: _n_\*_x_ _+n_ -- )        | move _n_ cells from the return stack
+
+`RDROP` as the same as `R>DROP`, a combination of `R>` and `DROP`.
 
 The `N>R` and `NR>` words move _+n_+1 cells, including the cell _+n_.  For
 example `2 N>R ... NR> DROP` moves 2+1 cells to the return stack and back,
@@ -1861,13 +1869,13 @@ Other words related to the return stack:
 | `RP@`   | ( -- _addr_ ) | returns the return stack pointer, points the to return TOS
 | `RP!`   | ( _addr_ -- ) | assigns the return stack pointer (danger!)
 
-"Caller cancelling" is possible with `R>DROP` ("r from drop" or just "r drop")
+"Caller cancelling" is possible with `RDROP` ("r drop")
 to remove a return address before exiting:
 
-    : bar  ." bar " R>DROP ;
+    : bar  ." bar " RDROP ;
     : foo  ." foo " bar ." rest of foo" ;
 
-where `R>DROP` removes the return address to `foo`.  Therefore:
+where `RDROP` removes the return address to `foo`.  Therefore:
 
     foo ↲
     foo bar OK[0]
@@ -1912,10 +1920,19 @@ The following words define constants, variables and values:
 | `FVALUE`    | ( F: _r1_ "name" -- ; -- F: _r2_ ) | define "name" with initial value _r1_ to return its current value _r2_ on the floating point stack
 | `TO`        | ( F: _r_ "name" -- )               | assign "name" the value _r_, if "name" is an `FVALUE`
 
-Values are initialized with the specified initial values and do not require
-fetch operations, exactly like constants.  By contrast to constants, values can
-be updated with `TO` and `+TO`.  Note that the `TO` and `+TO` words are used
-to assign and update `VALUE` and `2VALUE` words.
+Double integers are stored big endian with the 16 high order bits stored first,
+followed by the 16 low order bits.  The TOS of a double integer on the stack
+contains the 16 higher order bits (stacks grow downward).
+
+A single integer is stored little endian with the 8 low order bits stored
+first, followed by the 8 high order bits.  For examample, `C@` fetches the low
+order 8 bits of a single integer stored at the specified address.
+
+Values defined with `VALUE` and `2VALUE` are initialized with the specified
+initial values and do not require fetch operations, exactly like constants.  By
+contrast to constants, values can be updated with `TO` and `+TO`.  Note that
+the `TO` and `+TO` words are used to assign and update `VALUE` and `2VALUE`
+words.
 
 ### Deferred words
 
@@ -3429,8 +3446,9 @@ The program repeats for all balls:
 ### SQRT
 
 The square root of a number is approximated with Newton's method.  Forth500
-includes a floating point `FSQRT` word.  This example shows how the method can
-be used to efficiently compute the square root of an integer without `FSQRT`,
+includes a floating point `FSQRT` word.  This example shows how the
+Newton-Raphson method is used to efficiently compute the square root of an
+integer without `FSQRT`.
 
 Given an initial guess _x_ for _f_(_x_) = 0, an improved guess is _x_' = _x_ -
 _f_(_x_)/_f_'(_x_).  This is iterated with _x_=_x'_ until convergence.
@@ -3473,7 +3491,7 @@ compute the new estimate _x'_ as the TOS above them:
           2DUP <> WHILE \ and also while x'<>x
         REPEAT THEN
         DROP            \ -- x
-        R>DROP          \ drop a from the return stack
+        RDROP           \ drop a from the return stack
       THEN ;
 
 Note that the second `WHILE` requires a `THEN` after `REPEAT`.  For an
@@ -3499,8 +3517,124 @@ The double integer square root implementation:
           2OVER 2OVER D<> WHILE
         REPEAT THEN
         2DROP
-        R>DROP R>DROP
+        RDROP RDROP
       THEN ;
+
+### Primes
+
+This examples shows how a temporary array of cells is created and how various
+looping constructs are used to generate prime numbers.
+
+To create a temporary array of cells we will use `ALLOT`, but only at runtime.
+Afterwards we will destroy the array and release memory back to the dictionary.
+
+The address of our temporary array or cells is stored in value `array`:
+
+    0 VALUE array
+
+Allocation and clearing the array is performed with `calloc`:
+
+    : calloc    ( n -- ) HERE TO array 2* DUP ALLOT array SWAP ERASE ;
+
+Note that we store `HERE` in `array`, which is the address where our temporary
+array starts.  Destroying the temporary array is performed by `destroy` which
+computes the negative memory size to release with `ALLOT`:
+
+: destroy   ( -- ) array HERE - ALLOT ;
+
+Note that this is only safe if we `destroy` after `calloc` without defining any
+new words inbetween.  Fetching and storing a cell value in the array is
+performed with the `prime@` and `prime!` words, that take an array index `i` as
+a parameter:
+
+    : prime@    ( i -- x ) 2* array + @ ;
+    : prime!    ( x i -- ) 2* array + ! ;
+
+With these definitions, we can write a prime number `filter` to produce `n`
+primes:
+
+    : filter    ( n -- )
+      2 .
+      3 DUP 0 prime!
+      DUP .
+      SWAP \ -- 3 n
+      1 ?DO
+        BEGIN
+          2+ \ -- maybeprime
+          I 0 ?DO
+            I prime@   \ -- maybeprime prime
+            2DUP DUP * \ -- maybeprime prime maybeprime prime*prime
+            < IF
+              DROP TRUE LEAVE \ -- maybeprime true
+            ELSE
+              OVER SWAP \ -- maybeprime maybeprime prime
+              MOD 0= IF
+                FALSE LEAVE \ -- maybeprime false
+              THEN
+            THEN
+          LOOP \ -- maybeprime isprime
+        UNTIL
+        DUP .
+        DUP I prime!
+      LOOP
+      DROP ;
+
+This word definition is a bit long, longer than we usually want in Forth.
+But the innermost `DO-LOOP` requires the `I` index of the outer `DO-LOOP` to
+run.  The outer `DO-LOOP` counts the prime number index, from 1 to `n`.  The
+inner `BEGIN-UNtIL` loop produces the next prime number by checking if the
+current value (starting with 3 incremented to 5 to check first) against the
+previous prime numbers, as is done in the innermost `DO-LOOP`.  The innermost
+`DO-LOOP` always terminates with a `LEAVE` that jumps out of the loop.
+
+To display the first `n` primes (`n` > 1) we allocate the array, run the filter
+and destroy the array:
+
+    : primes    ( n -- ) DUP calloc ['] filter CATCH destroy THROW ;
+
+Note that `CATCH destroy THROW` ensures that we always destroy the array, even
+whan an exception occurrs, such as pressing BREAK.
+
+The Sieve of Eratosthenes is a famous prime number generator that marks off
+all the multiples of primes from a "grid" such that only the prime numbers
+remain.
+
+In Forth we mark bits in an array of cells.  Each cell has 16 bits.  A bit is
+marked with `mark!` and checked with `marked`:
+
+    : mark!     ( n -- ) DUP 4 RSHIFT 2* array + SWAP 15 AND 1 SWAP LSHIFT OVER @ OR SWAP ! ;
+    : marked    ( n -- ) DUP 4 RSHIFT 2* array + SWAP 15 AND 1 SWAP LSHIFT SWAP @ AND ;
+
+Note that `4 RSHIFT` computes the index into the cell array and `15 AND`
+computes the bit number 0 to 15, followed by `1 SWAP LSHIFT` to set a 1 at the
+corresponding bit position.
+
+Sieving is performed as follows:
+
+    : do-sieve  ( n -- )
+      2 .
+      DUP 3 ?DO
+        I marked 0= IF
+          I .
+          DUP I DO
+            I mark!
+          J +LOOP
+        THEN
+      2 +LOOP
+      DROP ;
+
+The outer `DO-LOOP` iterates from 3 to `n` in steps of 2.  If `I` is not
+marked, then it is a prime number and we mark `I` and all multiples in the
+inner `DO-LOOP` that runs from `I` to `n` in steps of `J`, i.e. the outer loop
+index which is the prime number.
+
+To display the prime numbers up to `n` (`n` > 3) we allocate the array, run the
+sieve and destroy the array:
+
+    : sieve     ( n -- ) DUP 15 + 16 / calloc ['] do-sieve CATCH destroy THROW ;
+
+where `15 + 16 /` rounds up to multiples of 16 to allocate enough space for the
+array.
 
 ### Numerical integration
 
@@ -3513,8 +3647,7 @@ _I_ = _h_/3 × [ _f_(_a_) + ∑ᵢ₌₁ ⁿ ( 4 _f_(_a_ + _h_ × (2 i - 1)) + 2
 where _h_ = (_b_-_a_)/(2 _n_)
 
 First we define the function to integrate as a deferred word in Forth, which
-means we can assign it later any given function _y_=_f_(_x_) defined in Forth
-to integrate:
+means we can assign it later any given function _y_=_f_(_x_) to integrate:
 
     DEFER integrand     ( F: x -- y )
 
