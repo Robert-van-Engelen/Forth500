@@ -84,8 +84,8 @@ and transfer the FORTH500.UUE file to the PC-E500(S) via the serial interface:
     decoded. 
 
 A new file FORTH500. is created (the Forth500.bin file specified with the
-BINTOPCE.EXE and UUENCODE.EXE tools but without filename extension), which can
-be loaded and run with:
+uucode/BINTOPCE.EXE and uucode/UUENCODE.EXE tools but without filename
+extension), which can be loaded and run with:
 
     > LOADM "FORTH500."
     > CALL &B0000
