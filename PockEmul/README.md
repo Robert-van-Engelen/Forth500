@@ -3,7 +3,7 @@ PockEmul Sharp PC-E500(S) emulator
 
 Forth500 runs on an emulated PC-E500(S) in [PockEmul](https://pockemul.com).
 
-Copy FORTH500.IMG to the PockEmul `pockemul/disk/ce140f` directory where the
+Copy `FORTH500.IMG` to the PockEmul `pockemul/disk/ce140f` directory where the
 emulated Sharp CE-140F keeps its files.
 
 To copy and run Forth500 on the emulated PC-E500(S) please follow these steps:
@@ -24,7 +24,7 @@ To copy and run Forth500 on the emulated PC-E500(S) please follow these steps:
     binary to the RAM disk F: drive
 9.  Enter `LOAD M "F:FORTH500.IMG"` to load Forth500 in reserved RAM then`CALL
     &B0000` to run Forth500
-10. In the PockEmul menu on the top left cornet select Storage and save the
+10. In the PockEmul menu on the top left corner select Storage and save the
     session for future use
 
 To exit Forth500 enter `BYE`.  To run Forth500 enter `CALL &B0000` in BASIC.
