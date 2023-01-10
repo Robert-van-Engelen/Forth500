@@ -25,14 +25,14 @@ To copy and run Forth500 on the emulated PC-E500(S) please follow these steps:
     `193464` or about, if no BASIC programs are present
 8.  Press BASIC and enter `COPY "X:FORTH500.IMG" TO "F:"` to copy the Forth500
     binary to the RAM disk F: drive
-9.  Enter `LOAD M "F:FORTH500.IMG"` to load Forth500 in reserved RAM then`CALL
+9.  Enter `LOADM "F:FORTH500.IMG"` to load Forth500 in reserved RAM then`CALL
     &B0000` to run Forth500
 10. In the PockEmul menu on the top left corner select Storage and save the
     session for future use
 
 To exit Forth500 enter `BYE`.  To run Forth500 enter `CALL &B0000` in BASIC.
 
-If you want to restore Forth500 to "factory settings", enter `LOAD M
+If you want to restore Forth500 to "factory settings", enter `LOADM
 "F:FORTH500.IMG"` to overwrite Forth500 in reserved RAM.
 
 At this time, it appears that the `FILES` word does not work, neither do some
