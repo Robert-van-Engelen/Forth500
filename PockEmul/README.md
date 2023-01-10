@@ -1,6 +1,8 @@
 PockEmul Sharp PC-E500(S) emulator
 ==================================
 
+![PC-E500S](PockEmul-PC-E500S.jpeg)
+
 Forth500 runs on an emulated PC-E500(S) in [PockEmul](https://pockemul.com).
 
 Copy `FORTH500.IMG` to the PockEmul `pockemul/disk/ce140f` directory where the
