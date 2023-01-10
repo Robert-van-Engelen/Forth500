@@ -21,7 +21,8 @@ To copy and run Forth500 on the emulated PC-E500(S) please follow these steps:
 5.  Turn the PC-E500S on, press PF1 twice to initialize memory S1 and S2
 6.  Press BASIC and Enter `INIT "F:255K"` to format the F: drive
 7.  Enter `POKE &BFE03,&1A,&FD,&0B,0,&FC,0: CALL &FFFD8` to reserve 64KB
-    memory, this resets the machine
+    memory, this resets the machine and `FRE0` should be reduced by 64K to show
+    `193464` or about, if no BASIC programs are present
 8.  Press BASIC and enter `COPY "X:FORTH500.IMG" TO "F:"` to copy the Forth500
     binary to the RAM disk F: drive
 9.  Enter `LOAD M "F:FORTH500.IMG"` to load Forth500 in reserved RAM then`CALL
