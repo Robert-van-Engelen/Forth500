@@ -399,7 +399,7 @@ DEFER STEP-KEY ( i*x -- j*x )
   DUP PUSH-VALUE
 ;
 
-: DO-R>DROP ( -- ) ( R: x -- )
+: DO-RDROP ( -- ) ( R: x -- )
   POP-VALUE DROP
 ;
 
@@ -574,7 +574,8 @@ DEFER STEP-KEY ( i*x -- j*x )
     ['] 2>R      OF DO-2>R    ENDOF
     ['] 2R>      OF DO-2R>    ENDOF
     ['] DUP>R    OF DO-DUP>R  ENDOF
-    ['] R>DROP   OF DO-R>DROP ENDOF
+    ['] RDROP    OF DO-RDROP  ENDOF
+    ['] R>DROP   OF DO-RDROP  ENDOF
     ['] R@       OF DO-R@     ENDOF
     ['] R'@      OF DO-R'@    ENDOF
     ['] R"@      OF DO-R"@    ENDOF

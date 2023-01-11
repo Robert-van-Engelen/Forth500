@@ -41,12 +41,12 @@ ANEW _REDEF_
       \ point to the CFA field
       DUP L>NAME NAME>
       \ compile a 'jp' to the (DEF) address
-      $02 OVER C!  CHAR+ ['] (DEF) OVER ! CELL+
+      $02 OVER C! 1+ ['] (DEF) OVER ! 2+
       \ LAST-XT is the deferred word
       LAST-XT SWAP !
       CR ." REDEF " 2R@ TYPE
     THEN
     @
   REPEAT
-  R>DROP R>DROP
+  RDROP RDROP
 ;

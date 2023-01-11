@@ -300,7 +300,7 @@ PAD CONSTANT temp.buf
   ." [DEL] cut  [STO] copy  [ANS]/[RCL] paste" CR
   ." [UP]/[DN] scroll   [LFT]/[RGT] edit line" CR
   EKEY CASE
-     $0c ( CCE   ) OF R>DROP EXIT ENDOF
+     $0c ( CCE   ) OF RDROP EXIT ENDOF
      $1c ( RIGHT ) OF menu-file ENDOF
      $1d ( LEFT  ) OF menu-file ENDOF
     $-04 ( OFF   ) OF POWER-OFF ENDOF
