@@ -38,4 +38,5 @@ If you want to restore Forth500 to "factory settings", enter `LOADM
 At this time, it appears that the `FILES` word does not work, neither do some
 of the file IO words on PockEmul 2.6.0.  Perhaps this can be fixed in PockEmul
 in the future.  With the `INCLUDE X:FILENAME.FTH` word you can load Forth
-source code (alas, this does not work in PockEmul 2.6.0.)
+source code (alas, this does not work in PockEmul 2.6.0 producing a 266 error
+meaning "the specified drive does not exist".)
