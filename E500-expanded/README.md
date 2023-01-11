@@ -102,6 +102,12 @@ To run Forth500:
 To exit Forth500, type `bye`.  Call Forth500 again to continue where you left
 off.  BASIC and Forth500 programs can co-exist.
 
+To call Forth quickly from BASIC, assign the PF2 key:
+
+    > KEY 2,"CALL &B0000"+CHR$ 13
+
+Then press PF2 to switch to Forth.
+
 ## Saving a Forth500 image
 
 Once Forth500 is loaded, you can save the entire Forth500 image to a RAM disk
