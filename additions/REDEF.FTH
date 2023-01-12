@@ -4,6 +4,9 @@
 \ The word to redefine is case sensitive, using the wrong case will not redefine
 \ A powerful and dangerous primitive: anything can be destructively redefined
 
+\ WARNING: FORGET or MARKER should not be used to delete the new definition!!!
+\          Doing so will crash Forth when the redefined word is executed!!!
+
 \ You can replace any Forth word, with one minor exception: a CREATE word that
 \ has no data.  Redefining that word will destroy the dictionary, because the
 \ CREATE word is replaced with a DEFER that has its 2 byte data overwriting the

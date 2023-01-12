@@ -4,6 +4,9 @@
 \ Changes the last definition to a deferred word calling the new definition
 \ Older definitions of the word before the last definition are not affected
 
+\ WARNING: FORGET or MARKER should not be used to delete the new definition!!!
+\          Doing so will crash Forth when the redefined word is executed!!!
+
 \ Example:
 \ : hello ." Hello" ;
 \ : hi hello ."  world!" CR ;
