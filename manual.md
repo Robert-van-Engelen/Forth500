@@ -2003,6 +2003,10 @@ which is used as follows:
 
 Some Forth implementations use `DEFERS` to do the same.
 
+**WARNING:** a deferred word referencing a word that is deleted with `FORGET`
+or deleted with a `MARKER` is no longer executable.  Executing it will likely
+lead to a crash, because the reference is deleted.
+
 ### Noname definitions
 
 A nameless colon definition just stores code that cannot be referenced by name.
@@ -2341,6 +2345,10 @@ with updated definitions:
 
     ANEW _program_ ↲
 
+**WARNING:** a deferred word referencing a word that is deleted is no longer
+executable.  Executing it will likely lead to a crash, because the reference is
+deleted.
+
 **WARNING:** do not use `DEFINITIONS` after `MARKER` or after `ANEW`, except
 when defining a new `VOCABULARY` with `DEFINITIONS` that will be removed by the
 marker.  Beware that extending a previous vocabulary with `DEFINITIONS` can
@@ -2376,6 +2384,10 @@ words defined thereafter.  To protect the dictionary, forgetting is not
 permitted past the address returned by `FENCE`.  `FENCE` is a value that can be
 assigned a new boundary in the dictionary to protect from `FORGET`.  For
 example, `HERE TO FENCE` protects all previously defined words.
+
+**WARNING:** a deferred word referencing a word that is deleted is no longer
+executable.  Executing it will likely lead to a crash, because the reference is
+deleted.
 
 **WARNING:** exercise caution with `FORGET` and vocabularies.  Typical usage
 should not pose any problems.  However, extending a previous vocabulary with
@@ -2579,7 +2591,8 @@ is false (zero), then the loop terminates in the `ELSE` branch.  Multiple
 requires a `THEN` after `REPEAT`.
 
 To understand how and why this works, note that a `WHILE` and `REPEAT`
-combination is equal to `BEGIN` with an `IF` to conditionally execute `AGAIN`:
+combination is identical to `BEGIN` with an `IF` to conditionally execute
+`AGAIN`:
 
     BEGIN       \  BEGIN
       test IF   \    test WHILE
