@@ -4150,14 +4150,16 @@ by J.V. Noble
 [Thinking Forth](http://thinking-forth.sourceforge.net)
 by Leo Brodie
 
+[Moving Forth](https://www.bradrodriguez.com/papers/moving1.htm)
+by Brad Rodriguez
+
+[Forth: The programming language that writes itself](http://ratfactor.com/forth/the_programming_language_that_writes_itself.html)
+
 [Standard Forth alphabetic list of words](https://forth-standard.org/standard/alpha)
 
 ## Links to additional resources
 
 [Forth Interest Group](http://www.forth.org)
-
-[Moving Forth](https://www.bradrodriguez.com/papers/moving1.htm)
-by Brad Rodriguez
 
 [Forth Systems Comparisons](http://www.forth.org/fd/FD-V13N6.pdf)
 by Guy M. Kelly
