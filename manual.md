@@ -2845,7 +2845,7 @@ The following file-related words are available:
 | `FILE-END?`       | ( _fileid_ -- _flag_ _ior_ )                    | returns `TRUE` if current position in _fileid_ is a the end
 | `SEEK-SET`        | ( -- 0 )                                        | to seek from the start of the file
 | `SEEK-CUR`        | ( -- 1 )                                        | to seek from the current position in the file
-| `SEEK-END`        | ( -- 2 )                                        | to seek from the ens of the file
+| `SEEK-END`        | ( -- 2 )                                        | to seek from the end of the file
 | `SEEK-FILE`       | ( _d_ _fileid_ 0\|1\|2 -- _ior_ )               | seek file offset _d_ from the start, relative to the current position or from the end
 | `REPOSITION-FILE` | ( _ud_ _fileid_ -- _ior_ )                      | seek file offset _ud_ from the start
 | `RESIZE-FILE`     | ( _ud_ _fileid_ -- _ior_ )                      | resize _fileid_ to _ud_ bytes (cannot truncate files, only enlarge)
