@@ -232,9 +232,9 @@ PAD CONSTANT temp.buf
   BEGIN
     text text.pos + len		\ num text+pos len
     2 PICK UMIN			\ num text+pos min(num,len)
-    ROT OVER DUP 0<> + 40 / 1+ 40 * -	\ text+pos min(num,len) num-40*floor(min-1/40+1)
-    -ROT			\ num-40*floor(min-/40+1) text+pos min
-    TYPE CR			\ num-40*floor(min-/40+1)
+    ROT OVER DUP 0<> + 40 / 1+ 40 * -	\ text+pos min(num,len) num-40*floor((min-1)/40+1)
+    -ROT			\ num-40*floor((min-1)/40+1) text+pos min
+    TYPE CR			\ num-40*floor((min-1)/40+1)
   DUP 0> WHILE
   down? WHILE
   REPEAT THEN
